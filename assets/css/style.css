@@ -1,0 +1,50 @@
+body { 
+    font-family: 'Inter', sans-serif; 
+}
+[v-cloak] { 
+    display: none; 
+}
+.custom-scrollbar::-webkit-scrollbar { 
+    height: 6px; width: 6px; 
+}
+.custom-scrollbar::-webkit-scrollbar-track { 
+    background: #f1f5f9; 
+}
+.custom-scrollbar::-webkit-scrollbar-thumb { 
+    background: #cbd5e1; border-radius: 4px; 
+}
+
+/* KOP SURAT & PRINT STYLES */
+/* Gaya khusus untuk layar cetak (Print) - FORMAT A4 */
+@media print {
+    @page {
+        size: A4;
+        margin: 0; /* Hapus margin default browser agar header URL tanggal hilang */
+    }
+    body, html {
+        background: white;
+        margin: 0;
+        padding: 0;
+    }
+    /* Sembunyikan elemen web (header, main, modal) */
+    header, main, .fixed.inset-0 { 
+        display: none !important; 
+    }
+    /* Kembalikan print-section ke normal flow tanpa absolute */
+    #print-section { 
+        display: block !important;
+        position: static !important;
+        margin: 0 !important; 
+        padding: 1cm 0 2cm 0 !important; /* Ubah baris ini: Atas 1cm, Kiri-Kanan 0, Bawah 2cm */
+        width: 210mm !important;
+        height: 297mm !important;
+        border: none !important;
+        box-shadow: none !important;
+        page-break-inside: avoid;
+    }
+    .no-print { display: none !important; }
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+}
