@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMN TekMira - Personal Asset Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style/dist/xlsx.bundle.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Link file CSS Eksternal -->
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen">
+    <div id="app" v-cloak class="flex flex-col min-h-screen pb-12">
+        <!-- ============================= -->
+        <!-- HALAMAN LOGIN -->
+        <!-- ============================= -->
+
+        <div
+            v-if="!isLoggedIn"
+            class="fixed inset-0 bg-slate-100 flex items-center justify-center z-[9999]"
+        >
+            <div class="w-full max-w-md px-6">
+
+                <div class="bg-white rounded-2xl shadow-xl p-8">
+
+                    <!-- Logo -->
+                    <div class="text-center mb-8">
+
+                        <div class="w-16 h-16 mx-auto mb-4 bg-amber-500 rounded-2xl flex items-center justify-center">
+                            <i class="fa-solid fa-laptop text-white text-2xl"></i>
+                        </div>
+
+                        <h1 class="text-2xl font-bold text-slate-800">
+                            BMN tekMIRA
+                        </h1>
+
+                        <p class="text-sm text-slate-500 mt-1">
+                            Sistem Informasi Barang Milik Negara
+                        </p>
+
+                    </div>
+
+                    <!-- USERNAME -->
+                    <div class="mb-4">
+
+                        <label class="block text-sm font-medium text-slate-700 mb-2">
+                            Username
+                        </label>
+
+                        <div class="relative">
+
+                            <i class="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+
+                            <input
+                                v-model="loginUsername"
+                                type="text"
+                                placeholder="Username"
+                                class="w-full border border-slate-300 rounded-xl py-4 pl-12 pr-4 outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
+                                @keyup.enter="handleLogin"
+                            >
+
+                        </div>
+
+                    </div>
+
+                    <!-- Password -->
+                    <div class="mb-2">
+
+                        <label class="block text-sm font-medium text-slate-700 mb-2">
+                            Password
+                        </label>
+
+                        <div class="relative">
+
+                            <i class="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+
+                            <input
+                                v-model="loginPassword"
+                                type="password"
+                                placeholder="Password"
+                                @keyup.enter="handleLogin"
+                                class="w-full pl-12 pr-4 py-4 border rounded-xl"
+                            >
+
+                        </div>
+
+                    </div>
+
+                    <!-- Lupa Password -->
+                    <div class="text-right mb-6">
+                        <button
+                            type="button"
+                            @click="openForgotPassword"
+                            class="text-sm text-amber-600 hover:text-amber-700 font-medium"
+                        >
+                            Lupa Password?
+                        </button>
+                    </div>
+
+                   
+                    <!-- BUTTON LOGIN -->
+                    <button
+                        type="button"
+                        @click="handleLogin"
+                        class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-4 rounded-xl transition cursor-pointer"
+                    >
+                        <i class="fa-solid fa-right-to-bracket mr-2"></i>
+                        Login
+                    </button>
+
+                    <!-- ERROR -->
+                    <p
+                        v-if="loginError"
+                        class="text-red-500 text-sm text-center mt-4"
+                    >
+                        {{ loginError }}
+                    </p>
+
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ============================= -->
+        <!-- MODAL LUPA PASSWORD -->
+        <!-- ============================= -->
+
+        <div
+            v-if="modalForgotPassword.show"
+            class="fixed inset-0 bg-black/50 flex items-center justify-center z-[10000]"
+        >
+
+            <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-7">
+
+                <!-- Header -->
+                <div class="flex justify-between items-start mb-6">
+
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-800">
+                            Lupa Password
+                        </h2>
+
+                        <p class="text-sm text-slate-500 mt-1">
+                            Buat password baru untuk akun admin
+                        </p>
+                    </div>
+
+                    <button
+                        @click="modalForgotPassword.show = false"
+                        class="text-slate-400 hover:text-slate-600 text-xl"
+                    >
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+
+                </div>
+
+                <!-- Username -->
+                <div class="mb-4">
+
+                    <label class="block text-sm font-medium text-slate-700 mb-2">
+                        Username
+                    </label>
+
+                    <input
+                        v-model="forgotUsername"
+                        type="text"
+                        placeholder="Masukkan username"
+                        class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    >
+
+                </div>
+
+                <!-- Password Baru -->
+                <div class="mb-4">
+
+                    <label class="block text-sm font-medium text-slate-700 mb-2">
+                        Password Baru
+                    </label>
+
+                    <input
+                        v-model="forgotNewPassword"
+                        type="password"
+                        placeholder="Masukkan password baru"
+                        class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    >
+
+                </div>
+
+                <!-- Konfirmasi -->
+                <div class="mb-6">
+
+                    <label class="block text-sm font-medium text-slate-700 mb-2">
+                        Konfirmasi Password
+                    </label>
+
+                    <input
+                        v-model="forgotConfirmPassword"
+                        type="password"
+                        placeholder="Ulangi password baru"
+                        class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    >
+
+                </div>
+
+                <!-- Button -->
+                <div class="flex justify-end gap-3">
+
+                    <button
+                        @click="modalForgotPassword.show = false"
+                        class="px-5 py-3 border border-slate-300 rounded-xl"
+                    >
+                        Batal
+                    </button>
+
+                    <button
+                        @click="resetPassword"
+                        class="px-5 py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl"
+                    >
+                        Reset Password
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ============================= -->
+        <!-- DASHBOARD -->
+        <!-- ============================= -->
+
+        <div v-else>
+        <!-- Header -->
+        <header class="bg-slate-900 text-white shadow-sm sticky top-0 z-30 no-print">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <div class="flex items-center space-x-3">
+                        <div class="bg-yellow-500 text-slate-950 p-2 rounded-lg font-bold text-base flex items-center justify-center w-9 h-9">
+                            <i class="fa-solid fa-boxes-stacked text-lg"></i>
+                        </div>
+                        <div>
+                            <h1 class="font-bold text-base leading-none">BMN tekMira</h1>
+                            <p class="text-[11px] text-slate-400 mt-1">Sistem Pengelolaan Aset Milik Negara</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <button @click="openAsetModal()" class="bg-yellow-600 hover:bg-yellow-500 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow-sm transition flex items-center space-x-1.5">
+                            <i class="fa-solid fa-plus text-xs"></i>
+                            <span class="hidden sm:inline">Tambah Aset</span>
+                        </button>
+                        <button @click="openPegawaiModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3 py-2 rounded-lg shadow-sm transition flex items-center space-x-1.5">
+                            <i class="fa-solid fa-user-plus text-xs"></i>
+                            <span class="hidden sm:inline">Tambah Pegawai</span>
+                        </button>
+                        
+                        <!-- TAMBAHAN: Menu Titik Tiga (Kebab Menu) -->
+                        <div class="relative ml-2 pl-3 border-l border-slate-700">
+                            <!-- Tombol Titik Tiga -->
+                            <button @click="showDropdown = !showDropdown" class="text-slate-300 hover:text-white hover:bg-slate-800 w-8 h-8 rounded-full flex items-center justify-center transition">
+                                <i class="fa-solid fa-ellipsis-vertical"></i>
+                            </button>
+
+                            <!-- Isi Dropdown Menu -->
+                            <div v-if="showDropdown" class="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 overflow-hidden">
+                                <!-- Info Singkat -->
+                                <div class="px-4 py-2.5 border-b border-slate-100 mb-1 bg-slate-50">
+                                    <p class="text-[9px] text-slate-400 font-semibold uppercase tracking-wider mb-0.5">Login Sebagai</p>
+                                    <p class="text-xs font-bold text-slate-800 truncate">{{ currentUsername }}</p>
+                                </div>
+                                
+                                <!-- Opsi Menu -->
+                                <button @click="openProfilModal(); showDropdown = false" class="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition flex items-center space-x-2.5">
+                                    <i class="fa-regular fa-circle-user w-4 text-center"></i>
+                                    <span>Profil Saya</span>
+                                </button>
+                                <button @click="openPengaturanModal(); showDropdown = false" class="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition flex items-center space-x-2.5">
+                                    <i class="fa-solid fa-file-signature w-4 text-center"></i>
+                                    <span>Pengaturan Dokumen</span>
+                                </button>
+                                
+                                <div class="border-t border-slate-100 my-1"></div>
+                                
+                                <button @click="openLogoutModal(); showDropdown = false" class="w-full text-left px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 transition flex items-center space-x-2.5">
+                                    <i class="fa-solid fa-arrow-right-from-bracket w-4 text-center"></i>
+                                    <span>Keluar</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Workspace -->
+        <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5 no-print">
+            
+            <!-- Toast -->
+            <div v-if="toast.show" :class="toast.isError ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-emerald-50 border-emerald-200 text-emerald-800'" class="p-3.5 rounded-xl border flex items-center justify-between text-xs font-medium shadow-sm transition-all">
+                <div class="flex items-center space-x-2">
+                    <i :class="toast.isError ? 'fa-solid fa-circle-xmark text-rose-600' : 'fa-solid fa-circle-check text-emerald-600'" class="text-base"></i>
+                    <span>{{ toast.message }}</span>
+                </div>
+                <button @click="toast.show = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- Stats Bar -->
+            <div class="flex flex-col md:flex-row gap-3 items-center">
+                
+                <!-- Kumpulan 4 Kotak Stat -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1 w-full">
+                    <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-3">
+                        <div class="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm"><i class="fa-solid fa-boxes-stacked"></i></div>
+                        <div>
+                            <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Total Aset</p>
+                            <p class="text-lg font-bold text-slate-800 leading-tight">{{ activeAssets.length }} <span class="text-xs font-normal text-slate-500">unit</span></p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-3">
+                        <div class="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-sm"><i class="fa-solid fa-user-check"></i></div>
+                        <div>
+                            <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Dipakai</p>
+                            <p class="text-lg font-bold text-slate-800 leading-tight">{{ assignedCount }} <span class="text-xs font-normal text-slate-500">unit</span></p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-3">
+                        <div class="w-9 h-9 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-sm"><i class="fa-solid fa-warehouse"></i></div>
+                        <div>
+                            <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Di Gudang</p>
+                            <p class="text-lg font-bold text-slate-800 leading-tight">{{ availableCount }} <span class="text-xs font-normal text-slate-500">unit</span></p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-3">
+                        <div class="w-9 h-9 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center font-bold text-sm"><i class="fa-solid fa-circle-xmark"></i></div>
+                        <div>
+                            <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Rusak Berat</p>
+                            <p class="text-lg font-bold text-slate-800 leading-tight">{{ activeAssets.filter(a => a.kondisi === 'Rusak Berat').length }} <span class="text-xs font-normal text-slate-500">unit</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tombol Export Excel-->
+                <button type="button" class="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm border border-emerald-700 flex flex-col items-center justify-center shrink-0 w-[68px] h-[68px] transition" title="Export to Excel" @click.prevent="exportExcel">
+                    <i class="fa-solid fa-file-excel text-[22px] mb-1"></i>
+                    <span class="text-[9px] font-bold uppercase tracking-wider">Excel</span>
+                </button>
+
+            </div>
+
+            <!-- Panel Nav & Search -->
+            <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-3">
+                <!-- BARIS 1: Search & Kondisi Sejajar -->
+                <div class="flex flex-col sm:flex-row gap-3 items-center">
+                    <div class="relative w-full sm:flex-1">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+                        <input type="text" v-model="searchQuery" placeholder="Cari: Pemegang / NUP / NIP / Tahun / Keterangan..." class="w-full pl-10 pr-9 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-yellow-500 transition"/>
+                        <button v-if="searchQuery" @click="searchQuery = ''" class="absolute right-3 top-2 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-circle-xmark text-sm"></i></button>
+                    </div>
+                    
+                    <!-- Area Kondisi (Muncul di Aset & Riwayat) -->
+                    <div v-if="currentTab === 'assets' || currentTab === 'mutasi'" class="flex items-center space-x-2 w-full sm:w-auto shrink-0 justify-end">
+                        <span class="text-slate-400 font-medium text-[10px] uppercase hidden sm:inline">Kondisi:</span>
+                        
+                        <!-- Dropdown Kondisi Khusus Aset -->
+                        <select v-if="currentTab === 'assets'" v-model="filterKondisi" class="bg-slate-50 border border-slate-200 text-slate-700 px-2 py-2 rounded-xl transition font-medium text-[11px] focus:outline-none focus:ring-1 focus:ring-yellow-500 cursor-pointer">
+                            <option value="all">Semua Kondisi</option>
+                            <option value="Baik">Baik</option>
+                            <option value="Rusak Ringan">Rusak Ringan</option>
+                            <option value="Rusak Berat">Rusak Berat</option>
+                        </select>
+
+                        <!-- Dropdown Kondisi Khusus Riwayat Surat -->
+                        <select v-if="currentTab === 'mutasi'" v-model="filterKondisiRiwayat" class="bg-slate-50 border border-slate-200 text-slate-700 px-2 py-2 rounded-xl transition font-medium text-[11px] focus:outline-none focus:ring-1 focus:ring-yellow-500 cursor-pointer">
+                            <option value="all">Semua Kondisi</option>
+                            <option value="Baik">Baik</option>
+                            <option value="Rusak Ringan">Rusak Ringan</option>
+                            <option value="Rusak Berat">Rusak Berat</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- BARIS 2: Tabs, Status, & Tombol Hapus Massal -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-100">
+                    <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                        <!-- Tab Selector -->
+                        <div class="flex items-center space-x-1 bg-slate-100 p-1 rounded-lg text-xs font-semibold text-slate-600 shrink-0 w-full sm:w-auto">
+                            <button @click="currentTab = 'assets'" :class="currentTab === 'assets' ? 'bg-white text-slate-900 shadow-sm' : 'hover:text-slate-900'" class="flex-1 sm:flex-none px-3 py-1.5 rounded-md transition flex justify-center items-center space-x-1.5">
+                                <i class="fa-solid fa-boxes-stacked"></i><span class="hidden sm:inline">Daftar Semua Aset</span>
+                            </button>
+                            <button @click="currentTab = 'pegawai'" :class="currentTab === 'pegawai' ? 'bg-white text-slate-900 shadow-sm' : 'hover:text-slate-900'" class="flex-1 sm:flex-none px-3 py-1.5 rounded-md transition flex justify-center items-center space-x-1.5">
+                                <i class="fa-solid fa-users"></i><span class="hidden sm:inline">Data Pegawai</span>
+                            </button>
+                            <button @click="currentTab = 'mutasi'" :class="currentTab === 'mutasi' ? 'bg-white text-slate-900 shadow-sm' : 'hover:text-slate-900'" class="flex-1 sm:flex-none px-3 py-1.5 rounded-md transition flex justify-center items-center space-x-1.5">
+                                <i class="fa-solid fa-right-left"></i><span class="hidden sm:inline">Riwayat Surat</span>
+                            </button>
+                        </div>
+
+                        <!-- TAMBAHAN: Dropdown Tampil Berapa Data -->
+                        <div class="flex items-center space-x-1.5 bg-white border border-slate-200 px-2.5 py-1.5 rounded-lg shadow-sm shrink-0">
+                            <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Tampil:</span>
+                            <select v-model="itemsPerPage" class="text-xs font-bold text-slate-700 bg-transparent focus:outline-none focus:ring-0 cursor-pointer">
+                                <option :value="25">25</option>
+                                <option :value="50">50</option>
+                                <option :value="100">100</option>
+                                <option :value="999999">Semua</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center justify-end gap-3 w-full sm:w-auto text-xs">
+                        <!-- Status Filter -->
+                        <div v-if="currentTab === 'assets'" class="flex items-center space-x-1.5">
+                            <button @click="filterStatus = 'all'" :class="filterStatus === 'all' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'" class="px-2.5 py-1 rounded-md transition font-medium text-[11px]">Semua</button>
+                            <button @click="filterStatus = 'assigned'" :class="filterStatus === 'assigned' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'" class="px-2.5 py-1 rounded-md transition font-medium text-[11px]">Dipakai</button>
+                            <button @click="filterStatus = 'gudang'" :class="filterStatus === 'gudang' ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'" class="px-2.5 py-1 rounded-md transition font-medium text-[11px]">Di Gudang</button>
+                        </div>
+
+                        <!-- Filter Status Khusus Riwayat Surat -->
+                        <div v-if="currentTab === 'mutasi'" class="flex items-center space-x-1.5">
+                            <button @click="filterSurat = 'all'" :class="filterSurat === 'all' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'" class="px-2.5 py-1 rounded-md transition font-medium text-[11px]">Semua Surat</button>
+                            <button @click="filterSurat = 'SIP'" :class="filterSurat === 'SIP' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'" class="px-2.5 py-1 rounded-md transition font-medium text-[11px]">SIP</button>
+                            <button @click="filterSurat = 'BAST'" :class="filterSurat === 'BAST' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'" class="px-2.5 py-1 rounded-md transition font-medium text-[11px]">BAST</button>
+                        </div>
+
+                        <!-- Area Tombol Select & Hapus -->
+                        <div class="flex items-center space-x-2">
+                            <!-- Tombol Pilih Data -->
+                            <button v-if="currentTab === 'assets' || currentTab === 'pegawai'" @click="toggleSelectMode" :class="isSelectMode ? 'bg-slate-200 text-slate-700' : 'bg-white border-slate-300 hover:bg-slate-50 text-slate-700'" class="border px-3 py-1 rounded-lg transition font-bold text-[11px] flex items-center space-x-1.5 shadow-sm">
+                                <i class="fa-solid" :class="isSelectMode ? 'fa-xmark' : 'fa-list-check'"></i>
+                                <span>{{ isSelectMode ? 'Batal Pilih' : 'Pilih Data' }}</span>
+                            </button>
+
+                            <!-- Tombol Hapus Sekaligus (Hanya muncul kalau Mode Pilih Aktif & Ada yg diceklis) -->
+                            <button v-if="isSelectMode && currentTab === 'assets' && selectedAssets.length > 0" @click="hapusBanyakAset" class="bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 px-3 py-1 rounded-lg transition font-bold text-[11px] flex items-center space-x-1.5 shadow-sm">
+                                <i class="fa-solid fa-trash-can"></i><span>Hapus ({{ selectedAssets.length }})</span>
+                            </button>
+                            <button v-if="isSelectMode && currentTab === 'pegawai' && selectedPegawai.length > 0" @click="hapusBanyakPegawai" class="bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 px-3 py-1 rounded-lg transition font-bold text-[11px] flex items-center space-x-1.5 shadow-sm">
+                                <i class="fa-solid fa-trash-can"></i><span>Hapus ({{ selectedPegawai.length }})</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 1: ASSETS -->
+            <div v-if="currentTab === 'assets'" class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-800 text-slate-200 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-700">
+                                <th v-if="isSelectMode" class="py-3 px-3 w-8 text-center"><input type="checkbox" v-model="selectAllAssets" class="cursor-pointer"></th>
+                                <th class="py-3 px-2 w-8 text-center">No</th>
+                                <th class="py-3 px-4">Kode & NUP</th>
+                                <th class="py-3 px-4 w-50 text-center">Jenis, Merek/Tipe & Tahun</th>
+                                <th class="px-4 py-3 text-center">Hari / Tanggal</th>
+                                <!-- Kolom Keterangan dengan Filter Panah -->
+                                <th class="py-3 px-4 w-40 text-center">
+                                    <div class="flex items-center justify-center space-x-1.5">
+                                        <span>Keterangan</span>
+                                        
+                                        <!-- Wadah Icon Panah & Select Transparan -->
+                                        <div class="relative flex items-center justify-center cursor-pointer group" title="Filter Keterangan">
+                                            
+                                            <!-- Icon Panah (Ditebelin pakai text-[12px] dan font-black) -->
+                                            <i class="fa-solid fa-chevron-down text-[12px] font-black transition-colors" 
+                                               :class="filterKeterangan !== 'all' ? 'text-blue-400' : 'text-slate-300 group-hover:text-white'">
+                                            </i>
+                                            
+                                            <!-- Select Asli (Ditambah text-slate-900 biar tulisannya hitam pas mekar) -->
+                                            <select v-model="filterKeterangan" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer text-slate-900">
+                                                <option value="all">Semua Keterangan</option>
+                                                <option value="Transfer masuk">TKTM Masuk</option>
+                                                <option value="Transfer keluar">TKTM Keluar</option>
+                                                <option value="Pembelian">Pembelian</option>
+                                                <option value="Sewa">Sewa</option>
+                                                <option value="Lainnya">Lainnya</option>
+                                            </select>
+                                            
+                                        </div>
+                                    </div>
+                                </th>
+                                <th class="py-3 px-4 text-center">Kondisi</th>
+                                <th class="py-3 px-4 text-center">Posisi Aset</th>
+                                <th class="py-3 px-4 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <tr v-for="(asset, index) in filteredAssets.slice(0, itemsPerPage)" :key="asset.id" class="hover:bg-slate-50">
+                                <td v-if="isSelectMode" class="py-3 px-3 text-center"><input type="checkbox" :value="asset.id" v-model="selectedAssets" class="cursor-pointer"></td>
+                                <td class="py-3 px-2 text-center text-[11px] font-bold text-slate-400">{{ index + 1 }}</td>
+                                <td class="py-3 px-4">
+                                    <div class="font-mono text-slate-800 font-bold">{{ asset.kodeBarang }}</div>
+                                    <div class="text-[11px] text-slate-500 mt-0.5">NUP: <span class="font-mono bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 font-bold text-slate-800">{{ asset.nup }}</span></div>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <div class="flex items-center space-x-1.5 mb-0.5">
+                                        <span class="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded bg-indigo-100 text-indigo-700">{{ asset.jenis }}</span>
+                                        <span class="font-semibold text-slate-800">{{ asset.merek }}</span>
+                                    </div>
+                                    <div class="text-[11px] text-slate-500">{{ asset.tipe }}</div>
+                                    <div class="text-[10px] text-slate-400 font-mono mt-0.5">Tahun: {{ asset.tahun || '-' }}</div>
+                                </td>
+                                <!-- Kolom Tanggal BAST -->
+                                    <td class="px-4 py-3 whitespace-nowrap text-[11px] text-slate-600 font-medium">
+                                        {{ getLastMutationDate(asset) }}
+                                    </td>
+                                    
+                                    <!-- Kolom Keterangan (Dikecilin) -->
+                                    <td class="px-4 py-3 text-[11px] text-slate-500 text-center max-w-[120px] truncate" :title="asset.keterangan">
+                                        {{ asset.keterangan || '-' }}
+
+                                         
+                                    </td>
+                                    
+                                <td class="py-3 px-4">
+                                    <span class="px-2 py-0.5 rounded-full font-semibold text-[10px] inline-flex items-center space-x-1" :class="getConditionBadgeClass(asset.kondisi)">
+                                        <i class="fa-solid text-[9px]" :class="getConditionIconClass(asset.kondisi)"></i>
+                                        <span>{{ asset.kondisi }}</span>
+                                    </span>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <div v-if="asset.pemegangId" class="flex items-center space-x-2">
+                                        <div class="w-7 h-7 rounded-full bg-yellow-100 text-yellow-800 font-bold text-[10px] flex items-center justify-center border border-yellow-200 shrink-0">
+                                            {{ getPegawaiInitials(asset.pemegangId) }}
+                                        </div>
+                                        <div class="min-w-0">
+                                            <p class="font-semibold text-slate-800 text-xs truncate">{{ getPegawaiName(asset.pemegangId) }}</p>
+                                            <p class="text-[10px] text-slate-400 font-mono">NIP: {{ getPegawaiNip(asset.pemegangId) }}</p>
+                                        </div>
+                                    </div>
+                                    <span v-else class="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-200 inline-flex items-center space-x-1 shadow-sm">
+                                        <i class="fa-solid fa-warehouse text-[10px]"></i>
+                                        <span>Di Gudang BMN (Siap)</span>
+                                    </span>
+                                </td>
+                                <td class="py-3 px-4 text-center">
+                                    <div class="flex items-center justify-center space-x-1">
+                                        <button @click="openSerahTerimaModal(asset)" class="bg-slate-900 hover:bg-yellow-600 text-white text-[11px] px-2.5 py-1 rounded-md transition font-medium flex items-center space-x-1 shadow-sm" :title="asset.pemegangId ? 'Kembalikan/Pindah Tangan' : 'Pinjamkan ke Pegawai'">
+                                                <i class="fa-solid" :class="asset.pemegangId ? 'fa-right-left' : 'fa-hand-holding-hand'"></i>
+                                                <span class="hidden md:inline">{{ asset.pemegangId ? 'Mutasi' : 'Pinjamkan' }}</span>
+                                        </button>
+
+                                        <button @click="openAsetModal(asset)" class="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-md" title="Edit Data"><i class="fa-solid fa-pen-to-square"></i></button>
+                                        <button @click="deleteAsset(asset.id)" class="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-slate-100 rounded-md" title="Hapus"><i class="fa-solid fa-trash-can"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr v-if="filteredAssets.length === 0">
+                                <td colspan="8" class="text-center py-10 text-slate-400">
+                                    <i class="fa-solid fa-box-open text-3xl mb-2 block text-slate-300"></i>
+                                    Tidak ada data aset yang sesuai pencarian dan filter Anda.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 2: PEGAWAI -->
+            <div v-if="currentTab === 'pegawai'" class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-800 text-slate-200 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-700">
+                                <th v-if="isSelectMode" class="py-3 px-3 w-8 text-center"><input type="checkbox" v-model="selectAllAssets" class="cursor-pointer"></th>                                <th class="py-3 px-2 w-8 text-center">No</th>
+                                <th class="py-2.5 px-4">Nama Pegawai</th>
+                                <th class="py-2.5 px-4">NIP</th>
+                                <th class="py-2.5 px-4">Jabatan</th>
+                                <th class="py-2.5 px-4">Aset Yang Dipegang</th>
+                                <th class="py-2.5 px-4 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <!-- DIPERBAIKI: Tambah index -->
+                            <tr v-for="(p, index) in filteredPegawai.slice(0, itemsPerPage)" :key="p.id" class="hover:bg-slate-50">
+                                <td v-if="isSelectMode" class="py-3 px-3 text-center"><input type="checkbox" :value="p.id" v-model="selectedPegawai" class="cursor-pointer"></td>
+                                <td class="py-3 px-2 text-center text-[11px] font-bold text-slate-400">{{ index + 1 }}</td>
+                                <td class="py-3 px-4 font-semibold text-slate-800">{{ p.nama }}</td>
+                                <td class="py-3 px-4 font-mono text-slate-600 text-[11px]">{{ p.nip }}</td>
+                                <td class="py-3 px-4 text-slate-600">{{ p.jabatan }}</td>
+                                <td class="py-3 px-4">
+                                    <div class="space-y-1.5">
+                                        <div v-for="(ast, key) in getPegawaiAllAssets(p.id)" :key="key" class="bg-slate-50 p-1.5 rounded border border-slate-200 text-[10px]">
+                                            <div class="font-semibold text-slate-800 flex justify-between">
+                                                <span>{{ ast.jenis }}: {{ ast.merek }} {{ ast.tipe }}</span>
+                                                <span class="text-slate-500">NUP: {{ ast.nup }}</span>
+                                            </div>
+                                        </div>
+                                        <span v-if="Object.keys(getPegawaiAllAssets(p.id)).length === 0" class="text-slate-400 italic text-[11px]">Tidak memegang aset apapun</span>
+                                    </div>
+                                </td>
+                                <td class="py-3 px-4 text-center">
+                                    <div class="flex items-center justify-center space-x-1">
+                                        <!-- Tombol Pintasan Transfer Keluar (TKTM) -->
+                                        <button @click="openModalTKTM(p)" class="p-1.5 text-orange-500 hover:text-orange-700 hover:bg-orange-50 rounded-md transition" title="Transfer Keluar Aset (TKTM)">
+                                            <i class="fa-solid fa-truck-arrow-right"></i>
+                                        </button>
+                                        
+                                        <!-- Tombol Edit & Hapus (Bawaan Asli) -->
+                                        <button @click="openPegawaiModal(p)" class="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-md"><i class="fa-solid fa-pen-to-square"></i></button>
+                                        <button @click="deletePegawai(p.id)" class="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-slate-100 rounded-md"><i class="fa-solid fa-trash-can"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 3: MUTASI & BAST -->
+            <div v-if="currentTab === 'mutasi'" class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-800 text-slate-200 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-700">
+                                <th v-if="isSelectMode" class="py-3 px-3 w-8 text-center"><input type="checkbox" v-model="selectAllAssets" class="cursor-pointer"></th>
+                                <th class="py-3 px-2 w-8 text-center">No</th>
+                                <th class="py-2.5 px-4">Tanggal</th>
+                                <th class="py-2.5 px-4">Barang BMN</th>
+                                <th class="py-2.5 px-4">Asal (Gudang/Lama)</th>
+                                <th class="py-2.5 px-4">Mutasi Ke</th>
+                                <th class="py-2.5 px-4">Kondisi</th>
+                                <th class="py-2.5 px-4">Nomor Surat</th>
+                                <th class="py-2.5 px-4 text-center">Aksi Dokumen</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <!-- DIPERBAIKI: Panggil filteredHistory, bukan historyList -->
+                            <tr v-for="(h, index) in filteredHistory.slice(0, itemsPerPage)" :key="h.id" class="hover:bg-slate-50">
+                                <td class="py-3 px-2 text-center text-[11px] font-bold text-slate-400">{{ index + 1 }}</td>
+                                <td class="py-3 px-4 font-mono text-[11px] text-slate-500 whitespace-nowrap">{{ h.tanggal }}</td>
+                                <td class="py-3 px-4">
+                                    <div class="font-bold text-slate-800">{{ h.merekTipe }}</div>
+                                    <div class="text-[10px] font-mono text-slate-500">NUP: {{ h.nup }} | {{ h.kategoriLabel }}</div>
+                                </td>
+                                <td class="py-3 px-4 text-slate-600 font-medium">{{ h.pemegangLama }}</td>
+                                <td class="py-3 px-4 text-yellow-700 font-bold">{{ h.pemegangBaru }}</td>
+                                <td class="py-3 px-4">
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-semibold" :class="getConditionBadgeClass(h.kondisi)">{{ h.kondisi }}</span>
+                                </td>
+                                <td class="py-3 px-4 font-mono text-[11px] text-slate-500">{{ h.nomorBast || '-' }}</td>
+                                
+                                <!-- KOLOM AKSI (CETAK & UPLOAD) -->
+                                <td class="py-3 px-4 text-center">
+                                    <div class="flex items-center justify-center space-x-1.5">
+                                        <!-- Tombol Cetak -->
+                                        <button @click="cetakUlangBast(h)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-[10px] px-2.5 py-1.5 rounded-md transition font-semibold flex items-center justify-center space-x-1">
+                                            <i class="fa-solid fa-print"></i><span class="hidden xl:inline">Cetak</span>
+                                        </button>
+
+                                        <!-- Logika Upload / Lihat Bukti -->
+                                        <template v-if="h.file_bukti">
+                                            <button @click="openPdf(h.file_bukti)" class="bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 text-[10px] px-2.5 py-1.5 rounded-md transition font-semibold flex items-center space-x-1" title="Lihat Bukti TTD">
+                                                <i class="fa-solid fa-file-pdf"></i><span>Lihat</span>
+                                            </button>
+                                            <button @click="triggerUpload(h.id)" class="bg-slate-50 text-slate-400 hover:text-blue-600 hover:bg-slate-100 text-[10px] px-2 py-1.5 rounded-md transition border border-slate-200" title="Upload Ulang">
+                                                <i class="fa-solid fa-upload"></i>
+                                            </button>
+                                        </template>
+                                        <template v-else>
+                                            <button @click="triggerUpload(h.id)" class="bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 text-[10px] px-2.5 py-1.5 rounded-md transition font-semibold flex items-center space-x-1">
+                                                <i class="fa-solid fa-upload"></i><span class="hidden xl:inline">Upload</span>
+                                            </button>
+                                        </template>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+
+        <!-- MODALS (Aset, Pegawai, Serah Terima) -->
+        <div v-if="modalPengaturan.show" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 no-print">
+            <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-xl border border-slate-200">
+                <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-base">Pengaturan Dokumen</h3>
+                        <p class="text-[11px] text-slate-500">Ubah data penandatangan surat (Mengetahui)</p>
+                    </div>
+                    <button @click="modalPengaturan.show = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-base"></i></button>
+                </div>
+                <form @submit.prevent="savePengaturan" class="space-y-3 mt-4">
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">Nama Kepala (Mengetahui) *</label>
+                        <input type="text" v-model="formPengaturan.namaKepala" required class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">NIP *</label>
+                        <input type="text" v-model="formPengaturan.nipKepala" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">Jabatan Penandatangan *</label>
+                        <textarea v-model="formPengaturan.jabatanKepala" required rows="2" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500"></textarea>
+                    </div>
+                    <div class="pt-3 flex justify-end space-x-2">
+                        <button type="button" @click="modalPengaturan.show = false" class="px-3.5 py-1.5 rounded-lg text-xs font-medium border border-slate-300 hover:bg-slate-50">Batal</button>
+                        <!-- Sementara logikanya diset nampilin Toast aja -->
+                        <button type="submit" class="px-4 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-yellow-600 text-white shadow-sm">Simpan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- MODAL PROFIL (USERNAME & GANTI PASSWORD) -->
+        <div v-if="modalProfil.show" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 no-print">
+            <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-xl border border-slate-200">
+                <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-base">Profil & Keamanan</h3>
+                        <p class="text-[11px] text-slate-500">Perbarui username dan kata sandi Anda</p>
+                    </div>
+                    <button @click="modalProfil.show = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-base"></i></button>
+                </div>
+                <form @submit.prevent="saveProfil" class="space-y-3 mt-4">
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">Username *</label>
+                        <input type="text" v-model="formProfil.username" required class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
+                    </div>
+                    <div class="pt-2 border-t border-slate-100">
+                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">Password Lama <span class="text-slate-400 font-normal">(Kosongkan jika tak diganti)</span></label>
+                        <input type="password" v-model="formProfil.oldPass" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Password Baru</label>
+                            <input type="password" v-model="formProfil.newPass" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Konfirmasi</label>
+                            <input type="password" v-model="formProfil.confirmPass" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
+                        </div>
+                    </div>
+                    <div class="pt-3 flex justify-end space-x-2">
+                        <button type="button" @click="modalProfil.show = false" class="px-3.5 py-1.5 rounded-lg text-xs font-medium border border-slate-300 hover:bg-slate-50">Batal</button>
+                        <button type="submit" class="px-4 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-yellow-600 text-white shadow-sm">Simpan Profil</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- MODAL LOGOUT -->
+        <div v-if="modalLogout.show" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 no-print">
+            <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-200 text-center">
+                <div class="w-16 h-16 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa-solid fa-arrow-right-from-bracket text-2xl"></i>
+                </div>
+                <h3 class="font-bold text-slate-800 text-lg mb-2">Yakin Ingin Keluar?</h3>
+                <p class="text-xs text-slate-500 mb-6">Sesi Anda akan diakhiri dan harus login kembali untuk mengakses sistem.</p>
+                
+                <div class="flex justify-center space-x-3">
+                    <button @click="modalLogout.show = false" class="flex-1 px-4 py-2 rounded-xl text-xs font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50 transition">Batal</button>
+                    <button @click="confirmLogout" class="flex-1 px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white shadow-sm transition">Ya, Keluar</button>
+                </div>
+            </div>
+        </div>
+        <div v-if="modalAset.show" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 no-print">
+            <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-xl border border-slate-200">
+                <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                    <h3 class="font-bold text-slate-800 text-base">{{ modalAset.isEdit ? 'Edit Data' : 'Tambah Aset' }}</h3>
+                    <button @click="modalAset.show = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-base"></i></button>
+                </div>
+                <form @submit.prevent="saveAset" class="space-y-3 mt-4">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Jenis Aset *</label>
+                            <select v-model="formAset.jenis" @change="ubahKodeOtomatis" required class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500 focus:outline-none">
+                                <option value="Laptop">Laptop</option>
+                                <option value="Notebook">Notebook</option>
+                                <option value="Tablet">Tablet</option>
+                                <option value="PC Unit">PC Unit</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">NUP *</label>
+                            <input type="text" v-model="formAset.nup"  class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">Kode Barang BMN  *</label>
+                        <input type="text" v-model="formAset.kodeBarang" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Merek *</label>
+                            <input type="text" v-model="formAset.merek" required class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Tipe / Model *</label>
+                            <input type="text" v-model="formAset.tipe" required class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Tahun Perolehan</label>
+                            <input type="text" v-model="formAset.tahun" placeholder="e.g. 2024" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Kondisi Fisik *</label>
+                            <select v-model="formAset.kondisi" required class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
+                                <option value="Baik">Baik</option>
+                                <option value="Rusak Ringan">Rusak Ringan</option>
+                                <option value="Rusak Berat">Rusak Berat</option>
+                            </select>
+                        </div>
+                    </div>
+                    <!-- KETERANGAN DIBIKIN DROPDOWN (Penuh 2 Kolom) -->
+                    <div class="col-span-2 sm:col-span-2">
+                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">Tipe Aset*</label>
+                        <select v-model="formAset.kategoriKeterangan" required class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500">
+                            <option value="Pembelian">Pembelian</option>
+                            <option value="Transfer masuk">Transfer Masuk (TKTM)</option>
+                            <option value="Transfer keluar">Transfer Keluar (TKTM)</option>
+                            <option value="Sewa">Sewa</option>
+                            <option value="Lainnya">Lainnya</option>
+                        </select>
+                    </div>
+
+                    <!-- KOTAK DETAIL MUNCUL DINAMIS TERGANTUNG PILIHAN DI ATAS -->
+                    <div class="col-span-2 sm:col-span-2" v-if="formAset.kategoriKeterangan">
+                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">
+                            {{ 
+                                formAset.kategoriKeterangan === 'Transfer masuk' ? 'Asal Unit (Dari mana?)' : 
+                                formAset.kategoriKeterangan === 'Transfer keluar' ? 'Tujuan Unit (Ke mana?)' : 
+                                'Detail Tambahan (Opsional)' 
+                            }}
+                        </label>
+                        <input type="text" v-model="formAset.detailKeterangan" 
+                            :placeholder="formAset.kategoriKeterangan === 'Transfer masuk' ? 'Contoh: Dari Ditjen Minerba Pusat' : formAset.kategoriKeterangan === 'Transfer keluar' ? 'Contoh: Ke BPSDM' : 'Tulis keterangan tambahan di sini...'" 
+                            class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="pt-3 flex justify-end space-x-2">
+                        <button type="button" @click="modalAset.show = false" class="px-3.5 py-1.5 rounded-lg text-xs font-medium border border-slate-300 hover:bg-slate-50">Batal</button>
+                        <button type="submit" class="px-4 py-1.5 rounded-lg text-xs font-semibold bg-yellow-600 hover:bg-yellow-700 text-white shadow-sm">Simpan Data</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div v-if="modalPegawai.show" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 no-print">
+            <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-xl border border-slate-200">
+                <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                    <h3 class="font-bold text-slate-800 text-base">{{ modalPegawai.isEdit ? 'Edit Pegawai' : 'Tambah Pegawai' }}</h3>
+                    <button @click="modalPegawai.show = false" class="text-slate-400"><i class="fa-solid fa-xmark text-base"></i></button>
+                </div>
+                <form @submit.prevent="savePegawai" class="space-y-3 mt-4">
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">Nama Lengkap *</label>
+                        <input type="text" v-model="formPegawai.nama" required class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">NIP *</label>
+                        <input type="text" v-model="formPegawai.nip" required class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">Jabatan *</label>
+                        <input list="daftar-jabatan" type="text" v-model="formPegawai.jabatan" required placeholder="Pilih dari daftar atau ketik baru..." class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
+                        <datalist id="daftar-jabatan">
+                            <option value="Kepala Bagian Perlengkapan"></option>
+                            <option value="Staf Perlengkapan"></option>
+                        </datalist>
+                    </div>
+                    <!-- LIST ASET UNTUK TRANSFER KELUAR (Cuma muncul pas Edit) -->
+                    <div v-if="modalPegawai.isEdit" class="col-span-2 mt-2 pt-3 border-t border-slate-200">
+                        <label class="block text-[11px] font-semibold text-slate-700 mb-2">Aset yang Dipegang (Pilih untuk Transfer Keluar):</label>
+                        
+                        <!-- Kalau pegawainya ga megang apa-apa -->
+                        <div v-if="asetDipegang.length === 0" class="text-[10px] text-slate-500 italic bg-slate-50 p-2 rounded border border-slate-200">
+                            Tidak ada aset aktif yang sedang dipegang.
+                        </div>
+                        
+                        <!-- Kalau ada asetnya, munculin daftarnya -->
+                        <div v-else class="space-y-2">
+                            <div v-for="asset in asetDipegang" :key="asset.id" class="flex items-center justify-between bg-orange-50/40 p-2 rounded-lg border border-orange-100">
+                                <div class="text-[10px] text-slate-700">
+                                    <span class="font-bold">{{ asset.jenis }}</span>: {{ asset.merek }} {{ asset.tipe }} <br>
+                                    <span class="font-mono text-slate-500">NUP: {{ asset.nup }}</span>
+                                </div>
+                                <button type="button" @click.prevent="prosesTransferKeluar(asset)" class="bg-orange-500 hover:bg-orange-600 text-white text-[9px] px-2.5 py-1.5 rounded-md font-bold transition flex items-center space-x-1.5">
+                                    <i class="fa-solid fa-truck-arrow-right"></i><span>Transfer Keluar</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pt-3 flex justify-end space-x-2">
+                        <button type="button" @click="modalPegawai.show = false" class="px-3.5 py-1.5 rounded-lg text-xs font-medium border border-slate-300 hover:bg-slate-50">Batal</button>
+                        <button type="submit" class="px-4 py-1.5 rounded-lg text-xs font-semibold bg-yellow-600 hover:bg-yellow-700 text-white shadow-sm">Simpan Pegawai</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div v-if="modalSerahTerima.show" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 no-print">
+            <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-xl border border-slate-200">
+                <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-base">Serah Terima / Mutasi Aset</h3>
+                        <p class="text-[11px] text-slate-500">Membuat Surat Keterangan otomatis</p>
+                    </div>
+                    <button @click="modalSerahTerima.show = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-base"></i></button>
+                </div>
+                <div v-if="modalSerahTerima.asset" class="mt-3 p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
+                    <div class="font-bold text-slate-800">{{ modalSerahTerima.asset.jenis }}: {{ modalSerahTerima.asset.merek }} {{ modalSerahTerima.asset.tipe }}</div>
+                    <div class="text-slate-600 font-mono text-[11px]">NUP: <span class="font-bold text-slate-800">{{ modalSerahTerima.asset.nup }}</span> | Tahun: {{ modalSerahTerima.asset.tahun || '-' }}</div>
+                    <div class="text-slate-500 text-[11px]">Pihak Pertama (Asal): <strong class="text-slate-800">{{ modalSerahTerima.asset.pemegangId ? getPegawaiName(modalSerahTerima.asset.pemegangId) : 'Gudang BMN TekMira' }}</strong></div>
+                </div>
+                <form @submit.prevent="submitSerahTerima" class="space-y-3 mt-4">
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">Pihak Kedua (Penerima Baru) *</label>
+                        <select v-model="formMutasi.pemegangBaruId" @change="generateNomorSurat" required class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
+                            <!-- Placeholder biar defaultnya nyuruh milih dulu -->
+                            <option value="" disabled>-- Pilih Penerima --</option>
+                            <option v-if="modalSerahTerima.asset.pemegangId !== null" value="GUDANG" class="font-bold">Kembalikan Ke Gudang BMN</option>
+                            <option v-for="p in availablePegawaiForTransfer" :key="p.id" :value="p.id">
+                                <!-- FORMAT NAMA - JABATAN -->
+                                {{ p.nama }} - {{ p.jabatan }}
+                            </option>
+                        </select>
+                        <span class="text-[10px] text-slate-400 mt-1 block">* Menampilkan pegawai yang belum memegang aset kategori ini.</span>
+                    </div>
+
+                    <!-- KOTAK KHUSUS STAF GUDANG (MUNCUL KALAU DARI ATAU KE GUDANG) -->
+                    <div v-if="modalSerahTerima.asset.pemegangId === null || formMutasi.pemegangBaruId === 'GUDANG'" class="bg-indigo-50 border border-indigo-100 p-2.5 rounded-lg">
+                        <label class="block text-[11px] font-bold text-indigo-800 mb-1"><i class="fa-solid fa-user-pen mr-1"></i> Staf Gudang Bertugas*</label>
+                        <select v-model="formMutasi.adminGudangId" required class="w-full text-xs p-2 rounded-lg border border-indigo-200 focus:ring-2 focus:ring-indigo-500">
+                            <!-- Placeholder wajib milih staf -->
+                            <option value="" disabled class="italic">-- Pilih Staf Gudang --</option>
+                            <option v-for="staf in stafGudangList" :key="staf.id" :value="staf.id">
+                                {{ staf.nama }} ({{ staf.jabatan }})
+                            </option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Tanggal BAST *</label>
+                            <input type="date" v-model="formMutasi.tanggal" @change="generateNomorSurat" required class="w-full text-xs p-2 rounded-lg border border-slate-300">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Kondisi Barang *</label>
+                            <select v-model="formMutasi.kondisi" required class="w-full text-xs p-2 rounded-lg border border-slate-300">
+                                <option value="Baik">Baik</option>
+                                <option value="Rusak Ringan">Rusak Ringan</option>
+                                <option value="Rusak Berat">Rusak Berat</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">Nomor Surat</label>
+                        <input type="text" v-model="formMutasi.nomorBast" placeholder="e.g.TM/2026/08/01" class="w-full text-xs p-2 rounded-lg border border-slate-300">
+                    </div>
+                    <div class="pt-3 flex justify-end space-x-2">
+                        <button type="button" @click="modalSerahTerima.show = false" class="px-3.5 py-1.5 rounded-lg text-xs font-medium border border-slate-300">Batal</button>
+                        <button type="submit" class="px-4 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-yellow-600 text-white shadow-sm flex items-center space-x-1.5">
+                            <i class="fa-solid fa-file-signature text-[11px]"></i><span>Proses & Tampilkan </span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- PRINT BAST / SURAT IZIN PREVIEW (Simulasi Kertas A4) -->
+        <div id="print-section" v-if="printData.show" class="bg-white mx-auto border shadow-2xl relative my-10 text-black w-[210mm] min-h-[297mm] pt-[1cm] pb-[2cm]">
+            
+            <!-- Tombol Aksi (Tidak ikut tercetak) -->
+            <button @click="tutupPrint" class="absolute top-4 right-4 bg-slate-200 hover:bg-rose-500 hover:text-white text-slate-700 p-2 rounded-full no-print transition z-10"><i class="fa-solid fa-xmark"></i></button>
+            <button @click="jalankanPrint" class="absolute top-4 right-16 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-1.5 rounded-lg no-print font-bold text-sm shadow-md transition z-10"><i class="fa-solid fa-print mr-2"></i>Cetak Dokumen</button>
+            
+            <!-- ========================================== -->
+            <!-- BAGIAN 1: KOP SURAT (Margin Lebar / Tipis) -->
+            <!-- ========================================== -->
+            <div class="px-[1cm]">
+                <div class="flex flex-row items-center justify-between border-b-[2px] border-black pb-2 mb-8">
+                    
+                    <!-- Area Logo Kiri (Dikurangi ukurannya jadi titik tengah w-[180px]) -->
+                    <div class="w-[180px] flex-shrink-0 pr-2 -mt-8">
+                        <img src="assets/logo.png" alt="Kementerian ESDM" class="w-full h-auto object-contain" />
+                    </div>
+
+                    <!-- Area Judul Tengah -->
+                    <div class="flex-grow text-left">
+                        <h1 class="text-[11px] uppercase leading-tight whitespace-nowrap mt-1">
+                            Kementerian Energi dan Sumber Daya Mineral Republik Indonesia
+                        </h1>
+                        <h2 class="text-[11px] font-bold uppercase leading-tight mt-0.5 whitespace-nowrap">
+                            Direktorat Jenderal Mineral dan Batubara
+                        </h2>
+                        <h2 class="text-[13px] font-bold uppercase leading-tight mt-0.5s whitespace-nowrap">
+                            Balai Besar Pengujian Mineral dan Batubara
+                        </h2>
+                        <h2 class="text-[13px] font-bold leading-tight whitespace-nowrap">
+                            <span class="italic">tek</span>MIRA
+                        </h2>
+                        <p class="text-[10px] mt-1 whitespace-nowrap">
+                            Jalan Jenderal Sudirman Nomor 623 Bandung 40211
+                        </p>
+                    </div>
+
+                    <!-- Area Kontak Kanan -->
+                    <div class="flex-shrink-0 w-auto text-[10px] text-left pl-2 py-1 whitespace-nowrap -mt-8">
+                        <p class="leading-relaxed"><span class="">T.</span> (022) 6030483</p>
+                        <p class="leading-relaxed"><span class="">E.</span> info.tekmira@esdm.go.id</p>
+                        <p class="leading-relaxed"><span class="">W.</span> www.esdm.go.id</p>
+                    </div>
+                </div>
+            </div>
+            <!-- ========================================== -->
+            <!-- BAGIAN 2: ISI SURAT (Margin Menjorok 2.5cm)-->
+            <!-- ========================================== -->
+            <div class="px-[2.5cm]">
+                <!-- LOGIKA 1: JIKA DARI GUDANG -> MUNCUL SURAT IZIN PEMAKAIAN -->
+                <template v-if="printData.jenisTransaksi === 'PEMINJAMAN'">
+                    <div class="text-center mb-6">
+                        <h2 class="text-[15px] font-bold uppercase underline">Surat Izin Pemakaian Barang Milik Negara</h2>
+                        <p class="text-sm mt-1" v-if="printData.nomorBast">Nomor : {{ printData.nomorBast }}</p>
+                    </div>
+
+                    <div class="text-[13px] space-y-4 text-justify leading-relaxed">
+                        <p>Izin pemakaian barang inventaris kantor Balai Besar Pengujian Mineral dan Batubara tekMIRA berupa :</p>
+                        
+                        <table class="w-full ml-10">
+                            <tr><td class="w-44 pb-1">1. Nama Barang</td><td class="w-4 pb-1">:</td><td class="pb-1">{{ printData.kategoriLabel }}</td></tr>
+                            <tr><td class="w-44 pb-1">2. Merk/Type</td><td class="w-4 pb-1">:</td><td class="pb-1">{{ printData.merekTipe }}</td></tr>
+                            <tr><td class="w-44 pb-1">3. Jumlah</td><td class="w-4 pb-1">:</td><td class="pb-1">1 (satu) Unit</td></tr>
+                            <tr><td class="w-44 pb-1">4. Tahun Perolehan</td><td class="w-4 pb-1">:</td><td class="pb-1">{{ printData.tahun || '-' }}</td></tr>
+                            <tr><td class="w-44 pb-1">5. Kode/Nomor</td><td class="w-4 pb-1">:</td><td class="pb-1">{{ printData.kodeBarang }}.{{ printData.nup }}</td></tr>
+                            <tr><td class="w-44 pb-1">6. Pemakai</td><td class="w-4 pb-1">:</td><td class="pb-1">{{ printData.pemegangBaruNama }}</td></tr>
+                            <tr><td class="w-44 pb-1">7. Bidang/Bagian</td><td class="w-4 pb-1">:</td><td class="pb-1">{{ printData.pemegangBaruJabatan || '-' }}</td></tr>
+                        </table>
+
+                        <p class="mt-5">Selanjutnya barang inventaris tersebut agar dapat dipergunakan untuk keperluan dinas pada Kantor Balai Besar Pengujian Mineral dan Batubara tekMIRA pemakai/pengguna barang wajib memelihara dengan sebaik-baiknya dan bertanggung jawab penuh atas hilang/musnahnya barang inventaris tersebut.</p>
+
+                        <!-- TANDA TANGAN SURAT IZIN -->
+                        <div class="mt-12 flex justify-between w-full text-center">
+                            <div class="w-56">
+                                <p class="mb-24 mt-4">Yang menyerahkan</p>
+                                <p class="font-bold underline">{{ printData.pemegangLamaNama }}</p>
+                            </div>
+                            <div class="w-56">
+                                <p>Bandung, {{ formatTanggalIndo(printData.tanggal) }}</p>
+                                <p class="mb-20">Yang menerima/memakai</p>
+                                <p class="font-bold underline">{{ printData.pemegangBaruNama }}</p>
+                            </div>
+                        </div>
+                        
+                        <!-- TANDA TANGAN MENGETAHUI (Di Tengah) -->
+                        <div class="mt-6 text-center w-full">
+                            <br>
+                            <p>Mengetahui :</p>
+                            <!-- Pakai whitespace-pre-line biar kalau di-enter di form, di sini juga ikut turun -->
+                            <p class="mb-20 whitespace-pre-line">{{ formPengaturan.jabatanKepala }}</p>
+                            <p class="font-bold underline">{{ formPengaturan.namaKepala }}</p>
+                            <p v-if="formPengaturan.nipKepala" class="text-xs">NIP. {{ formPengaturan.nipKepala }}</p>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- LOGIKA 2: JIKA DARI PEGAWAI KE PEGAWAI / KE GUDANG -> MUNCUL BAST -->
+                <template v-else>
+                    <div class="text-center mb-6">
+                        <h2 class="text-[15px] font-bold uppercase underline">Berita Acara Serah Terima Barang Milik Negara (BAST-BMN)</h2>
+                        <p class="text-sm mt-1" v-if="printData.nomorBast">Nomor {{ printData.nomorBast }}</p>
+                    </div>
+
+                    <div class="text-[13px] space-y-4 text-justify leading-relaxed">
+                        <p>Pada hari ini, tanggal <strong>{{ formatTanggalIndo(printData.tanggal) }}</strong>, kami yang bertanda tangan di bawah ini:</p>
+                        
+                        <table class="w-full ml-10">
+                            <tr><td class="w-32 pb-1 align-top">Nama</td><td class="w-4 pb-1 align-top">:</td><td class="pb-1">{{ printData.pemegangLamaNama }}</td></tr>
+                            <tr><td class="w-32 pb-1 align-top">NIP</td><td class="w-4 pb-1 align-top">:</td><td class="pb-1">{{ printData.pemegangLamaNip || '-' }}</td></tr>
+                            <tr><td class="w-32 pb-4 align-top">Jabatan</td><td class="w-4 pb-4 align-top">:</td><td class="pb-4">{{ printData.pemegangLamaJabatan || '-' }}</td></tr>
+                            <tr><td colspan="3" class="pb-4">Selanjutnya di sebut <strong>PIHAK PERTAMA</strong></td></tr>
+
+                            <tr><td class="w-32 pb-1 align-top">Nama</td><td class="w-4 pb-1 align-top">:</td><td class="pb-1">{{ printData.pemegangBaruNama }}</td></tr>
+                            <tr><td class="w-32 pb-1 align-top">NIP</td><td class="w-4 pb-1 align-top">:</td><td class="pb-1">{{ printData.pemegangBaruNip || '-' }}</td></tr>
+                            <tr><td class="w-32 pb-4 align-top">Jabatan</td><td class="w-4 pb-4 align-top">:</td><td class="pb-4">{{ printData.pemegangBaruJabatan || '-' }}</td></tr>
+                            <tr><td colspan="3" class="pb-4">Selanjutnya di sebut <strong>PIHAK KEDUA</strong></td></tr>
+                        </table>
+
+                        <p>Dengan ini menyatakan bahwa PIHAK PERTAMA telah menyerahkan/Mengembalikan kepada PIHAK KEDUA berupa :</p>
+
+                        <table class="w-full border-collapse border border-black text-[13px] my-5 text-center">
+                            <thead>
+                                <tr class="bg-gray-100">
+                                    <th class="border border-black px-3 py-2 w-10">NO</th>
+                                    <th class="border border-black px-3 py-2 text-left">Nama Barang</th>
+                                    <th class="border border-black px-3 py-2">Jumlah</th>
+                                    <th class="border border-black px-3 py-2">Tahun</th>
+                                    <th class="border border-black px-3 py-2">Kondisi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="border border-black px-3 py-2">1</td>
+                                    <td class="border border-black px-3 py-2 text-left">
+                                        <span class="font-semibold">{{ printData.kategoriLabel }} {{ printData.merekTipe }}</span><br>
+                                        <span class="font-mono text-xs">{{ printData.kodeBarang }}.{{ printData.nup }}</span>
+                                    </td>
+                                    <td class="border border-black px-3 py-2">1 Unit</td>
+                                    <td class="border border-black px-3 py-2">{{ printData.tahun || '-' }}</td>
+                                    <td class="border border-black px-3 py-2">{{ printData.kondisi }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <p>Demikian Berita Acara Serah Terima Barang Milik Negara ini dibuat untuk dapat diproses lebih lanjut.</p>
+
+                        <!-- TANDA TANGAN BAST (Kanan Kiri Rapi) -->
+                        <div class="mt-16 flex justify-between w-full text-center">
+                            <div class="w-56">
+                                <p class="mb-24 mt-4">Yang Menerima,<br>PIHAK KEDUA</p>
+                                <p class="font-bold underline">{{ printData.pemegangBaruNama }}</p>
+                            </div>
+                            <div class="w-56">
+                                <p>Bandung, {{ formatTanggalIndo(printData.tanggal) }}</p>
+                                <p class="mb-24">Yang Menyerahkan,<br>PIHAK PERTAMA</p>
+                                <p class="font-bold underline">{{ printData.pemegangLamaNama }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div> <!-- Penutup padding 2.5cm -->   
+        </div>
+
+        <!-- MODAL TKTM KELUAR KHUSUS PEGAWAI -->
+        <div v-if="modalTKTM.show" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-xl border border-slate-200">
+                <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-base">Transfer Keluar (TKTM)</h3>
+                        <p class="text-[11px] text-slate-500">Pilih aset milik <span class="font-bold">{{ modalTKTM.namaPegawai }}</span></p>
+                    </div>
+                    <button @click="modalTKTM.show = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-base"></i></button>
+                </div>
+                
+                <form @submit.prevent="submitTKTM" class="space-y-4 mt-4">
+                    <!-- Kalau pegawainya ga megang aset -->
+                    <div v-if="modalTKTM.asetList.length === 0" class="text-[11px] text-red-500 bg-red-50 p-3 rounded-lg border border-red-100 text-center">
+                        Pegawai ini tidak sedang memegang aset apapun yang bisa ditransfer.
+                    </div>
+                    
+                    <!-- Kalau ada asetnya, bisa dipilih -->
+                    <div v-else class="space-y-3">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Pilih Aset yang Akan Ditransfer *</label>
+                            <select v-model="modalTKTM.selectedAsetId" required class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500">
+                                <option value="" disabled>-- Pilih Aset --</option>
+                                <option v-for="aset in modalTKTM.asetList" :key="aset.id" :value="aset.id">
+                                    {{ aset.jenis }}: {{ aset.merek }} {{ aset.tipe }} (NUP: {{ aset.nup }})
+                                </option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Tujuan Unit (Ke mana?) *</label>
+                            <input type="text" v-model="modalTKTM.tujuan" placeholder="Contoh: Ke BPSDM" required class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500">
+                        </div>
+                        
+                        <div class="pt-3 flex justify-end space-x-2">
+                            <button type="button" @click="modalTKTM.show = false" class="px-3.5 py-1.5 rounded-lg text-xs font-medium border border-slate-300">Batal</button>
+                            <button type="submit" class="px-4 py-1.5 rounded-lg text-xs font-semibold bg-orange-600 hover:bg-orange-700 text-white shadow-sm flex items-center space-x-1.5">
+                                <i class="fa-solid fa-truck-fast text-[11px]"></i><span>Proses Transfer</span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Input file rahasia buat upload PDF -->
+    <input type="file" ref="fileInputBukti" @change="handleFileUpload" accept=".pdf" class="hidden">
+
+    <!-- Link file JS Eksternal -->
+    <script src="assets/js/app.js"></script>
+</body>
+</html>
