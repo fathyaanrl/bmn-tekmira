@@ -351,6 +351,7 @@ createApp({
 
                 pegawaiList.value = (pegawaiResponse.data || []).map(normalizePegawai).sort((a, b) => b.id - a.id);
                 historyList.value = (mutasiResponse.data || []).map(normalizeHistory);
+                await refreshBuktiList();
 
                 showToast(`Database berhasil dimuat: ${assets.length} aset, ${pegawaiList.value.length} user.`);
             } catch (error) {
@@ -375,6 +376,24 @@ createApp({
             const response = await apiRequest('mutasi.php');
             historyList.value = (response.data || []).map(normalizeHistory);
         };
+
+        // =====================================================
+        // BUKTI SURAT (file PDF hasil upload, dicek dari FOLDER, bukan dari DB)
+        // =====================================================
+        const buktiIds = ref([]); // isinya kumpulan ID yang udah punya file bukti_<id>.pdf
+
+        const refreshBuktiList = async () => {
+            try {
+                const res = await fetch(`${API_BASE}/list_bukti.php`);
+                const result = await res.json();
+                buktiIds.value = (result.ids || []).map(Number);
+            } catch (error) {
+                console.error('Gagal ambil daftar bukti surat:', error);
+            }
+        };
+
+        // Dipanggil dari template: cek apakah baris riwayat ini udah ada file buktinya
+        const hasBukti = (id) => buktiIds.value.includes(Number(id));
 
         // =====================================================
         // CATEGORY & STATISTICS
@@ -602,7 +621,7 @@ createApp({
                 
                 if (result.status === 'success') {
                     showToast('Yey! Bukti TTD berhasil diupload.');
-                    await refreshHistory(); 
+                    await refreshBuktiList(); 
                 } else {
                     showToast(result.message, true); // Nampilin error aslinya dari PHP
                 }
@@ -615,8 +634,8 @@ createApp({
             }
         };
 
-        const openPdf = (fileName) => {
-            if(fileName) window.open(`uploads/surat/${fileName}`, '_blank');
+        const openPdf = (id) => {
+            if (id) window.open(`uploads/surat/bukti_${id}.pdf`, '_blank');
         };
 
         // =====================================================
@@ -1484,7 +1503,8 @@ createApp({
             fileInputBukti, 
             triggerUpload, 
             handleFileUpload, 
-            openPdf
+            openPdf,
+            hasBukti
         };
     }
 }).mount('#app');

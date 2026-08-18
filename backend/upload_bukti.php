@@ -1,60 +1,45 @@
 <?php
-// Matikan error HTML pas udah jalan normal nanti
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
+header('Content-Type: application/json');
 
-header("Access-Control-Allow-Origin: *");
-header("Content-Type: application/json; charset=UTF-8");
-
-try {
-    // Panggil file konfigurasi kamu
-    require 'config.php'; 
-
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        
-        if (!isset($_FILES['file_pdf'])) {
-            echo json_encode(['status' => 'error', 'message' => 'File tidak masuk!']);
-            exit;
-        }
-
-        $id_riwayat = $_POST['id'];
-        $uploadDir = '../uploads/surat/';
-        
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0777, true);
-        }
-
-        $fileName = time() . '_' . basename($_FILES['file_pdf']['name']);
-        $targetFilePath = $uploadDir . $fileName;
-        $fileType = strtolower(pathinfo($targetFilePath, PATHINFO_EXTENSION));
-
-        if($fileType !== 'pdf') {
-            echo json_encode(['status' => 'error', 'message' => 'Cuma boleh upload file PDF ya!']);
-            exit;
-        }
-
-        if (move_uploaded_file($_FILES['file_pdf']['tmp_name'], $targetFilePath)) {
-            
-            // ========================================================
-            // PERBAIKAN DI SINI: Pakai PDO ($pdo) menyesuaikan sistemmu
-            // ========================================================
-            $query = "UPDATE mutasi SET file_bukti = :file_bukti WHERE id = :id";
-            $stmt = $pdo->prepare($query);
-            
-            // Eksekusi datanya
-            if($stmt->execute([':file_bukti' => $fileName, ':id' => $id_riwayat])) {
-                echo json_encode(['status' => 'success', 'file_name' => $fileName]);
-            } else {
-                echo json_encode(['status' => 'error', 'message' => 'Gagal simpan ke database.']);
-            }
-            
-        } else {
-            echo json_encode(['status' => 'error', 'message' => 'Gagal mindahin file ke folder uploads/surat/']);
-        }
-    } else {
-        echo json_encode(['status' => 'error', 'message' => 'Metode bukan POST']);
-    }
-} catch (Throwable $e) {
-    echo json_encode(['status' => 'error', 'message' => 'Sistem Error: ' . $e->getMessage()]);
+// Validasi input
+if (!isset($_POST['id']) || !isset($_FILES['file_pdf'])) {
+    echo json_encode(['status' => 'error', 'message' => 'Data tidak lengkap (id / file kosong).']);
+    exit;
 }
-?>
+
+$id = preg_replace('/[^0-9]/', '', $_POST['id']); // cuma boleh angka, biar aman
+if ($id === '') {
+    echo json_encode(['status' => 'error', 'message' => 'ID tidak valid.']);
+    exit;
+}
+
+$file = $_FILES['file_pdf'];
+
+// Validasi tipe file harus PDF
+if ($file['type'] !== 'application/pdf') {
+    echo json_encode(['status' => 'error', 'message' => 'File harus format PDF!']);
+    exit;
+}
+
+// Validasi ukuran file (maksimal 5MB, ubah sesuai kebutuhan)
+$maxSize = 5 * 1024 * 1024;
+if ($file['size'] > $maxSize) {
+    echo json_encode(['status' => 'error', 'message' => 'Ukuran file maksimal 5MB.']);
+    exit;
+}
+
+// Folder tujuan: backend/../uploads/surat/ (sesuaikan kalau struktur foldermu beda)
+$targetDir = __DIR__ . '/../uploads/surat/';
+if (!is_dir($targetDir)) {
+    mkdir($targetDir, 0755, true);
+}
+
+// Nama file dibikin dari ID doang -> bukti_<id>.pdf
+// Kalau upload ulang, otomatis ke-overwrite (nimpa file lama), gak perlu hapus manual
+$targetFile = $targetDir . 'bukti_' . $id . '.pdf';
+
+if (move_uploaded_file($file['tmp_name'], $targetFile)) {
+    echo json_encode(['status' => 'success', 'message' => 'File berhasil diupload.']);
+} else {
+    echo json_encode(['status' => 'error', 'message' => 'Gagal menyimpan file ke server. Cek permission folder uploads/surat/.']);
+}

@@ -20,6 +20,9 @@
     <!-- TAMBAHKAN CSS INI DI SINI -->
     <!-- TIMPA BAGIAN INI SAJA DI INDEX.HTML KAMU -->
 
+     <!-- CSS TAMBAHAN: biar hasil cetak (baik ke printer beneran maupun "Save as PDF") pas ukuran A4 -->
+
+
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen">
     <div id="app" v-cloak class="flex flex-col min-h-screen pb-12">
@@ -651,6 +654,7 @@
                                 <td class="py-3 px-4 font-mono text-[11px] text-slate-500">{{ h.nomorBast || '-' }}</td>
                                 
                                 <!-- KOLOM AKSI (CETAK & UPLOAD) -->
+                                                                <!-- KOLOM AKSI (CETAK & UPLOAD) -->
                                 <td class="py-3 px-4 text-center">
                                     <div class="flex items-center justify-center space-x-1.5">
                                         <!-- Tombol Cetak -->
@@ -658,20 +662,15 @@
                                             <i class="fa-solid fa-print"></i><span class="hidden xl:inline">Cetak</span>
                                         </button>
 
-                                        <!-- Logika Upload / Lihat Bukti -->
-                                        <template v-if="h.file_bukti">
-                                            <button @click="openPdf(h.file_bukti)" class="bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 text-[10px] px-2.5 py-1.5 rounded-md transition font-semibold flex items-center space-x-1" title="Lihat Bukti TTD">
-                                                <i class="fa-solid fa-file-pdf"></i><span>Lihat</span>
-                                            </button>
-                                            <button @click="triggerUpload(h.id)" class="bg-slate-50 text-slate-400 hover:text-blue-600 hover:bg-slate-100 text-[10px] px-2 py-1.5 rounded-md transition border border-slate-200" title="Upload Ulang">
-                                                <i class="fa-solid fa-upload"></i>
-                                            </button>
-                                        </template>
-                                        <template v-else>
-                                            <button @click="triggerUpload(h.id)" class="bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 text-[10px] px-2.5 py-1.5 rounded-md transition font-semibold flex items-center space-x-1">
-                                                <i class="fa-solid fa-upload"></i><span class="hidden xl:inline">Upload Surat</span>
-                                            </button>
-                                        </template>
+                                        <!-- Tombol Lihat Surat (selalu tampil) -->
+                                        <button @click="openPdf(h.id)" :disabled="!hasBukti(h.id)" :class="hasBukti(h.id) ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-50 text-slate-300 border-slate-200 cursor-not-allowed'" class="border text-[10px] px-2.5 py-1.5 rounded-md transition font-semibold flex items-center space-x-1" title="Lihat Bukti TTD">
+                                            <i class="fa-solid fa-file-pdf"></i><span>Lihat</span>
+                                        </button>
+
+                                        <!-- Tombol Upload / Upload Ulang (icon aja, kecil) -->
+                                        <button @click="triggerUpload(h.id)" class="bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 text-[10px] px-2 py-1.5 rounded-md transition" :title="hasBukti(h.id) ? 'Upload Ulang' : 'Upload Surat'">
+                                            <i class="fa-solid fa-upload"></i>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -867,8 +866,7 @@
                         <label class="block text-[11px] font-semibold text-slate-700 mb-1">Jabatan *</label>
                         <input list="daftar-jabatan" type="text" v-model="formPegawai.jabatan" required placeholder="Pilih dari daftar atau ketik baru..." class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
                         <datalist id="daftar-jabatan">
-                            <option value="Kepala Bagian Perlengkapan"></option>
-                            <option value="Staf Perlengkapan"></option>
+                            <option value="Pengelola Layanan Operasional"></option>
                         </datalist>
                     </div>
                     <!-- LIST ASET UNTUK TRANSFER KELUAR (Cuma muncul pas Edit) -->
