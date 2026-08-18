@@ -585,28 +585,31 @@ createApp({
             formData.append('file_pdf', file);
 
             try {
+                // Tembak pakai tanda kutip backtick ` 
                 const response = await fetch(`${API_BASE}/upload_bukti.php`, { method: 'POST', body: formData });
                 
-                // Ambil balasan mentah dari PHP
+                // KITA BACA MENTAHNYA DULU
                 const textResult = await response.text(); 
                 
-                try {
-                    // Coba terjemahin ke JSON
-                    const result = JSON.parse(textResult);
-                    
-                    if (result.status === 'success') {
-                        showToast('Yey! Bukti TTD berhasil diupload.');
-                        await refreshHistory(); 
-                    } else {
-                        showToast(result.message, true); 
-                    }
-                } catch (parseError) {
-                    // KALAU BUKAN JSON (BERARTI ADA ERROR PHP), MUNCULIN POP-UP!
-                    alert("INI ERROR ASLINYA DARI PHP:\n\n" + textResult);
+                // Kalau PHP-nya tetep nge-blank
+                if (!textResult || textResult.trim() === '') {
+                    showToast('Server PHP nge-blank! Coba upload file PDF yang lebih kecil.', true);
+                    return;
                 }
 
+                // Terjemahin ke JSON
+                const result = JSON.parse(textResult);
+                
+                if (result.status === 'success') {
+                    showToast('Yey! Bukti TTD berhasil diupload.');
+                    await refreshHistory(); 
+                } else {
+                    showToast(result.message, true); // Nampilin error aslinya dari PHP
+                }
             } catch (error) {
-                showToast(`Gagal menghubungi server.`, true);
+                // Kalau muncul pesan merah aneh, ini bakal nangkep
+                showToast(`Gagal! Cek tulisan merah di atas atau klik F12.`, true);
+                console.error("Error dari server:", error);
             } finally {
                 event.target.value = ''; 
             }
@@ -911,7 +914,7 @@ createApp({
         // MODAL SERAH TERIMA & SURAT
         // =====================================================
         const modalSerahTerima = ref({ show: false, asset: null });
-        const formMutasi = ref({ pemegangBaruId: '', adminGudangId: '', tanggal: new Date().toISOString().slice(0, 10), kondisi: 'Baik', nomorBast: '' });
+        const formMutasi = ref({ pemegangBaruId: '', adminGudangId: '', tanggal: new Date().toISOString().slice(0, 10), kondisi: 'Baik', nomorBast: '', nomorSip: '' });
         const printData = ref({ show: false });
 
         const openSerahTerimaModal = (asset) => {
@@ -945,58 +948,50 @@ createApp({
             const oldHolder = asset.pemegangId;
             const newHolder = formMutasi.value.pemegangBaruId;
 
-            // Tentukan SIP atau BAST yang bener
-            let jenisSurat = 'BAST';
-            // Kalau pemegang lamanya kosong (artinya dari Gudang), PASTI jadinya SIP
-            if (oldHolder === null || oldHolder === '') {
-                jenisSurat = 'SIP'; 
-            }
-
             const tgl = new Date(formMutasi.value.tanggal);
             const tahun = tgl.getFullYear();
             const bulan = String(tgl.getMonth() + 1).padStart(2, '0');
 
-            // --- SETTING MANUAL NOMOR TERAKHIR DI SINI ---
-            // Pisahin angkanya sesuai buku fisik di kantor kamu
-            let maxNomorSIP = 15;  // Biar selanjutnya jadi 016
-            let maxNomorBAST = 8;  // Biar selanjutnya jadi 009
+            let maxNomorSIP = 15;  
+            let maxNomorBAST = 8;  
 
-            // Sistem milih mau pakai angka maksimal yang mana
-            let maxNomor = jenisSurat === 'SIP' ? maxNomorSIP : maxNomorBAST; 
-
+            // Cari nomor terakhir untuk SIP dan BAST di tahun yang sama
             historyList.value.forEach(h => {
                 if (!h.tanggal || !h.nomorBast) return;
-                
                 const hTahun = new Date(h.tanggal).getFullYear();
                 if (hTahun === tahun) {
-                    // Deteksi dari format string-nya, ini riwayat SIP atau BAST?
-                    const isHistorySIP = h.nomorBast.includes('/GDG/');
-                    const isHistoryBAST = h.nomorBast.includes('-GDG/');
-
-                    // Cuma hitung riwayat yang jenisnya sama
-                    if ((jenisSurat === 'SIP' && isHistorySIP) || (jenisSurat === 'BAST' && isHistoryBAST)) {
-                        const match = h.nomorBast.match(/^(\d+)/);
-                        if (match) {
-                            const num = parseInt(match[1], 10);
-                            if (num > maxNomor && num < 1000) {
-                                maxNomor = num;
-                            }
-                        }
+                    const match = h.nomorBast.match(/^(\d+)/);
+                    if (match) {
+                        const num = parseInt(match[1], 10);
+                        if (h.nomorBast.includes('/GDG/') && num > maxNomorSIP && num < 1000) maxNomorSIP = num;
+                        if (h.nomorBast.includes('-GDG/') && num > maxNomorBAST && num < 1000) maxNomorBAST = num;
                     }
                 }
             });
 
-            const nextNomor = String(maxNomor + 1).padStart(3, '0');
+            const nextSIP = String(maxNomorSIP + 1).padStart(3, '0');
+            const nextBAST = String(maxNomorBAST + 1).padStart(3, '0');
 
-            // Cetak formatnya persis sesuai template kamu
-            if (jenisSurat === 'SIP') {
-                formMutasi.value.nomorBast = `${nextNomor}/${bulan}/GDG/${tahun}`;
+            const formatSIP = `${nextSIP}/${bulan}/GDG/${tahun}`;
+            const formatBAST = `${nextBAST}-GDG/${bulan}/${tahun}`;
+
+            // Penentuan Surat
+            if (oldHolder === null || oldHolder === '') {
+                // Dari Gudang ke Pegawai -> Hanya SIP
+                formMutasi.value.nomorSip = formatSIP;
+                formMutasi.value.nomorBast = '';
+            } else if (newHolder === 'GUDANG' || newHolder === null) {
+                // Dari Pegawai ke Gudang -> Hanya BAST
+                formMutasi.value.nomorBast = formatBAST;
+                formMutasi.value.nomorSip = '';
             } else {
-                formMutasi.value.nomorBast = `${nextNomor}-GDG/${bulan}/${tahun}`;
+                // Mutasi Pegawai ke Pegawai -> BUTUH KEDUANYA
+                formMutasi.value.nomorBast = formatBAST;
+                formMutasi.value.nomorSip = formatSIP;
             }
         };
 
-       const submitSerahTerima = async () => {
+        const submitSerahTerima = async () => {
             const asset = modalSerahTerima.value.asset;
             if (!asset) return;
 
@@ -1004,67 +999,88 @@ createApp({
             let newHolderId = null;
             let newPegawai = null;
             
-            // Ambil data admin gudang yang barusan dipilih di dropdown
             let adminGudang = formMutasi.value.adminGudangId ? getPegawaiInfo(formMutasi.value.adminGudangId) : null;
+            if (!adminGudang) {
+                showToast('Staf Gudang wajib dipilih!', true);
+                return;
+            }
 
             if (formMutasi.value.pemegangBaruId !== 'GUDANG') {
                 newHolderId = Number(formMutasi.value.pemegangBaruId);
                 newPegawai = getPegawaiInfo(newHolderId);
-                if (!newPegawai) {
-                    showToast('Pegawai tujuan tidak ditemukan.', true);
-                    return;
-                }
             }
-
-            // --- LOGIKA PENGISI TANDA TANGAN SURAT OTOMATIS ---
-            // Pihak 1: Kalau ada pemegang lama, pakai namanya. Kalau kosong (asalnya dari gudang), pakai nama Staf Gudang.
-            let pihakPertamaSurat = oldPegawai || adminGudang; 
-            
-            // Pihak 2: Kalau ada pegawai baru, pakai namanya. Kalau dikembaliin ke gudang, pakai nama Staf Gudang.
-            let pihakKeduaSurat = newPegawai || adminGudang;
 
             let jenisTransaksi;
             if (!oldPegawai && newPegawai) jenisTransaksi = 'PEMINJAMAN';
             else if (oldPegawai && !newPegawai) jenisTransaksi = 'PENGEMBALIAN';
             else if (oldPegawai && newPegawai) jenisTransaksi = 'MUTASI';
-            else {
-                showToast('Transaksi tidak valid.', true);
-                return;
-            }
+            else return;
 
             try {
-                const response = await apiRequest('mutasi.php', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        aset_id: asset.id,
-                        tanggal: formMutasi.value.tanggal,
-                        pemegang_lama_id: oldPegawai ? oldPegawai.id : null,
-                        pemegang_baru_id: newHolderId,
-                        jenis_transaksi: jenisTransaksi,
-                        kondisi: formMutasi.value.kondisi,
-                        nomor_bast: formMutasi.value.nomorBast || null,
-                        keterangan: ''
-                    })
-                });
+                if (jenisTransaksi === 'MUTASI') {
+                    // 1. Eksekusi BAST 
+                    await apiRequest('mutasi.php', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            aset_id: asset.id,
+                            tanggal: formMutasi.value.tanggal,
+                            pemegang_lama_id: oldPegawai.id,
+                            pemegang_baru_id: null,
+                            jenis_transaksi: 'PENGEMBALIAN',
+                            kondisi: formMutasi.value.kondisi,
+                            nomor_bast: formMutasi.value.nomorBast,
+                            keterangan: 'Otomatis: Pengembalian sebelum dimutasi'
+                        })
+                    });
+
+                    // 2. Eksekusi SIP 
+                    await apiRequest('mutasi.php', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            aset_id: asset.id,
+                            tanggal: formMutasi.value.tanggal,
+                            pemegang_lama_id: null,
+                            pemegang_baru_id: newHolderId,
+                            jenis_transaksi: 'PEMINJAMAN',
+                            kondisi: formMutasi.value.kondisi,
+                            nomor_bast: formMutasi.value.nomorSip,
+                            keterangan: 'Otomatis: Peminjaman hasil mutasi'
+                        })
+                    });
+                } else {
+                    // Jika hanya meminjam / mengembalikan (Normal 1 Halaman)
+                    await apiRequest('mutasi.php', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            aset_id: asset.id,
+                            tanggal: formMutasi.value.tanggal,
+                            pemegang_lama_id: oldPegawai ? oldPegawai.id : null,
+                            pemegang_baru_id: newHolderId,
+                            jenis_transaksi: jenisTransaksi,
+                            kondisi: formMutasi.value.kondisi,
+                            nomor_bast: jenisTransaksi === 'PENGEMBALIAN' ? formMutasi.value.nomorBast : formMutasi.value.nomorSip,
+                            keterangan: ''
+                        })
+                    });
+                }
 
                 await Promise.all([refreshAssets(), refreshHistory()]);
                 modalSerahTerima.value.show = false;
-                showToast(response.message || 'Transaksi berhasil disimpan.');
+                showToast('Transaksi berhasil diproses & otomatis membuka dokumen cetak.');
 
                 let updatedAsset = null;
                 Object.values(db.value).forEach(list => {
                     const found = list.find(item => Number(item.id) === Number(asset.id));
                     if (found) updatedAsset = found;
                 });
+                if (!updatedAsset) updatedAsset = { ...asset, pemegangId: newHolderId, kondisi: formMutasi.value.kondisi };
 
-                if (!updatedAsset) {
-                    updatedAsset = { ...asset, pemegangId: newHolderId, kondisi: formMutasi.value.kondisi };
-                }
-
-                // --- TAMPILKAN DATA KE KERTAS PRINT ---
+                // KITA KEMBALIKAN AUTO-SHOW PRINT PREVIEW NYA!
+                // KITA KEMBALIKAN AUTO-SHOW PRINT PREVIEW NYA!
                 printData.value = {
                     show: true,
                     jenisTransaksi: jenisTransaksi,
+                    printMode: jenisTransaksi === 'PEMINJAMAN' ? 'SIP' : 'BAST', // <-- TAMBAHAN BARU INI
                     tanggal: formMutasi.value.tanggal,
                     kategoriLabel: updatedAsset.jenis,
                     kodeBarang: updatedAsset.kodeBarang,
@@ -1073,39 +1089,66 @@ createApp({
                     tahun: updatedAsset.tahun,
                     kondisi: formMutasi.value.kondisi,
                     nomorBast: formMutasi.value.nomorBast,
-                    
-                    // Masukin variabel surat yang udah disaring tadi
-                    pemegangLamaNama: pihakPertamaSurat?.nama || 'Gudang BMN TekMira',
-                    pemegangLamaNip: pihakPertamaSurat?.nip || null,
-                    pemegangLamaJabatan: pihakPertamaSurat?.jabatan || null,
-                    
-                    pemegangBaruNama: pihakKeduaSurat?.nama || 'Gudang BMN TekMira',
-                    pemegangBaruNip: pihakKeduaSurat?.nip || null,
-                    pemegangBaruJabatan: pihakKeduaSurat?.jabatan || null
+                    nomorSip: formMutasi.value.nomorSip,
+                    pemegangLamaNama: oldPegawai?.nama || 'Gudang BMN TekMira',
+                    pemegangLamaNip: oldPegawai?.nip || '-',
+                    pemegangLamaJabatan: oldPegawai?.jabatan || '-',
+                    pemegangBaruNama: newPegawai?.nama || 'Gudang BMN TekMira',
+                    pemegangBaruNip: newPegawai?.nip || '-',
+                    pemegangBaruJabatan: newPegawai?.jabatan || '-',
+                    adminNama: adminGudang.nama,
+                    adminNip: adminGudang.nip,
+                    adminJabatan: adminGudang.jabatan
                 };
-
+                // Kita kasih waktu loading (200ms) biar halamannya muncul dulu baru di-scroll
                 setTimeout(() => {
                     const printArea = document.getElementById('print-section');
-                    if (printArea) printArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 100);
+                    if (printArea) {
+                        printArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }, 200);
 
             } catch (error) {
                 showToast(`Transaksi gagal: ${error.message}`, true);
             }
         };
 
-        const formatTanggalIndo = (tanggal) => {
-            if (!tanggal) return '-';
-            const date = new Date(`${tanggal}T00:00:00`);
-            return date.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-        };
-
         const cetakUlangBast = (record) => {
-            printData.value = { show: true, ...record };
+            // Karena sekarang riwayatnya tunggal, kita sesuaikan dengan format aslinya
+            let nBast = '';
+            let nSip = '';
+            
+            // Deteksi berdasarkan format Nomor Surat (SIP atau BAST)
+            if (record.nomorBast && record.nomorBast.includes('/GDG/')) {
+                nSip = record.nomorBast;
+                record.jenisTransaksi = 'PEMINJAMAN'; // Force ubah tipe buat cetak
+            } else {
+                nBast = record.nomorBast;
+                record.jenisTransaksi = 'PENGEMBALIAN';
+            }
+
+            printData.value = { 
+                show: true, 
+                ...record,
+                nomorBast: nBast,
+                nomorSip: nSip,
+                jenisTransaksi: record.jenisTransaksi,
+                printMode: record.jenisTransaksi === 'PEMINJAMAN' ? 'SIP' : 'BAST', // <-- TAMBAHAN BARU INI
+                adminNama: 'Admin Gudang',
+                adminNip: '-',
+                adminJabatan: '-'
+            };
+            
             setTimeout(() => {
                 const printArea = document.getElementById('print-section');
                 if (printArea) printArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }, 100);
+        };
+
+        const formatTanggalIndo = (tanggal) => {
+            if (!tanggal) return '-';
+            const date = new Date(`${tanggal}T00:00:00`);
+            return date.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         };
 
         const tutupPrint = () => { printData.value.show = false; };
