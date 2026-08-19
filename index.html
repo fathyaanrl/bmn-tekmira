@@ -17,7 +17,6 @@
     <link rel="stylesheet" href="assets/css/style.css">
     
     <!-- TAMBAHKAN CSS INI DI SINI -->
-    <!-- TAMBAHKAN CSS INI DI SINI -->
     <!-- TIMPA BAGIAN INI SAJA DI INDEX.HTML KAMU -->
 
      <!-- CSS TAMBAHAN: biar hasil cetak (baik ke printer beneran maupun "Save as PDF") pas ukuran A4 -->
@@ -438,7 +437,7 @@
                         <!-- Area Tombol Select & Hapus -->
                         <div class="flex items-center space-x-2">
                             <!-- Tombol Pilih Data -->
-                            <button v-if="currentTab === 'assets' || currentTab === 'pegawai'" @click="toggleSelectMode" :class="isSelectMode ? 'bg-slate-200 text-slate-700' : 'bg-white border-slate-300 hover:bg-slate-50 text-slate-700'" class="border px-3 py-1 rounded-lg transition font-bold text-[11px] flex items-center space-x-1.5 shadow-sm">
+                            <button v-if="currentTab === 'assets' || currentTab === 'pegawai' || currentTab === 'mutasi'" @click="toggleSelectMode" :class="isSelectMode ? 'bg-slate-200 text-slate-700' : 'bg-white border-slate-300 hover:bg-slate-50 text-slate-700'" class="border px-3 py-1 rounded-lg transition font-bold text-[11px] flex items-center space-x-1.5 shadow-sm">
                                 <i class="fa-solid" :class="isSelectMode ? 'fa-xmark' : 'fa-list-check'"></i>
                                 <span>{{ isSelectMode ? 'Batal Pilih' : 'Pilih Data' }}</span>
                             </button>
@@ -449,6 +448,9 @@
                             </button>
                             <button v-if="isSelectMode && currentTab === 'pegawai' && selectedPegawai.length > 0" @click="hapusBanyakPegawai" class="bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 px-3 py-1 rounded-lg transition font-bold text-[11px] flex items-center space-x-1.5 shadow-sm">
                                 <i class="fa-solid fa-trash-can"></i><span>Hapus ({{ selectedPegawai.length }})</span>
+                            </button>
+                            <button v-if="isSelectMode && currentTab === 'mutasi' && selectedHistory.length > 0" @click="hapusBanyakHistory" class="bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 px-3 py-1 rounded-lg transition font-bold text-[11px] flex items-center space-x-1.5 shadow-sm">
+                                <i class="fa-solid fa-trash-can"></i><span>Hapus ({{ selectedHistory.length }})</span>
                             </button>
                         </div>
                     </div>
@@ -626,7 +628,7 @@
                     <table class="w-full text-left border-collapse text-xs">
                         <thead>
                             <tr class="bg-slate-800 text-slate-200 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-700">
-                                <th v-if="isSelectMode" class="py-3 px-3 w-8 text-center"><input type="checkbox" v-model="selectAllAssets" class="cursor-pointer"></th>
+                                <th v-if="isSelectMode" class="py-3 px-3 w-8 text-center"><input type="checkbox" v-model="selectAllHistory" class="cursor-pointer"></th>   
                                 <th class="py-3 px-2 w-8 text-center">No</th>
                                 <th class="py-2.5 px-4">Tanggal</th>
                                 <th class="py-2.5 px-4">Barang BMN</th>
@@ -640,6 +642,7 @@
                         <tbody class="divide-y divide-slate-100">
                             <!-- DIPERBAIKI: Panggil filteredHistory, bukan historyList -->
                             <tr v-for="(h, index) in filteredHistory.slice(0, itemsPerPage)" :key="h.id" class="hover:bg-slate-50">
+                                <td v-if="isSelectMode" class="py-3 px-3 text-center"><input type="checkbox" :value="h.id" v-model="selectedHistory" class="cursor-pointer"></td>
                                 <td class="py-3 px-2 text-center text-[11px] font-bold text-slate-400">{{ index + 1 }}</td>
                                 <td class="py-3 px-4 font-mono text-[11px] text-slate-500 whitespace-nowrap">{{ h.tanggal }}</td>
                                 <td class="py-3 px-4">
@@ -882,9 +885,6 @@
                     <div>
                         <label class="block text-[11px] font-semibold text-slate-700 mb-1">Jabatan *</label>
                         <input list="daftar-jabatan" type="text" v-model="formPegawai.jabatan" required placeholder="Pilih dari daftar atau ketik baru..." class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
-                        <datalist id="daftar-jabatan">
-                            <option value="Perlengkapan"></option>
-                        </datalist>
                     </div>
                     <!-- LIST ASET UNTUK TRANSFER KELUAR (Cuma muncul pas Edit) -->
                     <div v-if="modalPegawai.isEdit" class="col-span-2 mt-2 pt-3 border-t border-slate-200">
@@ -945,11 +945,13 @@
                         <span class="text-[10px] text-slate-400 mt-1 block">* Menampilkan pegawai yang belum memegang aset kategori ini.</span>
                     </div>
 
-                    <!-- KOTAK KHUSUS STAF GUDANG ((Sekarang Wajib untuk SEMUA Transaksi)) -->
+                    <!-- KOTAK PEGAWAI/ADMIN YANG BERTUGAS -->
                     <div class="bg-indigo-50 border border-indigo-100 p-2.5 rounded-lg">
-                        <label class="block text-[11px] font-bold text-indigo-800 mb-1"><i class="fa-solid fa-user-pen mr-1"></i> Staf Gudang Bertugas*</label>
+                        <label class="block text-[11px] font-bold text-indigo-800 mb-1">
+                            <i class="fa-solid fa-user-pen mr-1"></i> Admin / Pegawai Bertugas*
+                        </label>
                         <select v-model="formMutasi.adminGudangId" required class="w-full text-xs p-2 rounded-lg border border-indigo-200 focus:ring-2 focus:ring-indigo-500">
-                            <option value="" disabled class="italic">-- Pilih Staf Gudang --</option>
+                            <option value="" disabled class="italic">-- Pilih Pegawai --</option>
                             <option v-for="staf in stafGudangList" :key="staf.id" :value="staf.id">
                                 {{ staf.nama }} ({{ staf.jabatan }})
                             </option>

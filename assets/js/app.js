@@ -204,6 +204,7 @@ createApp({
         const isSelectMode = ref(false);
         const selectedAssets = ref([]);
         const selectedPegawai = ref([]);
+        const selectedHistory = ref([]);
 
         const toast = ref({
             show: false,
@@ -671,7 +672,11 @@ createApp({
             get: () => filteredPegawai.value.length > 0 && selectedPegawai.value.length === filteredPegawai.value.length,
             set: (val) => { selectedPegawai.value = val ? filteredPegawai.value.map(p => p.id) : []; }
         });
-
+        
+        const selectAllHistory = computed({
+            get: () => filteredHistory.value.length > 0 && selectedHistory.value.length === filteredHistory.value.length,
+            set: (val) => { selectedHistory.value = val ? filteredHistory.value.map(h => h.id) : []; }
+        });
 
         // =====================================================
         // MODAL ASET
@@ -923,12 +928,8 @@ createApp({
             );
         });
 
-        // Filter otomatis buat staf gudang/perlengkapan/bmn
         const stafGudangList = computed(() => {
-            return pegawaiList.value.filter(pegawai => {
-                const jab = String(pegawai.jabatan).toLowerCase();
-                return jab.includes('perlengkapan') || jab.includes('bmn') || jab.includes('gudang');
-            });
+            return pegawaiList.value;
         });
 
         // =====================================================
@@ -1591,6 +1592,13 @@ createApp({
                     selectedAssets.value = [];
                     await refreshAssets();
                     showToast('Aset terpilih berhasil dihapus.');
+                } else if (jenis === 'banyak_history') {
+                    for (const histId of selectedHistory.value) {
+                        await apiRequest('mutasi.php', { method: 'DELETE', body: JSON.stringify({ id: histId }) });
+                    }
+                    selectedHistory.value = [];
+                    await refreshHistory();
+                    showToast('Riwayat surat terpilih berhasil dihapus.');
                 }
             } catch (error) {
                 showToast(`Gagal menghapus data: ${error.message}`, true);
@@ -1623,6 +1631,11 @@ createApp({
             openModalHapus('banyak_pegawai', null, `Yakin ingin menghapus ${selectedPegawai.value.length} pegawai terpilih?`);
         };
 
+        const hapusBanyakHistory = () => {
+            if (selectedHistory.value.length === 0) return;
+            openModalHapus('banyak_history', null, `Yakin ingin menghapus ${selectedHistory.value.length} riwayat surat terpilih?`);
+        };
+
         // =====================================================
         // LIFECYCLE
         // =====================================================
@@ -1652,8 +1665,6 @@ createApp({
             
             modalAset, formAset, openAsetModal, saveAset, deleteAsset, // <--- INI JUGA KETINGGALAN
             modalPegawai, formPegawai, openPegawaiModal, savePegawai, deletePegawai, // <--- INI JUGA KETINGGALAN
-            
-            // FUNGSI MODAL HAPUS BARU
             modalHapus, openModalHapus, prosesHapusData, 
             
             modalSerahTerima, formMutasi, openSerahTerimaModal, availablePegawaiForTransfer, stafGudangList, submitSerahTerima,
@@ -1667,7 +1678,7 @@ createApp({
             modalTKTM, openModalTKTM, submitTKTM,
 
             filterSurat, filterKondisiRiwayat, filteredHistory, fileInputBukti, triggerUpload, 
-            handleFileUpload, openPdf, hasBukti
+            handleFileUpload, openPdf, hasBukti, selectedHistory, selectAllHistory, hapusBanyakHistory,
         };
     }
 }).mount('#app');
