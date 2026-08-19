@@ -1133,18 +1133,57 @@ createApp({
         };
 
         const cetakUlangBast = (record) => {
-            // Karena sekarang riwayatnya tunggal, kita sesuaikan dengan format aslinya
             let nBast = '';
             let nSip = '';
             
-            // Deteksi berdasarkan format Nomor Surat (SIP atau BAST)
             if (record.nomorBast && record.nomorBast.includes('/GDG/')) {
                 nSip = record.nomorBast;
-                record.jenisTransaksi = 'PEMINJAMAN'; // Force ubah tipe buat cetak
+                record.jenisTransaksi = 'PEMINJAMAN';
             } else {
                 nBast = record.nomorBast;
                 record.jenisTransaksi = 'PENGEMBALIAN';
             }
+
+            // =========================================================
+            // LACAK DATA PEGAWAI BERDASARKAN NAMA DI RIWAYAT
+            // =========================================================
+            const cariPegawaiBerdasarkanNama = (namaCari) => {
+                if (!namaCari || namaCari.includes('Gudang') || namaCari === '-') return null;
+                return pegawaiList.value.find(p => p.nama.toLowerCase() === namaCari.toLowerCase()) || null;
+            };
+
+            const pegawaiLamaObj = cariPegawaiBerdasarkanNama(record.pemegangLama);
+            const pegawaiBaruObj = cariPegawaiBerdasarkanNama(record.pemegangBaru);
+
+            // Ambil staf gudang pertama yang ditemukan di list sebagai default admin jika dari/ke gudang
+            const defaultStafGudang = stafGudangList.value[0] || pegawaiList.value[0] || { nama: 'Admin Gudang', nip: '-', jabatan: 'Staf Perlengkapan' };
+
+            // Tentukan Pihak Pertama & Kedua beserta Jabatan dan NIP aslinya
+            let namaPihakPertama = record.pemegangLama;
+            let nipPihakPertama = pegawaiLamaObj?.nip || '-';
+            let jabatanPihakPertama = pegawaiLamaObj?.jabatan || (record.pemegangLama.includes('Gudang') ? defaultStafGudang.jabatan : '-');
+
+            let namaPihakKedua = record.pemegangBaru;
+            let nipPihakKedua = pegawaiBaruObj?.nip || '-';
+            let jabatanPihakKedua = pegawaiBaruObj?.jabatan || (record.pemegangBaru.includes('Gudang') ? defaultStafGudang.jabatan : '-');
+
+            // Jika Pihak Kedua adalah gudang, gunakan data staf gudang aktif
+            let namaAdminGudang = defaultStafGudang.nama;
+            let nipAdminGudang = defaultStafGudang.nip;
+            let jabatanAdminGudang = defaultStafGudang.jabatan;
+
+            if (record.pemegangBaru.includes('Gudang') || record.pemegangBaru === '-') {
+                namaPihakKedua = namaAdminGudang;
+                nipPihakKedua = nipAdminGudang;
+                jabatanPihakKedua = jabatanAdminGudang;
+            }
+
+            if (record.pemegangLama.includes('Gudang') || record.pemegangLama === '-') {
+                namaPihakPertama = namaAdminGudang;
+                nipPihakPertama = nipAdminGudang;
+                jabatanPihakPertama = jabatanAdminGudang;
+            }
+            // =========================================================
 
             printData.value = { 
                 show: true, 
@@ -1152,10 +1191,20 @@ createApp({
                 nomorBast: nBast,
                 nomorSip: nSip,
                 jenisTransaksi: record.jenisTransaksi,
-                printMode: record.jenisTransaksi === 'PEMINJAMAN' ? 'SIP' : 'BAST', // <-- TAMBAHAN BARU INI
-                adminNama: 'Admin Gudang',
-                adminNip: '-',
-                adminJabatan: '-'
+                printMode: record.jenisTransaksi === 'PEMINJAMAN' ? 'SIP' : 'BAST',
+                
+                // Masukkan data yang sudah dilacak dengan akurat
+                pemegangLamaNama: namaPihakPertama,
+                pemegangLamaNip: nipPihakPertama,
+                pemegangLamaJabatan: jabatanPihakPertama,
+                
+                pemegangBaruNama: namaPihakKedua,
+                pemegangBaruNip: nipPihakKedua,
+                pemegangBaruJabatan: jabatanPihakKedua,
+
+                adminNama: namaAdminGudang,
+                adminNip: nipAdminGudang,
+                adminJabatan: jabatanAdminGudang
             };
             
             setTimeout(() => {
