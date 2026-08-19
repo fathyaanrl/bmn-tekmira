@@ -406,6 +406,14 @@ createApp({
             ...db.value.pcs,
             ...db.value.tablets
         ]);
+
+        // Aset yang "beneran keliatan" -> udah dibuang yang berketerangan 'Transfer keluar'
+        // Dipakai khusus buat kartu statistik di atas, biar gak ikut kehitung
+        const visibleAssets = computed(() =>
+            activeAssets.value.filter(asset =>
+                !(asset.keterangan && String(asset.keterangan).toLowerCase().includes('transfer keluar'))
+            )
+        );
         
         const categoryLabel = computed(() => {
             if (currentCategory.value === 'laptops') return 'Laptop';
@@ -420,14 +428,15 @@ createApp({
         });
 
         const assignedCount = computed(() =>
-            activeAssets.value.filter(asset => asset.pemegangId !== null).length
-        );        
+            visibleAssets.value.filter(asset => asset.pemegangId !== null).length
+        );     
+
         const availableCount = computed(() =>
-            activeAssets.value.filter(asset => asset.pemegangId === null).length
+            visibleAssets.value.filter(asset => asset.pemegangId === null).length
         );
         
         const damagedCount = computed(() =>
-            activeAssets.value.filter(asset => asset.kondisi !== 'Baik').length
+            visibleAssets.value.filter(asset => asset.kondisi !== 'Baik').length
         );
         
         // =====================================================
@@ -540,11 +549,15 @@ createApp({
                 );
             }).sort((a, b) => Number(b.id) - Number(a.id));
         });
-        const filteredPegawai = computed(() => {
-            const query = searchQuery.value.toLowerCase().trim();
-            if (!query) return pegawaiList.value;
 
-            return pegawaiList.value.filter(pegawai => (
+        const filteredPegawai = computed(() => {
+            // Sembunyiin pegawai yang semua asetnya udah "Transfer keluar" (alias udah resign/pindah)
+            const pegawaiAktifSaja = pegawaiList.value.filter(pegawai => !pegawaiSudahKeluar(pegawai.id));
+
+            const query = searchQuery.value.toLowerCase().trim();
+            if (!query) return pegawaiAktifSaja;
+
+            return pegawaiAktifSaja.filter(pegawai => (
                 String(pegawai.nama).toLowerCase().includes(query) ||
                 String(pegawai.nip).toLowerCase().includes(query) ||
                 String(pegawai.jabatan).toLowerCase().includes(query)
@@ -943,10 +956,25 @@ createApp({
             generateNomorSurat();
         };
 
+        // Cek: pegawai ini masih aktif atau semua asetnya udah "Transfer keluar" (alias udah resign/pindah)?
+        const pegawaiSudahKeluar = (pegawaiId) => {
+            const punyaAsetPernah = allAssets.value.some(asset => Number(asset.pemegangId) === Number(pegawaiId));
+            if (!punyaAsetPernah) return false; // Belum pernah pegang aset sama sekali -> pegawai baru, bukan "udah keluar"
+
+            const masihAdaAsetAktif = allAssets.value.some(asset =>
+                Number(asset.pemegangId) === Number(pegawaiId) &&
+                (!asset.keterangan || !String(asset.keterangan).toLowerCase().includes('transfer keluar'))
+            );
+            return !masihAdaAsetAktif; // Kalau gak ada satupun aset aktif tersisa -> dianggap udah keluar
+        };
+
         const availablePegawaiForTransfer = computed(() => {
             if (!modalSerahTerima.value.asset) return [];
             const currentHolderId = modalSerahTerima.value.asset.pemegangId;
-            return pegawaiList.value.filter(pegawai => Number(pegawai.id) !== Number(currentHolderId));
+            return pegawaiList.value.filter(pegawai =>
+                Number(pegawai.id) !== Number(currentHolderId) &&
+                !pegawaiSudahKeluar(pegawai.id)
+            );
         });
 
         // Filter otomatis buat staf gudang/perlengkapan/bmn
@@ -1373,9 +1401,41 @@ createApp({
         // =====================================================
         // EXPORT EXCEL
         // =====================================================
+                // Sama kayak filteredAssets, tapi KHUSUS buat export -> gak nyembunyiin 'Transfer keluar'
+        // walau lagi di filter 'Semua', soalnya laporan Excel emang harus lengkap.
+        const assetsForExport = computed(() => {
+            return activeAssets.value.filter(asset => {
+                if (filterKeterangan.value !== 'all') {
+                    const ket = (asset.keterangan || '').toLowerCase();
+                    const pilihan = filterKeterangan.value.toLowerCase();
+                    if (!ket.startsWith(pilihan)) return false;
+                }
+                // (Sengaja TIDAK ada blok "sembunyiin transfer keluar" di sini)
+
+                if (filterStatus.value === 'assigned' && asset.pemegangId === null) return false;
+                if (filterStatus.value === 'gudang' && asset.pemegangId !== null) return false;
+                if (filterKondisi.value !== 'all' && asset.kondisi !== filterKondisi.value) return false;
+
+                const query = searchQuery.value.toLowerCase().trim();
+                if (!query) return true;
+
+                const holder = asset.pemegangId ? getPegawaiName(asset.pemegangId).toLowerCase() : 'gudang bmn';
+
+                return (
+                    String(asset.kodeBarang).toLowerCase().includes(query) ||
+                    String(asset.nup).toLowerCase().includes(query) ||
+                    String(asset.merek).toLowerCase().includes(query) ||
+                    String(asset.tipe).toLowerCase().includes(query) ||
+                    String(asset.tahun).toLowerCase().includes(query) ||
+                    String(asset.keterangan).toLowerCase().includes(query) ||
+                    holder.includes(query)
+                );
+            }).sort((a, b) => Number(b.id) - Number(a.id));
+        });
+
         const exportExcel = () => {
 
-            const dataToExport = filteredAssets.value;
+            const dataToExport = assetsForExport.value;
 
             if (!dataToExport.length) {
                 showToast('Tidak ada data untuk di-export!', true);
@@ -1526,7 +1586,7 @@ createApp({
             modalForgotPassword, forgotUsername, forgotNewPassword, forgotConfirmPassword, openForgotPassword, resetPassword,
             
             currentCategory, currentTab, showDropdown, searchQuery, filterStatus, filterKondisi, toast,
-            categoryLabel, categoryIcon, db, activeAssets, allAssets, pegawaiList, historyList, assignedCount, availableCount, damagedCount,
+            categoryLabel, categoryIcon, db, activeAssets, visibleAssets, allAssets, pegawaiList, historyList, assignedCount, availableCount, damagedCount,
             getPegawaiName, getPegawaiNip, getPegawaiInitials, getPegawaiAllAssets, getConditionBadgeClass, getConditionIconClass,
             filteredAssets, filteredPegawai, filterKeterangan,
             
