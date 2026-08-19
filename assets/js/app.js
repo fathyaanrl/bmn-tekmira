@@ -5,7 +5,7 @@ createApp({
     setup() {
         //login
         const isLoggedIn = ref(
-            localStorage.getItem('bmn_logged_in') === 'true'
+            sessionStorage.getItem('bmn_logged_in') === 'true'
         );
 
         const loginUsername = ref('');
@@ -127,7 +127,7 @@ createApp({
                     loginError.value = '';
 
                     // SIMPAN STATUS LOGIN
-                    localStorage.setItem('bmn_logged_in', 'true');
+                    sessionStorage.setItem('bmn_logged_in', 'true');
 
                     // SIMPAN USERNAME
                     currentUsername.value = result.username;
@@ -161,7 +161,7 @@ createApp({
         const checkLogin = () => {
 
             const loggedIn =
-                localStorage.getItem('bmn_logged_in');
+                sessionStorage.getItem('bmn_logged_in');
 
             if (loggedIn === 'true') {
                 isLoggedIn.value = true;
@@ -672,33 +672,6 @@ createApp({
             set: (val) => { selectedPegawai.value = val ? filteredPegawai.value.map(p => p.id) : []; }
         });
 
-        const hapusBanyakAset = async () => {
-            if (!confirm(`Yakin ingin menghapus ${selectedAssets.value.length} aset terpilih?`)) return;
-            try {
-                for (const id of selectedAssets.value) {
-                    await apiRequest('aset.php', { method: 'DELETE', body: JSON.stringify({ id }) });
-                }
-                selectedAssets.value = [];
-                await refreshAssets();
-                showToast('Aset terpilih berhasil dihapus.');
-            } catch (error) {
-                showToast(`Gagal menghapus beberapa aset: ${error.message}`, true);
-            }
-        };
-
-        const hapusBanyakPegawai = async () => {
-            if (!confirm(`Yakin ingin menghapus ${selectedPegawai.value.length} pegawai terpilih?`)) return;
-            try {
-                for (const id of selectedPegawai.value) {
-                    await apiRequest('pegawai.php', { method: 'DELETE', body: JSON.stringify({ id }) });
-                }
-                selectedPegawai.value = [];
-                await refreshPegawai();
-                showToast('Pegawai terpilih berhasil dihapus.');
-            } catch (error) {
-                showToast(`Gagal menghapus beberapa pegawai: ${error.message}`, true);
-            }
-        };
 
         // =====================================================
         // MODAL ASET
@@ -777,17 +750,6 @@ createApp({
             }
         };
 
-        const deleteAsset = async (id) => {
-            if (!confirm('Yakin ingin menghapus aset ini?')) return;
-            try {
-                await apiRequest('aset.php', { method: 'DELETE', body: JSON.stringify({ id }) });
-                await refreshAssets();
-                showToast('Aset berhasil dihapus.');
-            } catch (error) {
-                showToast(`Gagal menghapus aset: ${error.message}`, true);
-            }
-        };
-
         // =====================================================
         // MODAL PEGAWAI
         // =====================================================
@@ -827,22 +789,6 @@ createApp({
                 showToast('Data pegawai berhasil disimpan.');
             } catch (error) {
                 showToast(`Gagal menyimpan pegawai: ${error.message}`, true);
-            }
-        };
-
-        const deletePegawai = async (id) => {
-            const held = getPegawaiAllAssets(id);
-            if (held.length > 0) {
-                showToast(`Gagal! Pegawai masih memegang ${held.length} aset. Kembalikan ke gudang dulu.`, true);
-                return;
-            }
-            if (!confirm('Yakin ingin menghapus data pegawai ini?')) return;
-            try {
-                await apiRequest('pegawai.php', { method: 'DELETE', body: JSON.stringify({ id }) });
-                await refreshPegawai();
-                showToast('Data pegawai berhasil dihapus.');
-            } catch (error) {
-                showToast(`Gagal menghapus pegawai: ${error.message}`, true);
             }
         };
 
@@ -1387,7 +1333,7 @@ createApp({
 
             isLoggedIn.value = false;
 
-            localStorage.removeItem(
+            sessionStorage.removeItem(
                 'bmn_logged_in'
             );
 
@@ -1605,6 +1551,79 @@ createApp({
         };
 
         // =====================================================
+        // MODAL KONFIRMASI HAPUS (POP UP MODERN)
+        // =====================================================
+        const modalHapus = ref({
+            show: false,
+            id: null,
+            jenis: '', 
+            pesan: ''
+        });
+
+        const openModalHapus = (jenis, id = null, pesan) => {
+            modalHapus.value = { show: true, id, jenis, pesan };
+        };
+
+        const prosesHapusData = async () => {
+            const { jenis, id } = modalHapus.value;
+            modalHapus.value.show = false; // Tutup modal langsung pas di-klik "Ya"
+
+            try {
+                if (jenis === 'pegawai') {
+                    await apiRequest('pegawai.php', { method: 'DELETE', body: JSON.stringify({ id }) });
+                    await refreshPegawai();
+                    showToast('Data pegawai berhasil dihapus.');
+                } else if (jenis === 'banyak_pegawai') {
+                    for (const pegId of selectedPegawai.value) {
+                        await apiRequest('pegawai.php', { method: 'DELETE', body: JSON.stringify({ id: pegId }) });
+                    }
+                    selectedPegawai.value = [];
+                    await refreshPegawai();
+                    showToast('Pegawai terpilih berhasil dihapus.');
+                } else if (jenis === 'aset') {
+                    await apiRequest('aset.php', { method: 'DELETE', body: JSON.stringify({ id }) });
+                    await refreshAssets();
+                    showToast('Aset berhasil dihapus.');
+                } else if (jenis === 'banyak_aset') {
+                    for (const asetId of selectedAssets.value) {
+                        await apiRequest('aset.php', { method: 'DELETE', body: JSON.stringify({ id: asetId }) });
+                    }
+                    selectedAssets.value = [];
+                    await refreshAssets();
+                    showToast('Aset terpilih berhasil dihapus.');
+                }
+            } catch (error) {
+                showToast(`Gagal menghapus data: ${error.message}`, true);
+            }
+        };
+
+        // --- FUNGSI PENGHUBUNG DARI HTML KE MODAL ---
+
+        const deleteAsset = (id) => {
+            openModalHapus('aset', id, 'Yakin ingin menghapus data aset ini? Tindakan ini tidak bisa dibatalkan.');
+        };
+
+        const deletePegawai = (id) => {
+            // Validasi: Cek dulu pegawainya masih megang aset atau nggak
+            const held = getPegawaiAllAssets(id);
+            if (held.length > 0) {
+                showToast(`Gagal! Pegawai masih memegang ${held.length} aset. Kembalikan ke gudang dulu.`, true);
+                return;
+            }
+            openModalHapus('pegawai', id, 'Yakin ingin menghapus data pegawai ini?');
+        };
+
+        const hapusBanyakAset = () => {
+            if (selectedAssets.value.length === 0) return;
+            openModalHapus('banyak_aset', null, `Yakin ingin menghapus ${selectedAssets.value.length} aset terpilih?`);
+        };
+
+        const hapusBanyakPegawai = () => {
+            if (selectedPegawai.value.length === 0) return;
+            openModalHapus('banyak_pegawai', null, `Yakin ingin menghapus ${selectedPegawai.value.length} pegawai terpilih?`);
+        };
+
+        // =====================================================
         // LIFECYCLE
         // =====================================================
         onMounted(async () => {
@@ -1628,10 +1647,14 @@ createApp({
             getPegawaiName, getPegawaiNip, getPegawaiInitials, getPegawaiAllAssets, getConditionBadgeClass, getConditionIconClass,
             filteredAssets, filteredPegawai, filterKeterangan,
             
-            isSelectMode, toggleSelectMode, selectedAssets, selectedPegawai, selectAllAssets, selectAllPegawai, hapusBanyakAset, hapusBanyakPegawai,
+            isSelectMode, toggleSelectMode, selectedAssets, selectedPegawai, selectAllAssets, selectAllPegawai, 
+            hapusBanyakAset, hapusBanyakPegawai, // <--- INI KETINGGALAN TADI
             
-            modalAset, formAset, openAsetModal, saveAset, deleteAsset,
-            modalPegawai, formPegawai, openPegawaiModal, savePegawai, deletePegawai,
+            modalAset, formAset, openAsetModal, saveAset, deleteAsset, // <--- INI JUGA KETINGGALAN
+            modalPegawai, formPegawai, openPegawaiModal, savePegawai, deletePegawai, // <--- INI JUGA KETINGGALAN
+            
+            // FUNGSI MODAL HAPUS BARU
+            modalHapus, openModalHapus, prosesHapusData, 
             
             modalSerahTerima, formMutasi, openSerahTerimaModal, availablePegawaiForTransfer, stafGudangList, submitSerahTerima,
             
@@ -1643,15 +1666,8 @@ createApp({
             exportExcel, getLastMutationDate, asetDipegang, 
             modalTKTM, openModalTKTM, submitTKTM,
 
-            // --- INI VARIABEL BARU YANG BIKIN MACET KALAU KELUPAAN ---
-            filterSurat, 
-            filterKondisiRiwayat, 
-            filteredHistory, 
-            fileInputBukti, 
-            triggerUpload, 
-            handleFileUpload, 
-            openPdf,
-            hasBukti
+            filterSurat, filterKondisiRiwayat, filteredHistory, fileInputBukti, triggerUpload, 
+            handleFileUpload, openPdf, hasBukti
         };
     }
 }).mount('#app');
