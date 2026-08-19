@@ -328,7 +328,7 @@
                         <div class="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm"><i class="fa-solid fa-boxes-stacked"></i></div>
                         <div>
                             <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Total Aset</p>
-                            <p class="text-lg font-bold text-slate-800 leading-tight">{{ activeAssets.length }} <span class="text-xs font-normal text-slate-500">unit</span></p>
+                            <p class="text-lg font-bold text-slate-800 leading-tight">{{ visibleAssets.length }} <span class="text-xs font-normal text-slate-500">unit</span></p>
                         </div>
                     </div>
                     <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-3">
@@ -349,7 +349,7 @@
                         <div class="w-9 h-9 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center font-bold text-sm"><i class="fa-solid fa-circle-xmark"></i></div>
                         <div>
                             <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Rusak Berat</p>
-                            <p class="text-lg font-bold text-slate-800 leading-tight">{{ activeAssets.filter(a => a.kondisi === 'Rusak Berat').length }} <span class="text-xs font-normal text-slate-500">unit</span></p>
+                            <p class="text-lg font-bold text-slate-800 leading-tight">{{ visibleAssets.filter(a => a.kondisi === 'Rusak Berat').length }} <span class="text-xs font-normal text-slate-500">unit</span></p>
                         </div>
                     </div>
                 </div>
