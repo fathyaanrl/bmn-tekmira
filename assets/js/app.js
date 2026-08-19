@@ -1401,7 +1401,7 @@ createApp({
         // =====================================================
         // EXPORT EXCEL
         // =====================================================
-                // Sama kayak filteredAssets, tapi KHUSUS buat export -> gak nyembunyiin 'Transfer keluar'
+         // Sama kayak filteredAssets, tapi KHUSUS buat export -> gak nyembunyiin 'Transfer keluar'
         // walau lagi di filter 'Semua', soalnya laporan Excel emang harus lengkap.
         const assetsForExport = computed(() => {
             return activeAssets.value.filter(asset => {
@@ -1434,136 +1434,174 @@ createApp({
         });
 
         const exportExcel = () => {
+            // 1. Ambil semua data (master) tanpa filter
+            const allAssets = activeAssets.value.sort((a, b) => Number(b.id) - Number(a.id));
 
-            const dataToExport = assetsForExport.value;
-
-            if (!dataToExport.length) {
+            if (!allAssets.length) {
                 showToast('Tidak ada data untuk di-export!', true);
                 return;
             }
 
-            const judulKategori = categoryLabel.value.toUpperCase();
+            // 2. Kelompokkan Data Berdasarkan Kategori/Status
+            const dataGudang = allAssets.filter(a => a.pemegangId === null);
+            const dataDipakai = allAssets.filter(a => a.pemegangId !== null && !(a.keterangan || '').toLowerCase().startsWith('transfer'));
+            const dataTransferMasuk = allAssets.filter(a => (a.keterangan || '').toLowerCase().startsWith('transfer masuk'));
+            const dataTransferKeluar = allAssets.filter(a => (a.keterangan || '').toLowerCase().startsWith('transfer keluar'));
 
-            const headerRow = [
-                'No', 'USER', 'KODE BARANG', 'NUP BARU', 'MERK', 'TAHUN', 'TANGGAL BAST', 'KONDISI', 'KETERANGAN'
+            // Daftar sheet yang akan dibuat
+            const sheetCategories = [
+                { title: 'Semua Data', data: allAssets },
+                { title: 'Di Gudang', data: dataGudang },
+                { title: 'Dipakai', data: dataDipakai },
+                { title: 'Transfer Masuk', data: dataTransferMasuk },
+                { title: 'Transfer Keluar', data: dataTransferKeluar }
             ];
-
-            const dataRows = dataToExport.map((asset, index) => [
-                index + 1,
-                asset.pemegangId ? getPegawaiName(asset.pemegangId) : 'Gudang BMN TekMira',
-                asset.kodeBarang || '-',
-                asset.nup || '-',
-                `${asset.merek || ''} ${asset.tipe || ''}`.trim() || '-',
-                asset.tahun || '-',
-                getLastMutationDate(asset), // <--- Manggil fungsi tanggal barusan
-                asset.kondisi || '-',
-                asset.keterangan || '-'
-            ]);
-
-            const aoa = [
-                [`DAFTAR PEMEGANG ${judulKategori}`],
-                ['BALAI BESAR PENGUJIAN MINERAL DAN BATUBARA tekMIRA'],
-                [],
-                headerRow,
-                ...dataRows,
-                [],
-            ];
-
-            const ws = XLSX.utils.aoa_to_sheet(aoa);
-
-            const colCount = headerRow.length;
-            const headerRowIndex = 3; 
-            const lastDataRowIndex = headerRowIndex + dataRows.length;
-
-            // ---------- MERGE JUDUL & SUBJUDUL ----------
-            ws['!merges'] = [
-                { s: { r: 0, c: 0 }, e: { r: 0, c: colCount - 1 } },
-                { s: { r: 1, c: 0 }, e: { r: 1, c: colCount - 1 } },
-                { s: { r: lastDataRowIndex + 2, c: 0 }, e: { r: lastDataRowIndex + 2, c: colCount - 1 } }
-            ];
-
-            // ---------- LEBAR KOLOM ----------
-            ws['!cols'] = [
-                { wch: 5 },  // No
-                { wch: 28 }, // User
-                { wch: 14 }, // Kode
-                { wch: 12 }, // NUP
-                { wch: 22 }, // Merk
-                { wch: 8 },  // Tahun
-                { wch: 20 }, // Tanggal BAST (KOLOM BARU)
-                { wch: 12 }, // Kondisi
-                { wch: 15 }  // Keterangan (SUDAH DIKECILKAN DARI 25 KE 15)
-            ];
-
-            const borderThin = {
-                top: { style: 'thin', color: { rgb: '000000' } },
-                bottom: { style: 'thin', color: { rgb: '000000' } },
-                left: { style: 'thin', color: { rgb: '000000' } },
-                right: { style: 'thin', color: { rgb: '000000' } }
-            };
-
-            const setCellStyle = (r, c, style) => {
-                const addr = XLSX.utils.encode_cell({ r, c });
-                if (!ws[addr]) ws[addr] = { t: 's', v: '' };
-                ws[addr].s = { ...(ws[addr].s || {}), ...style };
-            };
-
-            // ---------- STYLE JUDUL ----------
-            setCellStyle(0, 0, {
-                font: { bold: true, sz: 14 },
-                alignment: { horizontal: 'center', vertical: 'center' }
-            });
-
-            setCellStyle(1, 0, {
-                font: { bold: true, sz: 12, underline: true },
-                alignment: { horizontal: 'center', vertical: 'center' }
-            });
-
-            // ---------- STYLE HEADER TABEL ----------
-            for (let c = 0; c < colCount; c++) {
-                setCellStyle(headerRowIndex, c, {
-                    font: { bold: true },
-                    alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
-                    fill: { fgColor: { rgb: 'D9D9D9' } },
-                    border: borderThin
-                });
-            }
-
-            // ---------- STYLE DATA ----------
-            for (let r = headerRowIndex + 1; r <= lastDataRowIndex; r++) {
-                for (let c = 0; c < colCount; c++) {
-                    setCellStyle(r, c, {
-                        alignment: {
-                            horizontal: (c === 1 || c === 4 || c === 7) ? 'left' : 'center',
-                            vertical: 'center',
-                            wrapText: true
-                        },
-                        border: borderThin
-                    });
-                }
-            }
-
-            // ---------- STYLE FOOTER ----------
-            setCellStyle(lastDataRowIndex + 2, 0, {
-                font: { bold: true },
-                alignment: { horizontal: 'left', vertical: 'center' }
-            });
-
-            // ---------- AUTOFILTER DI HEADER ----------
-            ws['!autofilter'] = {
-                ref: XLSX.utils.encode_range(
-                    { r: headerRowIndex, c: 0 },
-                    { r: headerRowIndex, c: colCount - 1 }
-                )
-            };
 
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, judulKategori.substring(0, 31));
+            const judulKategori = categoryLabel.value.toUpperCase();
 
-            const namaFile = `Daftar_Pemegang_${judulKategori.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+            // 3. Helper Function untuk Mengisi & Memoles Setiap Sheet
+            const createStyledSheet = (sheetTitle, assetList) => {
+                const headerRow = [
+                    'NO', 'USER', 'KODE BARANG', 'NUP BARU', 'MERK & TIPE', 'TAHUN', 'TANGGAL BAST', 'KONDISI', 'KETERANGAN'
+                ];
+
+                const dataRows = assetList.map((asset, index) => [
+                    index + 1,
+                    asset.pemegangId ? getPegawaiName(asset.pemegangId) : 'Gudang BMN TekMira',
+                    asset.kodeBarang ? String(asset.kodeBarang) : '-',
+                    asset.nup ? String(asset.nup) : '-',
+                    `${asset.merek || ''} ${asset.tipe || ''}`.trim() || '-',
+                    asset.tahun || '-',
+                    getLastMutationDate(asset),
+                    asset.kondisi || '-',
+                    asset.keterangan || '-'
+                ]);
+
+                const aoa = [
+                    [`DAFTAR PEMEGANG ${judulKategori} - ${sheetTitle.toUpperCase()}`],
+                    ['BALAI BESAR PENGUJIAN MINERAL DAN BATUBARA TEKMIRA'],
+                    [],
+                    headerRow,
+                    ...dataRows
+                ];
+
+                const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+                const colCount = headerRow.length;
+                const headerRowIndex = 3;
+                const lastDataRowIndex = headerRowIndex + dataRows.length;
+
+                // Merge Judul
+                ws['!merges'] = [
+                    { s: { r: 0, c: 0 }, e: { r: 0, c: colCount - 1 } },
+                    { s: { r: 1, c: 0 }, e: { r: 1, c: colCount - 1 } }
+                ];
+
+                // Lebar Kolom (Presisi)
+                ws['!cols'] = [
+                    { wch: 6 },  // NO
+                    { wch: 26 }, // USER
+                    { wch: 18 }, // KODE BARANG
+                    { wch: 12 }, // NUP BARU
+                    { wch: 30 }, // MERK & TIPE
+                    { wch: 10 }, // TAHUN
+                    { wch: 24 }, // TANGGAL BAST
+                    { wch: 14 }, // KONDISI
+                    { wch: 35 }  // KETERANGAN
+                ];
+
+                // Tinggi Baris
+                const rowHeights = [];
+                rowHeights[0] = { hpt: 24 };
+                rowHeights[1] = { hpt: 20 };
+                rowHeights[2] = { hpt: 10 };
+                rowHeights[headerRowIndex] = { hpt: 26 };
+
+                for (let r = headerRowIndex + 1; r <= lastDataRowIndex; r++) {
+                    rowHeights[r] = { hpt: 22 };
+                }
+                ws['!rows'] = rowHeights;
+
+                const borderSubtle = {
+                    top: { style: 'thin', color: { rgb: 'CBD5E1' } },
+                    bottom: { style: 'thin', color: { rgb: 'CBD5E1' } },
+                    left: { style: 'thin', color: { rgb: 'CBD5E1' } },
+                    right: { style: 'thin', color: { rgb: 'CBD5E1' } }
+                };
+
+                const setCellStyle = (r, c, style) => {
+                    const addr = XLSX.utils.encode_cell({ r, c });
+                    if (!ws[addr]) ws[addr] = { t: 's', v: '' };
+                    ws[addr].s = { ...(ws[addr].s || {}), ...style };
+                };
+
+                // Style Judul Utama
+                setCellStyle(0, 0, {
+                    font: { bold: true, sz: 14, color: { rgb: '1E293B' }, name: 'Calibri' },
+                    alignment: { horizontal: 'center', vertical: 'center' }
+                });
+
+                // Style Subjudul
+                setCellStyle(1, 0, {
+                    font: { bold: true, sz: 11, color: { rgb: '475569' }, name: 'Calibri' },
+                    alignment: { horizontal: 'center', vertical: 'center' }
+                });
+
+                // Style Header Tabel (Dark Slate)
+                for (let c = 0; c < colCount; c++) {
+                    setCellStyle(headerRowIndex, c, {
+                        font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 11, name: 'Calibri' },
+                        alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+                        fill: { fgColor: { rgb: '1E293B' } },
+                        border: borderSubtle
+                    });
+                }
+
+                // Style Baris Data (Zebra Striping)
+                for (let r = headerRowIndex + 1; r <= lastDataRowIndex; r++) {
+                    const isEven = (r - headerRowIndex) % 2 === 0;
+                    const bgRowColor = isEven ? 'F8FAFC' : 'FFFFFF';
+
+                    for (let c = 0; c < colCount; c++) {
+                        let alignHoriz = 'center';
+                        if (c === 1 || c === 4 || c === 8) {
+                            alignHoriz = 'left';
+                        }
+
+                        setCellStyle(r, c, {
+                            font: { sz: 10, name: 'Calibri', color: { rgb: '334155' } },
+                            alignment: { horizontal: alignHoriz, vertical: 'center', wrapText: true },
+                            fill: { fgColor: { rgb: bgRowColor } },
+                            border: borderSubtle
+                        });
+                    }
+                }
+
+                // AutoFilter
+                ws['!autofilter'] = {
+                    ref: XLSX.utils.encode_range(
+                        { r: headerRowIndex, c: 0 },
+                        { r: headerRowIndex, c: colCount - 1 }
+                    )
+                };
+
+                return ws;
+            };
+
+            // 4. Generate Semua Sheet dan Masukkan ke Workbook
+            sheetCategories.forEach(cat => {
+                // Hanya buat tab jika ada datanya (atau tetap buat meski kosong jika ingin lengkap)
+                const ws = createStyledSheet(cat.title, cat.data);
+                // Nama sheet di Excel maksimal 31 karakter
+                XLSX.utils.book_append_sheet(wb, ws, cat.title.substring(0, 31));
+            });
+
+            // 5. Download File Excel
+            const namaFile = `Laporan_Aset_${judulKategori.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.xlsx`;
             XLSX.writeFile(wb, namaFile);
 
-            showToast('Export Excel berhasil!');
+            showToast('Export Excel multi-tab berhasil!');
         };
 
         // =====================================================
