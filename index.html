@@ -396,17 +396,16 @@
                     <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                         <!-- Tab Selector -->
                         <div class="flex items-center space-x-1 bg-slate-100 p-1 rounded-lg text-xs font-semibold text-slate-600 shrink-0 w-full sm:w-auto">
-                            <button @click="currentTab = 'assets'" :class="currentTab === 'assets' ? 'bg-white text-slate-900 shadow-sm' : 'hover:text-slate-900'" class="flex-1 sm:flex-none px-3 py-1.5 rounded-md transition flex justify-center items-center space-x-1.5">
+                            <button @click="currentTab = 'assets'; printData.show = false" :class="currentTab === 'assets' ? 'bg-white text-slate-900 shadow-sm' : 'hover:text-slate-900'" class="flex-1 sm:flex-none px-3 py-1.5 rounded-md transition flex justify-center items-center space-x-1.5">
                                 <i class="fa-solid fa-boxes-stacked"></i><span class="hidden sm:inline">Daftar Semua Aset</span>
                             </button>
-                            <button @click="currentTab = 'pegawai'" :class="currentTab === 'pegawai' ? 'bg-white text-slate-900 shadow-sm' : 'hover:text-slate-900'" class="flex-1 sm:flex-none px-3 py-1.5 rounded-md transition flex justify-center items-center space-x-1.5">
+                            <button @click="currentTab = 'pegawai'; printData.show = false" :class="currentTab === 'pegawai' ? 'bg-white text-slate-900 shadow-sm' : 'hover:text-slate-900'" class="flex-1 sm:flex-none px-3 py-1.5 rounded-md transition flex justify-center items-center space-x-1.5">
                                 <i class="fa-solid fa-users"></i><span class="hidden sm:inline">Data Pegawai</span>
                             </button>
-                            <button @click="currentTab = 'mutasi'" :class="currentTab === 'mutasi' ? 'bg-white text-slate-900 shadow-sm' : 'hover:text-slate-900'" class="flex-1 sm:flex-none px-3 py-1.5 rounded-md transition flex justify-center items-center space-x-1.5">
+                            <button @click="currentTab = 'mutasi'; printData.show = false" :class="currentTab === 'mutasi' ? 'bg-white text-slate-900 shadow-sm' : 'hover:text-slate-900'" class="flex-1 sm:flex-none px-3 py-1.5 rounded-md transition flex justify-center items-center space-x-1.5">
                                 <i class="fa-solid fa-right-left"></i><span class="hidden sm:inline">Riwayat Surat</span>
                             </button>
                         </div>
-
                         <!-- TAMBAHAN: Dropdown Tampil Berapa Data -->
                         <div class="flex items-center space-x-1.5 bg-white border border-slate-200 px-2.5 py-1.5 rounded-lg shadow-sm shrink-0">
                             <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Tampil:</span>
@@ -959,7 +958,7 @@
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Tanggal BAST *</label>
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Tanggal *</label>
                             <input type="date" v-model="formMutasi.tanggal" @change="generateNomorSurat" required class="w-full text-xs p-2 rounded-lg border border-slate-300">
                         </div>
                         <div>
@@ -973,11 +972,11 @@
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div v-if="formMutasi.nomorBast !== ''">
-                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">Nomor BAST (Pengembalian)</label>
+                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">Nomor BAST (Pihak Pertama)</label>
                         <input type="text" v-model="formMutasi.nomorBast" class="w-full text-xs p-2 rounded-lg border border-slate-300 bg-slate-50">
                     </div>
                     <div v-if="formMutasi.nomorSip !== ''">
-                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">Nomor SIP (Peminjaman)</label>
+                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">Nomor SIP (Pihak Kedua)</label>
                         <input type="text" v-model="formMutasi.nomorSip" class="w-full text-xs p-2 rounded-lg border border-slate-300 bg-slate-50">
                     </div>
                 </div>
@@ -998,10 +997,10 @@
             <!-- TOMBOL PILIH KERTAS (MUNCUL KHUSUS TRANSAKSI MUTASI) -->
             <div v-if="printData.jenisTransaksi === 'MUTASI'" class="absolute top-4 left-4 flex space-x-2 no-print z-10">
                 <button @click="printData.printMode = 'BAST'" :class="printData.printMode === 'BAST' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'" class="px-4 py-1.5 rounded-lg text-xs font-bold transition flex items-center">
-                    <i class="fa-solid fa-file-contract mr-1.5"></i> 1. Kertas BAST (Kembali)
+                    <i class="fa-solid fa-file-contract mr-1.5"></i> 1. Kertas BAST
                 </button>
                 <button @click="printData.printMode = 'SIP'" :class="printData.printMode === 'SIP' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'" class="px-4 py-1.5 rounded-lg text-xs font-bold transition flex items-center">
-                    <i class="fa-solid fa-file-signature mr-1.5"></i> 2. Kertas SIP (Pinjam)
+                    <i class="fa-solid fa-file-signature mr-1.5"></i> 2. Kertas SIP 
                 </button>
             </div>
 

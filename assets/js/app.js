@@ -1574,13 +1574,70 @@ createApp({
                     await apiRequest('pegawai.php', { method: 'DELETE', body: JSON.stringify({ id }) });
                     await refreshPegawai();
                     showToast('Data pegawai berhasil dihapus.');
+                } 
+                // =========================================================
+                // LOGIKA BARU: HAPUS PEGAWAI + KEMBALIKAN ASET KE GUDANG
+                // =========================================================
+                else if (jenis === 'pegawai_dengan_aset') {
+                    // 1. Tarik semua aset yang dipegang pegawai ini
+                    const held = getPegawaiAllAssets(id);
+                    
+                    // 2. Loop dan update semua aset jadi milik Gudang (pemegang_id = null)
+                    for (const asset of held) {
+                        const payload = {
+                            id: asset.id,
+                            jenis: asset.jenis,
+                            kode_barang: asset.kodeBarang,
+                            nup_baru: asset.nup_baru || asset.nup || '',
+                            merek: asset.merek,
+                            tipe: asset.tipe,
+                            nama_barang: asset.nama_barang || asset.namaBarang,
+                            tahun: asset.tahun,
+                            kondisi: asset.kondisi,
+                            keterangan: asset.keterangan,
+                            pemegang_id: null // <-- Kunci utamanya di sini: Balik ke gudang
+                        };
+                        await apiRequest('aset.php', { method: 'PUT', body: JSON.stringify(payload) });
+                    }
+                    
+                    // 3. Setelah aset aman di gudang, baru hapus pegawainya
+                    await apiRequest('pegawai.php', { method: 'DELETE', body: JSON.stringify({ id }) });
+                    
+                    // 4. Refresh tampilan tabel
+                    await refreshAssets();
+                    await refreshPegawai();
+                    showToast(`Pegawai dihapus & ${held.length} aset berhasil dikembalikan ke gudang.`); 
                 } else if (jenis === 'banyak_pegawai') {
+                    // Loop setiap pegawai yang dicentang
                     for (const pegId of selectedPegawai.value) {
+                        
+                        // 1. Tarik & kembalikan asetnya ke gudang dulu (kalau ada)
+                        const held = getPegawaiAllAssets(pegId);
+                        for (const asset of held) {
+                            const payload = {
+                                id: asset.id,
+                                jenis: asset.jenis,
+                                kode_barang: asset.kodeBarang,
+                                nup_baru: asset.nup_baru || asset.nup || '',
+                                merek: asset.merek,
+                                tipe: asset.tipe,
+                                nama_barang: asset.nama_barang || asset.namaBarang,
+                                tahun: asset.tahun,
+                                kondisi: asset.kondisi,
+                                keterangan: asset.keterangan,
+                                pemegang_id: null // <-- Balikin ke gudang
+                            };
+                            await apiRequest('aset.php', { method: 'PUT', body: JSON.stringify(payload) });
+                        }
+                        
+                        // 2. Setelah aset aman, baru hapus pegawainya
                         await apiRequest('pegawai.php', { method: 'DELETE', body: JSON.stringify({ id: pegId }) });
                     }
+                    
                     selectedPegawai.value = [];
+                    await refreshAssets(); // Refresh karena asetnya pada balik ke gudang
                     await refreshPegawai();
-                    showToast('Pegawai terpilih berhasil dihapus.');
+                    showToast('Pegawai terpilih berhasil dihapus & aset diamankan ke gudang.');
                 } else if (jenis === 'aset') {
                     await apiRequest('aset.php', { method: 'DELETE', body: JSON.stringify({ id }) });
                     await refreshAssets();
@@ -1606,18 +1663,18 @@ createApp({
         };
 
         // --- FUNGSI PENGHUBUNG DARI HTML KE MODAL ---
-
         const deleteAsset = (id) => {
             openModalHapus('aset', id, 'Yakin ingin menghapus data aset ini? Tindakan ini tidak bisa dibatalkan.');
         };
 
         const deletePegawai = (id) => {
-            // Validasi: Cek dulu pegawainya masih megang aset atau nggak
             const held = getPegawaiAllAssets(id);
             if (held.length > 0) {
-                showToast(`Gagal! Pegawai masih memegang ${held.length} aset. Kembalikan ke gudang dulu.`, true);
+                // Kalau ada aset, panggil modal dengan mode khusus
+                openModalHapus('pegawai_dengan_aset', id, `Pegawai ini masih memegang ${held.length} aset. Yakin ingin menghapus pegawai dan mengembalikan asetnya ke gudang BMN?`);
                 return;
             }
+            // Kalau kosong, hapus biasa
             openModalHapus('pegawai', id, 'Yakin ingin menghapus data pegawai ini?');
         };
 
@@ -1628,9 +1685,20 @@ createApp({
 
         const hapusBanyakPegawai = () => {
             if (selectedPegawai.value.length === 0) return;
-            openModalHapus('banyak_pegawai', null, `Yakin ingin menghapus ${selectedPegawai.value.length} pegawai terpilih?`);
-        };
+            
+            // Hitung total aset yang dipegang dari semua pegawai yang dicentang
+            let totalAsetDipegang = 0;
+            for (const pegId of selectedPegawai.value) {
+                totalAsetDipegang += getPegawaiAllAssets(pegId).length;
+            }
 
+            if (totalAsetDipegang > 0) {
+                openModalHapus('banyak_pegawai', null, `Dari ${selectedPegawai.value.length} pegawai terpilih, ada yang masih memegang total ${totalAsetDipegang} aset. Yakin ingin menghapus mereka dan mengembalikan semua asetnya ke gudang?`);
+            } else {
+                openModalHapus('banyak_pegawai', null, `Yakin ingin menghapus ${selectedPegawai.value.length} pegawai terpilih?`);
+            }
+        };
+        
         const hapusBanyakHistory = () => {
             if (selectedHistory.value.length === 0) return;
             openModalHapus('banyak_history', null, `Yakin ingin menghapus ${selectedHistory.value.length} riwayat surat terpilih?`);

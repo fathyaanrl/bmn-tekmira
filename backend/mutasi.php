@@ -85,6 +85,39 @@ if ($method === "POST") {
     }
     exit;
 }
+
+// =====================================================
+// BLOK BARU UNTUK MENGHAPUS RIWAYAT SURAT
+// =====================================================
+if ($method === "DELETE") {
+    $input = json_decode(file_get_contents("php://input"), true);
+    
+    if (!$input || empty($input["id"])) {
+        http_response_code(400);
+        echo json_encode(["success" => false, "message" => "ID riwayat tidak valid"]);
+        exit;
+    }
+
+    $id = (int) $input["id"];
+
+    try {
+        $stmt = $pdo->prepare("DELETE FROM mutasi WHERE id = :id");
+        $stmt->execute([":id" => $id]);
+
+        // Opsional: Hapus juga file PDF buktinya kalau ada biar server nggak penuh
+        $file_path = "../uploads/surat/bukti_" . $id . ".pdf"; 
+        if (file_exists($file_path)) {
+            unlink($file_path);
+        }
+
+        echo json_encode(["success" => true, "message" => "Riwayat berhasil dihapus"]);
+    } catch (PDOException $e) {
+        http_response_code(500);
+        echo json_encode(["success" => false, "message" => "Gagal menghapus riwayat", "error" => $e->getMessage()]);
+    }
+    exit;
+}
+
 http_response_code(405);
 echo json_encode(["success" => false, "message" => "Method tidak didukung"]);
 ?>
