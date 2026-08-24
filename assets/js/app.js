@@ -685,6 +685,26 @@ createApp({
         const formAset = ref({ jenis: '', kodeBarang: '', nup: '', merek: '', tipe: '', tahun: '', keterangan: '', kondisi: 'Baik', 
             kategoriKeterangan: 'Pembelian', detailKeterangan: ''});
 
+        const ubahKodeOtomatis = () => {
+            const jenis = formAset.value.jenis;
+            if (jenis === 'Laptop') {
+                formAset.value.kodeBarang = '3100102002';
+            } else if (jenis === 'Notebook') {
+                formAset.value.kodeBarang = '3100102003';
+            } else if (jenis === 'PC Unit') {
+                formAset.value.kodeBarang = '3100102001';
+            } else if (jenis === 'Tablet' ) {
+                formAset.value.kodeBarang = '3100102009';
+            } else if (jenis === 'Telephone Mobile' ) {
+                formAset.value.kodeBarang = '3060201004';
+            } else {
+                formAset.value.kodeBarang = '';
+            }
+        };
+
+        // =====================================================
+        // MODAL ASET
+        // =====================================================
         const openAsetModal = (item = null) => {
             if (item) {
                 // Logika pinter buat misahin teks "Kategori - Detail" kalau lagi mau ngedit
@@ -710,13 +730,15 @@ createApp({
                 return;
             }
             
-            let jenis = currentCategory.value === 'pcs' ? 'PC Desktop' : currentCategory.value === 'tablets' ? 'Tablet' : 'Laptop';
+            let jenis = currentCategory.value === 'pcs' ? 'PC Unit' : currentCategory.value === 'tablets' ? 'Tablet' : 'Laptop';
+            
             modalAset.value = { show: true, isEdit: false, editId: null };
-            // Pas nambah baru, setel default dropdownnya jadi Pembelian
             formAset.value = { 
                 jenis, kodeBarang: '', nup: '', merek: '', tipe: '', tahun: '', kondisi: 'Baik', 
                 kategoriKeterangan: 'Pembelian', detailKeterangan: '' 
             };
+
+            ubahKodeOtomatis();
         };
 
         const saveAset = async () => {
@@ -835,33 +857,28 @@ createApp({
 
         const submitTKTM = async () => {
             const { selectedAsetId, tujuan, asetList } = modalTKTM.value;
-            
-            // Cari detail lengkap dari aset yang barusan dipilih di dropdown
             const asset = asetList.find(a => a.id === selectedAsetId);
             if (!asset) return;
 
-            // Bikin kalimat gabungannya
             const combinedKeterangan = `Transfer keluar - ${tujuan.trim()}`;
 
             try {
-                // Bungkus paket data buat ditimpa keterangannya
                 const payload = {
                     id: asset.id,
                     jenis: asset.jenis,
                     kode_barang: asset.kodeBarang,
-                    nup_baru: asset.nup_baru || asset.nup || '',
+                    nup_baru: asset.nupBaru || asset.nup || '',
                     merek: asset.merek,
                     tipe: asset.tipe,
-                    nama_barang: asset.nama_barang || asset.namaBarang,
+                    nama_barang: asset.namaBarang,
                     tahun: asset.tahun,
                     kondisi: asset.kondisi,
-                    keterangan: combinedKeterangan, // <--- Ini yang bikin dia ngilang nanti
-                    pemegang_id: asset.pemegangId ?? null
+                    keterangan: combinedKeterangan,
+                    pemegang_id: null 
                 };
 
-                // Tembak ke database
                 await apiRequest('aset.php', { method: 'PUT', body: JSON.stringify(payload) });
-                await refreshAssets(); // Refresh biar ngilang dari tabel aktif
+                await refreshAssets(); 
                 
                 modalTKTM.value.show = false;
                 showToast('Aset berhasil ditransfer keluar (TKTM).');
@@ -1069,8 +1086,6 @@ createApp({
                 });
                 if (!updatedAsset) updatedAsset = { ...asset, pemegangId: newHolderId, kondisi: formMutasi.value.kondisi };
 
-                // KITA KEMBALIKAN AUTO-SHOW PRINT PREVIEW NYA!
-                // KITA KEMBALIKAN AUTO-SHOW PRINT PREVIEW NYA!
                 printData.value = {
                     show: true,
                     jenisTransaksi: jenisTransaksi,
@@ -1729,10 +1744,10 @@ createApp({
             filteredAssets, filteredPegawai, filterKeterangan,
             
             isSelectMode, toggleSelectMode, selectedAssets, selectedPegawai, selectAllAssets, selectAllPegawai, 
-            hapusBanyakAset, hapusBanyakPegawai, // <--- INI KETINGGALAN TADI
+            hapusBanyakAset, hapusBanyakPegawai, 
             
-            modalAset, formAset, openAsetModal, saveAset, deleteAsset, // <--- INI JUGA KETINGGALAN
-            modalPegawai, formPegawai, openPegawaiModal, savePegawai, deletePegawai, // <--- INI JUGA KETINGGALAN
+            modalAset, formAset, openAsetModal, saveAset, deleteAsset, ubahKodeOtomatis,
+            modalPegawai, formPegawai, openPegawaiModal, savePegawai, deletePegawai,
             modalHapus, openModalHapus, prosesHapusData, 
             
             modalSerahTerima, formMutasi, openSerahTerimaModal, availablePegawaiForTransfer, stafGudangList, submitSerahTerima,

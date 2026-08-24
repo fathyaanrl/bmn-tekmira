@@ -786,80 +786,98 @@
         <div v-if="modalAset.show" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 no-print">
             <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-xl border border-slate-200">
                 <div class="flex justify-between items-center pb-3 border-b border-slate-100">
-                    <h3 class="font-bold text-slate-800 text-base">{{ modalAset.isEdit ? 'Edit Data' : 'Tambah Aset' }}</h3>
+                    <h3 class="font-bold text-slate-800 text-base">{{ modalAset.isEdit ? 'Edit Aset' : 'Tambah Aset' }}</h3>
                     <button @click="modalAset.show = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-base"></i></button>
                 </div>
+                
                 <form @submit.prevent="saveAset" class="space-y-3 mt-4">
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Jenis Aset *</label>
-                            <select v-model="formAset.jenis" @change="ubahKodeOtomatis" required class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500 focus:outline-none">
-                                <option value="Laptop">Laptop</option>
-                                <option value="Notebook">Notebook</option>
-                                <option value="Tablet">Tablet</option>
-                                <option value="HP">Telepon Seluler</option>
-                                <option value="PC Unit">PC Unit</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">NUP *</label>
-                            <input type="text" v-model="formAset.nup"  class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
-                        </div>
-                    </div>
+                    <!-- 1. ASAL PEROLEHAN (Naik ke Paling Atas) -->
                     <div>
-                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">Kode Barang BMN  *</label>
-                        <input type="text" v-model="formAset.kodeBarang" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Merek *</label>
-                            <input type="text" v-model="formAset.merek" required class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
-                        </div>
-                        <div>
-                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Tipe / Model *</label>
-                            <input type="text" v-model="formAset.tipe" required class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Tahun Perolehan</label>
-                            <input type="text" v-model="formAset.tahun" placeholder="e.g. 2024" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
-                        </div>
-                        <div>
-                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Kondisi Fisik *</label>
-                            <select v-model="formAset.kondisi" required class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
-                                <option value="Baik">Baik</option>
-                                <option value="Rusak Ringan">Rusak Ringan</option>
-                                <option value="Rusak Berat">Rusak Berat</option>
-                            </select>
-                        </div>
-                    </div>
-                    <!-- KETERANGAN DIBIKIN DROPDOWN (Penuh 2 Kolom) -->
-                    <div class="col-span-2 sm:col-span-2">
-                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">Tipe Aset*</label>
+                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">Asal Perolehan</label>
                         <select v-model="formAset.kategoriKeterangan" required class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500">
                             <option value="Pembelian">Pembelian</option>
+                            <option value="Sewa">Sewa </option>
                             <option value="Transfer masuk">Transfer Masuk (TKTM)</option>
-                            <option value="Transfer keluar">Transfer Keluar (TKTM)</option>
-                            <option value="Sewa">Sewa</option>
                             <option value="Lainnya">Lainnya</option>
                         </select>
                     </div>
 
-                    <!-- KOTAK DETAIL MUNCUL DINAMIS TERGANTUNG PILIHAN DI ATAS -->
-                    <div class="col-span-2 sm:col-span-2" v-if="formAset.kategoriKeterangan">
+                    <!-- 2. DETAIL ASAL DINAMIS -->
+                    <div v-if="formAset.kategoriKeterangan">
                         <label class="block text-[11px] font-semibold text-slate-700 mb-1">
                             {{ 
-                                formAset.kategoriKeterangan === 'Transfer masuk' ? 'Asal Unit (Dari mana?)' : 
-                                formAset.kategoriKeterangan === 'Transfer keluar' ? 'Tujuan Unit (Ke mana?)' : 
+                                formAset.kategoriKeterangan === 'Transfer masuk' ? 'Asal Unit (Dari mana?) *' : 
+                                formAset.kategoriKeterangan === 'Transfer keluar' ? 'Tujuan Unit (Ke mana?) *' : 
+                                formAset.kategoriKeterangan === 'Sewa' ? 'Nama Vendor / Durasi Sewa (Opsional)' :
                                 'Detail Tambahan (Opsional)' 
                             }}
                         </label>
                         <input type="text" v-model="formAset.detailKeterangan" 
-                            :placeholder="formAset.kategoriKeterangan === 'Transfer masuk' ? 'Contoh: Dari Ditjen Minerba Pusat' : formAset.kategoriKeterangan === 'Transfer keluar' ? 'Contoh: Ke BPSDM' : 'Tulis keterangan tambahan di sini...'" 
-                            class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500">
+                            :placeholder="
+                                formAset.kategoriKeterangan === 'Transfer masuk' ? 'Contoh: Ditjen Minerba Pusat' : 
+                                formAset.kategoriKeterangan === 'Transfer keluar' ? 'Contoh: Ke BPSDM' : 
+                                formAset.kategoriKeterangan === 'Sewa' ? 'Contoh: PT. ABC / 1 Tahun' :
+                                'Tulis detail tambahan di sini...'" 
+                            class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500"
+                            :required="formAset.kategoriKeterangan === 'Transfer masuk' || formAset.kategoriKeterangan === 'Transfer keluar'">
                     </div>
-                    <div class="pt-3 flex justify-end space-x-2">
+
+                    <div class="border-t border-slate-100 my-2"></div>
+
+                    <!-- 3. JENIS & TAHUN -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Jenis Aset *</label>
+                            <select v-model="formAset.jenis" @change="ubahKodeOtomatis" required class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
+                                <option value="Laptop">Laptop</option>
+                                <option value="Notebook">Notebook</option>
+                                <option value="Tablet">Tablet</option>
+                                <option value="Telephone Mobile">Telephone Mobile</option>
+                                <option value="PC Unit">PC Unit</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Tahun Perolehan</label>
+                            <input type="text" v-model="formAset.tahun" placeholder="e.g. 2026" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
+                        </div>
+                    </div>
+
+                    <!-- 4. KODE BMN & NUP (HILANG KALAU PILIH SEWA) -->
+                    <div v-if="formAset.kategoriKeterangan !== 'Sewa'" class="grid grid-cols-2 gap-3 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">Kode Barang BMN *</label>
+                            <input type="text" v-model="formAset.kodeBarang" :required="formAset.kategoriKeterangan !== 'Sewa'" class="w-full text-xs p-2 rounded-md border border-slate-300 focus:ring-2 focus:ring-yellow-500">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">NUP *</label>
+                            <input type="text" v-model="formAset.nup" :required="formAset.kategoriKeterangan !== 'Sewa'" placeholder="No. Urut" class="w-full text-xs p-2 rounded-md border border-slate-300 focus:ring-2 focus:ring-yellow-500">
+                        </div>
+                    </div>
+
+                    <!-- 5. MEREK & TIPE -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Merek *</label>
+                            <input type="text" v-model="formAset.merek" required placeholder="Contoh: Lenovo" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Tipe / Model *</label>
+                            <input type="text" v-model="formAset.tipe" required placeholder="Contoh: ThinkPad T14" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
+                        </div>
+                    </div>
+
+                    <!-- 6. KONDISI -->
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">Kondisi Fisik *</label>
+                        <select v-model="formAset.kondisi" required class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
+                            <option value="Baik">Baik</option>
+                            <option value="Rusak Ringan">Rusak Ringan</option>
+                            <option value="Rusak Berat">Rusak Berat</option>
+                        </select>
+                    </div>
+
+                    <!-- TOMBOL -->
+                    <div class="pt-4 flex justify-end space-x-2">
                         <button type="button" @click="modalAset.show = false" class="px-3.5 py-1.5 rounded-lg text-xs font-medium border border-slate-300 hover:bg-slate-50">Batal</button>
                         <button type="submit" class="px-4 py-1.5 rounded-lg text-xs font-semibold bg-yellow-600 hover:bg-yellow-700 text-white shadow-sm">Simpan Data</button>
                     </div>
