@@ -25,14 +25,12 @@ createApp({
         const forgotConfirmPassword = ref('');
 
         const openForgotPassword = () => {
-
             forgotUsername.value = '';
             forgotNewPassword.value = '';
             forgotConfirmPassword.value = '';
 
             modalForgotPassword.value.show = true;
         };
-
 
         const resetPassword = async () => {
             const username = forgotUsername.value.trim();
@@ -154,7 +152,6 @@ createApp({
             }
         };
 
-
         // =====================================================
         // CEK LOGIN SAAT RELOAD
         // =====================================================
@@ -203,11 +200,20 @@ createApp({
         const fileInputBukti = ref(null);
         const currentUploadId = ref(null);
 
-        // Untuk fitur pilih/hapus banyak
         const isSelectMode = ref(false);
         const selectedAssets = ref([]);
         const selectedPegawai = ref([]);
         const selectedHistory = ref([]);
+
+        const sortHistoryOrder = ref('desc'); 
+        const toggleHistorySort = () => {
+            sortHistoryOrder.value = sortHistoryOrder.value === 'desc' ? 'asc' : 'desc';
+        };
+
+        const sortAssetOrder = ref('desc'); 
+        const toggleAssetSort = () => {
+            sortAssetOrder.value = sortAssetOrder.value === 'desc' ? 'asc' : 'desc';
+        };
 
         const toast = ref({
             show: false,
@@ -515,14 +521,11 @@ createApp({
         // =====================================================
         const filteredAssets = computed(() => {
             return activeAssets.value.filter(asset => {
-                // Filter Asal Perolehan (Keterangan)
                 if (filterKeterangan.value !== 'all' && !(asset.keterangan || '').toLowerCase().startsWith(filterKeterangan.value.toLowerCase())) return false;
                 if (filterKeterangan.value === 'all' && asset.keterangan && String(asset.keterangan).toLowerCase().includes('transfer keluar')) return false;
                 
-                // Filter Jenis Aset BARU
                 if (filterJenisAset.value !== 'all' && asset.jenis !== filterJenisAset.value) return false;
 
-                // Filter Status & Kondisi
                 if (filterStatus.value === 'assigned' && asset.pemegangId === null) return false;
                 if (filterStatus.value === 'gudang' && asset.pemegangId !== null) return false;
                 if (filterKondisi.value !== 'all' && asset.kondisi !== filterKondisi.value) return false;
@@ -536,7 +539,14 @@ createApp({
                     String(asset.merek).toLowerCase().includes(query) || String(asset.tipe).toLowerCase().includes(query) ||
                     String(asset.tahun).toLowerCase().includes(query) || String(asset.keterangan).toLowerCase().includes(query) || holder.includes(query)
                 );
-            }).sort((a, b) => Number(b.id) - Number(a.id));
+            }).sort((a, b) => {
+                // LOGIKA SORTING ASET BARU
+                if (sortAssetOrder.value === 'desc') {
+                    return Number(b.id) - Number(a.id); // Terbaru ke Terlama
+                } else {
+                    return Number(a.id) - Number(b.id); // Terlama ke Terbaru
+                }
+            });
         });
 
         const filteredPegawai = computed(() => {
@@ -599,7 +609,14 @@ createApp({
                 );
             }
 
-            return result.sort((a, b) => Number(b.id) - Number(a.id));
+            // LOGIKA SORTING RIWAYAT BARU
+            return result.sort((a, b) => {
+                if (sortHistoryOrder.value === 'desc') {
+                    return Number(b.id) - Number(a.id); // Terbaru ke Terlama
+                } else {
+                    return Number(a.id) - Number(b.id); // Terlama ke Terbaru
+                }
+            });
         });
 
         // Logika Upload PDF
@@ -1208,6 +1225,7 @@ createApp({
             let jenisTrans = record.jenisTransaksi || '';
             let tujuanTktm = '-';
 
+            // Deteksi jenis surat dari Keterangan / Transaksi yang tersimpan di DB
             if (record.keterangan && record.keterangan.includes('Penelitian Fisik')) {
                 jenisTrans = 'LAINNYA';
                 nPenelitian = record.nomorBast;
@@ -1218,13 +1236,13 @@ createApp({
                 nVerifikasi = record.nomorBast;
                 targetPrintMode = 'VERIFIKASI';
                 tujuanTktm = record.keterangan.split(' - ')[1] || '-';
-            } else if (record.nomorBast && String(record.nomorBast).includes('/GDG/')) {
+            } else if (jenisTrans === 'PEMINJAMAN' || (record.nomorBast && String(record.nomorBast).includes('/GDG/'))) {
+                jenisTrans = 'PEMINJAMAN'; // Khusus Gudang -> Pegawai
                 nSip = record.nomorBast;
-                jenisTrans = 'PEMINJAMAN';
                 targetPrintMode = 'SIP';
             } else {
+                jenisTrans = 'PENGEMBALIAN'; // Khusus Pegawai -> Gudang
                 nBast = record.nomorBast;
-                jenisTrans = 'PENGEMBALIAN';
                 targetPrintMode = 'BAST';
             }
 
@@ -1915,7 +1933,7 @@ createApp({
             
             modalAset, formAset, openAsetModal, saveAset, deleteAsset, ubahKodeOtomatis,
             modalPegawai, formPegawai, openPegawaiModal, savePegawai, deletePegawai,
-            modalHapus, openModalHapus, prosesHapusData, 
+            modalHapus, openModalHapus, prosesHapusData, sortHistoryOrder, toggleHistorySort,
             
             modalSerahTerima, formMutasi, openSerahTerimaModal, availablePegawaiForTransfer, stafGudangList, submitSerahTerima,
             printData, formatTanggalIndo, formatTanggalTerbilang, formatTanggalAngka, cetakUlangBast, tutupPrint, jalankanPrint,
@@ -1923,7 +1941,7 @@ createApp({
             modalPengaturan, formPengaturan, openPengaturanModal, savePengaturan,
             modalProfil, formProfil, openProfilModal, saveProfil,
             modalLogout, openLogoutModal, confirmLogout, itemsPerPage,
-            exportExcel, getLastMutationDate, asetDipegang, 
+            exportExcel, getLastMutationDate, asetDipegang, sortAssetOrder, toggleAssetSort,
             modalTKTM, openModalTKTM, submitTKTM, handleFotoTktm, filterJenisTransaksi,
 
             filterSurat, filterKondisiRiwayat, filteredHistory, fileInputBukti, filterJenisAset, filterStatusPegawai, triggerUpload, 

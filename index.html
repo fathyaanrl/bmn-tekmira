@@ -297,7 +297,12 @@
                                     <th class="py-3 px-2 w-8 text-center">No</th>
                                     <th class="py-3 px-4">Kode & NUP</th>
                                     <th class="py-3 px-4 w-50 text-center">Jenis, Merek & Tahun</th>
-                                    <th class="px-4 py-3 text-center">Hari / Tanggal</th>
+                                    <th class="px-4 py-3 text-left font-semibold w-40 cursor-pointer hover:bg-slate-800 transition select-none" @click="toggleAssetSort" title="Klik untuk mengurutkan Terbaru/Terlama">
+                                        <div class="flex items-center space-x-2">
+                                            <span>HARI / TANGGAL</span>
+                                            <i class="fa-solid text-[10px] text-slate-300" :class="sortAssetOrder === 'desc' ? 'fa-arrow-down-wide-short' : 'fa-arrow-up-short-wide'"></i>
+                                        </div>
+                                    </th>
                                     <th class="py-3 px-4 text-center">Keterangan</th>
                                     <th class="py-3 px-4 text-center w-32">
                                         <div class="flex items-center justify-center space-x-1.5 relative group cursor-pointer" title="Filter Kondisi">
@@ -442,7 +447,12 @@
                                 <tr class="bg-slate-800 text-slate-200 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-700">
                                     <th v-if="isSelectMode" class="py-3 px-3 w-8 text-center"><input type="checkbox" v-model="selectAllHistory" class="cursor-pointer"></th>
                                     <th class="py-3 px-2 w-8 text-center">No</th>
-                                    <th class="py-2.5 px-4">Tanggal</th>
+                                    <th class="px-4 py-3 text-left font-semibold w-40 cursor-pointer hover:bg-slate-800 transition select-none" @click="toggleHistorySort" title="Klik untuk mengurutkan Terbaru/Terlama">
+                                        <div class="flex items-center space-x-2">
+                                            <span>HARI / TANGGAL</span>
+                                            <i class="fa-solid text-[10px] text-slate-300" :class="sortHistoryOrder === 'desc' ? 'fa-arrow-down-wide-short' : 'fa-arrow-up-short-wide'"></i>
+                                        </div>
+                                    </th>
                                     <th class="py-2.5 px-4">Barang BMN</th>
                                     <th class="py-2.5 px-4">Asal (Gudang/Lama)</th>
                                     <th class="py-2.5 px-4">Mutasi Ke</th>
@@ -956,12 +966,27 @@
                 
                 <div class="flex items-center justify-between no-print mb-8 px-[1cm]">
                     <div class="flex items-center space-x-2">
-                        <template v-if="printData.printMode === 'BAST' || printData.printMode === 'SIP'">
-                            <button @click="printData.printMode = 'BAST'" :class="printData.printMode === 'BAST' ? 'bg-[#5A55F5] text-white' : 'bg-[#E2E8F0] text-slate-600 hover:bg-slate-300'" class="px-4 py-2.5 rounded-lg font-bold text-[13px] transition flex items-center space-x-2">
-                                <i class="fa-solid fa-file-contract"></i><span>1. Kertas BAST</span>
+                        <!-- Kumpulan Tombol BAST/SIP (Otomatis menyesuaikan Transaksi) -->
+                        <template v-if="printData.jenisTransaksi === 'MUTASI' || printData.jenisTransaksi === 'PENGEMBALIAN' || printData.jenisTransaksi === 'PEMINJAMAN'">
+                            
+                            <!-- Tombol BAST: Cuma Muncul jika PENGEMBALIAN (Pegawai ke Gudang) atau MUTASI -->
+                            <button v-if="printData.jenisTransaksi === 'PENGEMBALIAN' || printData.jenisTransaksi === 'MUTASI'" 
+                                    @click="printData.printMode = 'BAST'" 
+                                    :class="printData.printMode === 'BAST' ? 'bg-[#5A55F5] text-white' : 'bg-[#E2E8F0] text-slate-600 hover:bg-slate-300'" 
+                                    class="px-4 py-2.5 rounded-lg font-bold text-[13px] transition flex items-center space-x-2">
+                                <i class="fa-solid fa-file-contract"></i>
+                                <span v-if="printData.jenisTransaksi === 'MUTASI'">1. Kertas BAST</span>
+                                <span v-else>Kertas BAST</span>
                             </button>
-                            <button @click="printData.printMode = 'SIP'" :class="printData.printMode === 'SIP' ? 'bg-[#5A55F5] text-white' : 'bg-[#E2E8F0] text-slate-600 hover:bg-slate-300'" class="px-4 py-2.5 rounded-lg font-bold text-[13px] transition flex items-center space-x-2">
-                                <i class="fa-solid fa-file-signature"></i><span>2. Kertas SIP</span>
+
+                            <!-- Tombol SIP: Cuma Muncul jika PEMINJAMAN (Gudang ke Pegawai) atau MUTASI -->
+                            <button v-if="printData.jenisTransaksi === 'PEMINJAMAN' || printData.jenisTransaksi === 'MUTASI'" 
+                                    @click="printData.printMode = 'SIP'" 
+                                    :class="printData.printMode === 'SIP' ? 'bg-[#5A55F5] text-white' : 'bg-[#E2E8F0] text-slate-600 hover:bg-slate-300'" 
+                                    class="px-4 py-2.5 rounded-lg font-bold text-[13px] transition flex items-center space-x-2">
+                                <i class="fa-solid fa-file-signature"></i>
+                                <span v-if="printData.jenisTransaksi === 'MUTASI'">2. Kertas SIP</span>
+                                <span v-else>Kertas SIP</span>
                             </button>
                         </template>
 
@@ -1070,7 +1095,7 @@
                                 </div>
                                 <p class="font-bold underline">{{ printData.pemegangLamaNama }}</p>
                             </div>
-                        </div>>
+                        </div>
                         </div>
                     </template>
 
