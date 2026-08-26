@@ -540,23 +540,27 @@ createApp({
         });
 
         const filteredPegawai = computed(() => {
-            // Sembunyiin pegawai yang semua asetnya udah "Transfer keluar" (alias udah resign/pindah)
             const pegawaiAktifSaja = pegawaiList.value.filter(pegawai => !pegawaiSudahKeluar(pegawai.id));
+            
+            const hasilFilter = pegawaiAktifSaja.filter(pegawai => {
+                // Logika Filter Dropdown
+                if (filterStatusPegawai.value === 'ada' && getPegawaiAllAssets(pegawai.id).length === 0) return false;
+                if (filterStatusPegawai.value === 'kosong' && getPegawaiAllAssets(pegawai.id).length > 0) return false;
 
-            // Urutin abjad A-Z berdasarkan nama
-            const urutAbjad = (list) => [...list].sort((a, b) =>
+                // Logika Pencarian Teks
+                const query = searchQuery.value.toLowerCase().trim();
+                if (!query) return true;
+                
+                return (
+                    String(pegawai.nama).toLowerCase().includes(query) || 
+                    String(pegawai.nip).toLowerCase().includes(query) || 
+                    String(pegawai.jabatan).toLowerCase().includes(query)
+                );
+            });
+
+            return hasilFilter.sort((a, b) => 
                 String(a.nama).localeCompare(String(b.nama), 'id', { sensitivity: 'base' })
             );
-
-            const query = searchQuery.value.toLowerCase().trim();
-            if (!query) return urutAbjad(pegawaiAktifSaja);
-
-            const hasilCari = pegawaiAktifSaja.filter(pegawai => (
-                String(pegawai.nama).toLowerCase().includes(query) ||
-                String(pegawai.nip).toLowerCase().includes(query) ||
-                String(pegawai.jabatan).toLowerCase().includes(query)
-            ));
-            return urutAbjad(hasilCari);
         });
 
         // Filter Tabel Riwayat
@@ -1328,6 +1332,47 @@ createApp({
             return date.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         };
 
+        const terbilang = (angka) => {
+            const huruf = ["", "satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan", "sembilan", "sepuluh", "sebelas"];
+            if (angka < 12) return huruf[angka];
+            if (angka < 20) return terbilang(angka - 10) + " belas";
+            if (angka < 100) return terbilang(Math.floor(angka / 10)) + " puluh " + terbilang(angka % 10);
+            if (angka < 200) return "seratus " + terbilang(angka - 100);
+            if (angka < 1000) return terbilang(Math.floor(angka / 100)) + " ratus " + terbilang(angka % 100);
+            if (angka < 2000) return "seribu " + terbilang(angka - 1000);
+            if (angka < 1000000) return terbilang(Math.floor(angka / 1000)) + " ribu " + terbilang(angka % 1000);
+            return "";
+        };
+
+        const formatTanggalTerbilang = (tanggalStr) => {
+            if (!tanggalStr) return '';
+            const parts = tanggalStr.split('-');
+            if(parts.length !== 3) return tanggalStr;
+            const dateObj = new Date(`${tanggalStr}T00:00:00`);
+            
+            const hariArr = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+            const bulanArr = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            
+            const hari = hariArr[dateObj.getDay()];
+            const tgl = parseInt(parts[2], 10);
+            const bln = parseInt(parts[1], 10);
+            const thn = parseInt(parts[0], 10);
+            
+            const tglTeks = terbilang(tgl).trim();
+            const thnTeks = terbilang(thn).trim();
+            const blnNama = bulanArr[bln - 1];
+            
+            // Cuma balikin teksnya aja, nggak pakai kurung & angka
+            return `${hari} tanggal ${tglTeks} bulan ${blnNama} tahun ${thnTeks}`;
+        };
+
+        const formatTanggalAngka = (tanggalStr) => {
+            if (!tanggalStr) return '';
+            const parts = tanggalStr.split('-');
+            if(parts.length !== 3) return tanggalStr;
+            return `${parts[2]}-${parts[1]}-${parts[0]}`;
+        };
+
         const tutupPrint = () => { printData.value.show = false; };
         const jalankanPrint = () => { window.print(); };
 
@@ -1873,8 +1918,7 @@ createApp({
             modalHapus, openModalHapus, prosesHapusData, 
             
             modalSerahTerima, formMutasi, openSerahTerimaModal, availablePegawaiForTransfer, stafGudangList, submitSerahTerima,
-            
-            printData, formatTanggalIndo, cetakUlangBast, tutupPrint, jalankanPrint,
+            printData, formatTanggalIndo, formatTanggalTerbilang, formatTanggalAngka, cetakUlangBast, tutupPrint, jalankanPrint,
             
             modalPengaturan, formPengaturan, openPengaturanModal, savePengaturan,
             modalProfil, formProfil, openProfilModal, saveProfil,
