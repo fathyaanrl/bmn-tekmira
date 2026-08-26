@@ -333,6 +333,9 @@ createApp({
                 kondisi: row.kondisi || 'Baik',
                 nomorBast: row.nomor_bast || '',
                 jenisTransaksi: row.jenis_transaksi || '',
+                keterangan: row.keterangan || '',
+                nilai_perolehan: row.nilai_perolehan || '',  // <--- TAMBAHAN
+                lampiran_foto: row.lampiran_foto || null,    // <--- TAMBAHAN
                 file_bukti: row.file_bukti || null
             };
         };
@@ -560,23 +563,23 @@ createApp({
         const filteredHistory = computed(() => {
             let result = [...historyList.value];
 
-            // 1. Filter Jenis Surat (Yang sekarang jadi Tombol)
+            // 1. Filter Jenis Surat 
             if (filterSurat.value === 'SIP') {
                 result = result.filter(h => h.nomorBast && String(h.nomorBast).includes('/GDG/'));
             } else if (filterSurat.value === 'BAST') {
                 result = result.filter(h => h.nomorBast && String(h.nomorBast).includes('-GDG/'));
             } else if (filterSurat.value === 'VERIFIKASI') {
-                result = result.filter(h => h.nomorBast && String(h.nomorBast).includes('VRF'));
+                result = result.filter(h => h.keterangan && String(h.keterangan).includes('Verifikasi Aset'));
             } else if (filterSurat.value === 'PENELITIAN') {
-                result = result.filter(h => h.nomorBast && String(h.nomorBast).includes('PFT'));
+                result = result.filter(h => h.keterangan && String(h.keterangan).includes('Penelitian Fisik'));
             }
 
-            // 2. Filter Jenis Transaksi (Yang sekarang jadi Dropdown Baru)
+            // 2. Filter Jenis Transaksi
             if (filterJenisTransaksi.value !== 'all') {
                 result = result.filter(h => h.jenisTransaksi === filterJenisTransaksi.value);
             }
 
-            // 3. Filter Kondisi (Dari Header Tabel)
+            // 3. Filter Kondisi
             if (filterKondisiRiwayat.value !== 'all') {
                 result = result.filter(h => h.kondisi === filterKondisiRiwayat.value);
             }
@@ -826,7 +829,8 @@ createApp({
             nomorPenelitian: '', nomorVerifikasi: '',
             pemeriksaTekmira1: '', pemeriksaTekmira2: '', pemeriksaTujuan1: '', pemeriksaTujuan2: '',
             petinggiTujuan: '', petinggiTekmira: 'Daman',
-            fotoBarangUrls: [], fotoLabelUrls: [] // <-- Ubah jadi Array (pakai 's')
+            fotoBarangUrls: [], fotoLabelUrls: [],
+            fotoBarangFiles: [], fotoLabelFiles: [] // <-- TAMBAHAN BUAT NYIMPEN FILE ASLI
         });
 
         const openModalTKTM = (pegawai) => {
@@ -848,7 +852,8 @@ createApp({
                 nomorVerifikasi: `78.BA/BN.10/DBR/${thn}`,
                 pemeriksaTekmira1: '', pemeriksaTekmira2: '', pemeriksaTujuan1: '', pemeriksaTujuan2: '',
                 petinggiTujuan: '', petinggiTekmira: 'Daman',
-                fotoBarangUrls: [], fotoLabelUrls: [] // <-- Reset Array
+                fotoBarangUrls: [], fotoLabelUrls: [],
+                fotoBarangFiles: [], fotoLabelFiles: [] // <-- RESET FILE ASLI
             };
         };
 
@@ -867,11 +872,12 @@ createApp({
             const newUrls = files.map(file => URL.createObjectURL(file));
 
             if (jenis === 'barang') {
-                // Gabungin array foto lama sama foto yang baru di-upload
                 modalTKTM.value.fotoBarangUrls = [...modalTKTM.value.fotoBarangUrls, ...newUrls];
+                modalTKTM.value.fotoBarangFiles = [...modalTKTM.value.fotoBarangFiles, ...files]; // <-- Simpan ke memori
             }
             if (jenis === 'label') {
                 modalTKTM.value.fotoLabelUrls = [...modalTKTM.value.fotoLabelUrls, ...newUrls];
+                modalTKTM.value.fotoLabelFiles = [...modalTKTM.value.fotoLabelFiles, ...files]; // <-- Simpan ke memori
             }
             
             event.target.value = '';
@@ -885,11 +891,20 @@ createApp({
             const combinedKeterangan = `Transfer keluar - ${m.tujuan.trim()}`;
             const adminGudang = stafGudangList.value[0] || { nama: 'Admin BMN', nip: '-', jabatan: 'Staf' };
             const oldPegawai = getPegawaiInfo(m.pegawaiId);
-            
-            // <-- Tanggal dari input form, bukan dibikin baru lagi
             const tgl = m.tanggal; 
 
             try {
+                // Bungkus nama-nama pemeriksa jadi JSON buat disimpen ke database
+                const metadataNames = JSON.stringify({
+                    pemeriksaTekmira1: m.pemeriksaTekmira1 ? getPegawaiName(m.pemeriksaTekmira1) : '',
+                    pemeriksaTekmira2: m.pemeriksaTekmira2 ? getPegawaiName(m.pemeriksaTekmira2) : '',
+                    pemeriksaTujuan1: m.pemeriksaTujuan1 || '', 
+                    pemeriksaTujuan2: m.pemeriksaTujuan2 || '',
+                    petinggiTujuan: m.petinggiTujuan || '', 
+                    petinggiTekmira: m.petinggiTekmira || ''
+                });
+
+                // Update aset ke gudang
                 const payload = {
                     id: asset.id, jenis: asset.jenis, kode_barang: asset.kodeBarang,
                     nup_baru: asset.nup_baru || asset.nup || '', merek: asset.merek,
@@ -899,23 +914,39 @@ createApp({
                 };
                 await apiRequest('aset.php', { method: 'PUT', body: JSON.stringify(payload) });
 
-                await apiRequest('mutasi.php', { method: 'POST', body: JSON.stringify({ aset_id: asset.id, tanggal: tgl, pemegang_lama_id: m.pegawaiId, pemegang_baru_id: null, jenis_transaksi: 'LAINNYA', kondisi: asset.kondisi, nomor_bast: m.nomorPenelitian, keterangan: 'BA Penelitian Fisik - ' + m.tujuan.trim() }) });
-                await apiRequest('mutasi.php', { method: 'POST', body: JSON.stringify({ aset_id: asset.id, tanggal: tgl, pemegang_lama_id: m.pegawaiId, pemegang_baru_id: null, jenis_transaksi: 'LAINNYA', kondisi: asset.kondisi, nomor_bast: m.nomorVerifikasi, keterangan: 'BA Verifikasi Aset - ' + m.tujuan.trim() }) });
+                // Bikin mutasi 1 & 2 (Ditambah metadata nama)
+                const resMutasi1 = await apiRequest('mutasi.php', { method: 'POST', body: JSON.stringify({ aset_id: asset.id, tanggal: tgl, pemegang_lama_id: m.pegawaiId, pemegang_baru_id: null, jenis_transaksi: 'LAINNYA', kondisi: asset.kondisi, nomor_bast: m.nomorPenelitian, keterangan: 'BA Penelitian Fisik - ' + m.tujuan.trim(), nilai_perolehan: m.nilaiPerolehan, lampiran_foto: metadataNames }) });
                 
+                const resMutasi2 = await apiRequest('mutasi.php', { method: 'POST', body: JSON.stringify({ aset_id: asset.id, tanggal: tgl, pemegang_lama_id: m.pegawaiId, pemegang_baru_id: null, jenis_transaksi: 'LAINNYA', kondisi: asset.kondisi, nomor_bast: m.nomorVerifikasi, keterangan: 'BA Verifikasi Aset - ' + m.tujuan.trim(), nilai_perolehan: m.nilaiPerolehan, lampiran_foto: metadataNames }) });
+                
+                // UPLOAD FOTO KE SERVER
+                const uploadPhotos = async (mutasiId) => {
+                    if (m.fotoBarangFiles.length === 0 && m.fotoLabelFiles.length === 0) return;
+                    const formData = new FormData();
+                    formData.append('id', mutasiId);
+                    m.fotoBarangFiles.forEach(file => formData.append('foto_barang[]', file));
+                    m.fotoLabelFiles.forEach(file => formData.append('foto_label[]', file));
+                    await fetch(`${API_BASE}/upload_tktm.php`, { method: 'POST', body: formData });
+                };
+
+                if (resMutasi1.success && resMutasi1.data?.mutasi_id) await uploadPhotos(resMutasi1.data.mutasi_id);
+                if (resMutasi2.success && resMutasi2.data?.mutasi_id) await uploadPhotos(resMutasi2.data.mutasi_id);
+
                 await Promise.all([refreshAssets(), refreshHistory()]);
                 m.show = false;
-                showToast('Aset ditransfer & 2 Dokumen berhasil dibuat.');
+                showToast('Aset ditransfer, Surat & Foto berhasil disimpan.');
 
+                // Tampilkan ke layar (Data sementara buat preview langsung)
                 printData.value = {
                     show: true, jenisTransaksi: 'LAINNYA', printMode: 'PENELITIAN',
                     tanggal: tgl, kategoriLabel: asset.jenis, kodeBarang: asset.kodeBarang, nup: asset.nup_baru || asset.nup,
                     merekTipe: `${asset.merek} ${asset.tipe}`.trim(), tahun: asset.tahun, kondisi: asset.kondisi,
                     nomorPenelitian: m.nomorPenelitian, nomorVerifikasi: m.nomorVerifikasi, nilaiPerolehan: m.nilaiPerolehan,
-                    pemeriksaTekmira1: m.pemeriksaTekmira1 ? getPegawaiName(m.pemeriksaTekmira1) : '-',
-                    pemeriksaTekmira2: m.pemeriksaTekmira2 ? getPegawaiName(m.pemeriksaTekmira2) : '-',
-                    pemeriksaTujuan1: m.pemeriksaTujuan1 || '-', 
-                    pemeriksaTujuan2: m.pemeriksaTujuan2 || '-',
-                    petinggiTujuan: m.petinggiTujuan, petinggiTekmira: m.petinggiTekmira,
+                    pemeriksaTekmira1: m.pemeriksaTekmira1 ? getPegawaiName(m.pemeriksaTekmira1) : '....................',
+                    pemeriksaTekmira2: m.pemeriksaTekmira2 ? getPegawaiName(m.pemeriksaTekmira2) : '....................',
+                    pemeriksaTujuan1: m.pemeriksaTujuan1 || '....................', 
+                    pemeriksaTujuan2: m.pemeriksaTujuan2 || '....................',
+                    petinggiTujuan: m.petinggiTujuan || '....................', petinggiTekmira: m.petinggiTekmira || '....................',
                     fotoBarangUrls: m.fotoBarangUrls, fotoLabelUrls: m.fotoLabelUrls,
                     pemegangLamaNama: oldPegawai?.nama || '-', pemegangLamaNip: oldPegawai?.nip || '-', pemegangLamaJabatan: oldPegawai?.jabatan || '-',
                     pemegangBaruNama: m.tujuan.trim(), pemegangBaruNip: '-', pemegangBaruJabatan: '-',
@@ -1167,18 +1198,32 @@ createApp({
         const cetakUlangBast = (record) => {
             let nBast = '';
             let nSip = '';
-            
-            if (record.nomorBast && record.nomorBast.includes('/GDG/')) {
+            let nPenelitian = '';
+            let nVerifikasi = '';
+            let targetPrintMode = 'BAST';
+            let jenisTrans = record.jenisTransaksi || '';
+            let tujuanTktm = '-';
+
+            if (record.keterangan && record.keterangan.includes('Penelitian Fisik')) {
+                jenisTrans = 'LAINNYA';
+                nPenelitian = record.nomorBast;
+                targetPrintMode = 'PENELITIAN';
+                tujuanTktm = record.keterangan.split(' - ')[1] || '-';
+            } else if (record.keterangan && record.keterangan.includes('Verifikasi Aset')) {
+                jenisTrans = 'LAINNYA';
+                nVerifikasi = record.nomorBast;
+                targetPrintMode = 'VERIFIKASI';
+                tujuanTktm = record.keterangan.split(' - ')[1] || '-';
+            } else if (record.nomorBast && String(record.nomorBast).includes('/GDG/')) {
                 nSip = record.nomorBast;
-                record.jenisTransaksi = 'PEMINJAMAN';
+                jenisTrans = 'PEMINJAMAN';
+                targetPrintMode = 'SIP';
             } else {
                 nBast = record.nomorBast;
-                record.jenisTransaksi = 'PENGEMBALIAN';
+                jenisTrans = 'PENGEMBALIAN';
+                targetPrintMode = 'BAST';
             }
 
-            // =========================================================
-            // LACAK DATA PEGAWAI BERDASARKAN NAMA DI RIWAYAT
-            // =========================================================
             const cariPegawaiBerdasarkanNama = (namaCari) => {
                 if (!namaCari || namaCari.includes('Gudang') || namaCari === '-') return null;
                 return pegawaiList.value.find(p => p.nama.toLowerCase() === namaCari.toLowerCase()) || null;
@@ -1186,11 +1231,8 @@ createApp({
 
             const pegawaiLamaObj = cariPegawaiBerdasarkanNama(record.pemegangLama);
             const pegawaiBaruObj = cariPegawaiBerdasarkanNama(record.pemegangBaru);
-
-            // Ambil staf gudang pertama yang ditemukan di list sebagai default admin jika dari/ke gudang
             const defaultStafGudang = stafGudangList.value[0] || pegawaiList.value[0] || { nama: 'Admin Gudang', nip: '-', jabatan: 'Staf Perlengkapan' };
 
-            // Tentukan Pihak Pertama & Kedua beserta Jabatan dan NIP aslinya
             let namaPihakPertama = record.pemegangLama;
             let nipPihakPertama = pegawaiLamaObj?.nip || '-';
             let jabatanPihakPertama = pegawaiLamaObj?.jabatan || (record.pemegangLama.includes('Gudang') ? defaultStafGudang.jabatan : '-');
@@ -1199,15 +1241,20 @@ createApp({
             let nipPihakKedua = pegawaiBaruObj?.nip || '-';
             let jabatanPihakKedua = pegawaiBaruObj?.jabatan || (record.pemegangBaru.includes('Gudang') ? defaultStafGudang.jabatan : '-');
 
-            // Jika Pihak Kedua adalah gudang, gunakan data staf gudang aktif
             let namaAdminGudang = defaultStafGudang.nama;
             let nipAdminGudang = defaultStafGudang.nip;
             let jabatanAdminGudang = defaultStafGudang.jabatan;
 
-            if (record.pemegangBaru.includes('Gudang') || record.pemegangBaru === '-') {
-                namaPihakKedua = namaAdminGudang;
-                nipPihakKedua = nipAdminGudang;
-                jabatanPihakKedua = jabatanAdminGudang;
+            if (jenisTrans === 'LAINNYA') {
+                namaPihakKedua = tujuanTktm;
+                nipPihakKedua = '-';
+                jabatanPihakKedua = '-';
+            } else {
+                if (record.pemegangBaru.includes('Gudang') || record.pemegangBaru === '-') {
+                    namaPihakKedua = namaAdminGudang;
+                    nipPihakKedua = nipAdminGudang;
+                    jabatanPihakKedua = jabatanAdminGudang;
+                }
             }
 
             if (record.pemegangLama.includes('Gudang') || record.pemegangLama === '-') {
@@ -1215,17 +1262,47 @@ createApp({
                 nipPihakPertama = nipAdminGudang;
                 jabatanPihakPertama = jabatanAdminGudang;
             }
-            // =========================================================
+
+            // Ekstrak Foto & Metadata Nama dari JSON
+            let fotoBarang = [];
+            let fotoLabel = [];
+            let meta = {
+                pemeriksaTekmira1: '....................', pemeriksaTekmira2: '....................', 
+                pemeriksaTujuan1: '....................', pemeriksaTujuan2: '....................',
+                petinggiTujuan: '....................', petinggiTekmira: '....................'
+            };
+
+            if (record.lampiran_foto) {
+                try {
+                    const parsed = JSON.parse(record.lampiran_foto);
+                    if (parsed.barang) fotoBarang = parsed.barang; 
+                    if (parsed.label) fotoLabel = parsed.label;
+                    
+                    if (parsed.pemeriksaTekmira1) meta.pemeriksaTekmira1 = parsed.pemeriksaTekmira1;
+                    if (parsed.pemeriksaTekmira2) meta.pemeriksaTekmira2 = parsed.pemeriksaTekmira2;
+                    if (parsed.pemeriksaTujuan1) meta.pemeriksaTujuan1 = parsed.pemeriksaTujuan1;
+                    if (parsed.pemeriksaTujuan2) meta.pemeriksaTujuan2 = parsed.pemeriksaTujuan2;
+                    if (parsed.petinggiTujuan) meta.petinggiTujuan = parsed.petinggiTujuan;
+                    if (parsed.petinggiTekmira) meta.petinggiTekmira = parsed.petinggiTekmira;
+                } catch (e) { console.error('Gagal parse foto/meta', e); }
+            }
 
             printData.value = { 
                 show: true, 
                 ...record,
                 nomorBast: nBast,
                 nomorSip: nSip,
-                jenisTransaksi: record.jenisTransaksi,
-                printMode: record.jenisTransaksi === 'PEMINJAMAN' ? 'SIP' : 'BAST',
+                nomorPenelitian: nPenelitian,
+                nomorVerifikasi: nVerifikasi,
+                jenisTransaksi: jenisTrans,
+                printMode: targetPrintMode,
                 
-                // Masukkan data yang sudah dilacak dengan akurat
+                nilaiPerolehan: record.nilai_perolehan || '-',
+                fotoBarangUrls: fotoBarang,
+                fotoLabelUrls: fotoLabel,
+                
+                ...meta,
+                
                 pemegangLamaNama: namaPihakPertama,
                 pemegangLamaNip: nipPihakPertama,
                 pemegangLamaJabatan: jabatanPihakPertama,
@@ -1263,7 +1340,8 @@ createApp({
         const formPengaturan = ref({
             namaKepala: savedPengaturan?.namaKepala || 'Nur Syarief Boni Mulyanto',
             nipKepala: savedPengaturan?.nipKepala || '',
-            jabatanKepala: savedPengaturan?.jabatanKepala || 'Kepala Subbagian Perlengkapan,\nRumah Tangga dan Pengadaan'
+            jabatanKepala: savedPengaturan?.jabatanKepala || 'Kepala Subbagian Perlengkapan,\nRumah Tangga dan Pengadaan',
+            kodeSip: savedPengaturan?.kodeSip || 'F. DBR.U.1.02.02'
         });
 
         const openPengaturanModal = () => { modalPengaturan.value.show = true; };

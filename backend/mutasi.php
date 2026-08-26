@@ -8,7 +8,8 @@ if ($method === "GET") {
         $sql = "
             SELECT
                 m.id, m.aset_id, m.tanggal, m.pemegang_lama_id, m.pemegang_baru_id,
-                m.jenis_transaksi, m.kondisi, m.nomor_bast, m.keterangan,
+                m.jenis_transaksi, m.kondisi, m.nomor_bast, m.keterangan, 
+                m.nilai_perolehan, m.lampiran_foto,
                 a.jenis, a.kode_barang, a.nup_baru, a.merek, a.tipe, a.nama_barang, a.tahun,
                 p1.nama AS pemegang_lama_nama, p1.nip AS pemegang_lama_nip,
                 p2.nama AS pemegang_baru_nama, p2.nip AS pemegang_baru_nip
@@ -44,6 +45,10 @@ if ($method === "POST") {
     $kondisi = !empty($input["kondisi"]) ? $input["kondisi"] : null;
     $nomorBast = !empty($input["nomor_bast"]) ? $input["nomor_bast"] : null;
     $keterangan = !empty($input["keterangan"]) ? $input["keterangan"] : null;
+    $nilaiPerolehan = !empty($input["nilai_perolehan"]) ? $input["nilai_perolehan"] : null;
+    
+    // Tangkap data nama pemeriksa yang dikirim dari JS
+    $lampiranFoto = !empty($input["lampiran_foto"]) ? $input["lampiran_foto"] : null;
 
     $jenisValid = ["PEMINJAMAN", "PENGEMBALIAN", "MUTASI", "LAINNYA"];
     if (!in_array($jenisTransaksi, $jenisValid)) {
@@ -65,11 +70,12 @@ if ($method === "POST") {
             exit;
         }
 
-        $insertStmt = $pdo->prepare("INSERT INTO mutasi (aset_id, tanggal, pemegang_lama_id, pemegang_baru_id, jenis_transaksi, kondisi, nomor_bast, keterangan) VALUES (:aset_id, :tanggal, :pemegang_lama_id, :pemegang_baru_id, :jenis_transaksi, :kondisi, :nomor_bast, :keterangan)");
+        $insertStmt = $pdo->prepare("INSERT INTO mutasi (aset_id, tanggal, pemegang_lama_id, pemegang_baru_id, jenis_transaksi, kondisi, nomor_bast, keterangan, nilai_perolehan, lampiran_foto) VALUES (:aset_id, :tanggal, :pemegang_lama_id, :pemegang_baru_id, :jenis_transaksi, :kondisi, :nomor_bast, :keterangan, :nilai_perolehan, :lampiran_foto)");
         $insertStmt->execute([
             ":aset_id" => $asetId, ":tanggal" => $tanggal, ":pemegang_lama_id" => $pemegangLamaId,
             ":pemegang_baru_id" => $pemegangBaruId, ":jenis_transaksi" => $jenisTransaksi,
-            ":kondisi" => $kondisi, ":nomor_bast" => $nomorBast, ":keterangan" => $keterangan
+            ":kondisi" => $kondisi, ":nomor_bast" => $nomorBast, ":keterangan" => $keterangan,
+            ":nilai_perolehan" => $nilaiPerolehan, ":lampiran_foto" => $lampiranFoto
         ]);
         $mutasiId = $pdo->lastInsertId();
 
@@ -86,12 +92,8 @@ if ($method === "POST") {
     exit;
 }
 
-// =====================================================
-// BLOK BARU UNTUK MENGHAPUS RIWAYAT SURAT
-// =====================================================
 if ($method === "DELETE") {
     $input = json_decode(file_get_contents("php://input"), true);
-    
     if (!$input || empty($input["id"])) {
         http_response_code(400);
         echo json_encode(["success" => false, "message" => "ID riwayat tidak valid"]);
@@ -101,13 +103,28 @@ if ($method === "DELETE") {
     $id = (int) $input["id"];
 
     try {
+        $stmtFoto = $pdo->prepare("SELECT lampiran_foto FROM mutasi WHERE id = :id");
+        $stmtFoto->execute([":id" => $id]);
+        $row = $stmtFoto->fetch();
+
         $stmt = $pdo->prepare("DELETE FROM mutasi WHERE id = :id");
         $stmt->execute([":id" => $id]);
 
-        // Opsional: Hapus juga file PDF buktinya kalau ada biar server nggak penuh
         $file_path = "../uploads/surat/bukti_" . $id . ".pdf"; 
-        if (file_exists($file_path)) {
-            unlink($file_path);
+        if (file_exists($file_path)) unlink($file_path);
+
+        if ($row && !empty($row['lampiran_foto'])) {
+            $fotoData = json_decode($row['lampiran_foto'], true);
+            if (is_array($fotoData)) {
+                foreach (['barang', 'label'] as $kategori) {
+                    if (!empty($fotoData[$kategori]) && is_array($fotoData[$kategori])) {
+                        foreach ($fotoData[$kategori] as $pathFoto) {
+                            $fullPath = "../" . $pathFoto;
+                            if (file_exists($fullPath)) unlink($fullPath);
+                        }
+                    }
+                }
+            }
         }
 
         echo json_encode(["success" => true, "message" => "Riwayat berhasil dihapus"]);
