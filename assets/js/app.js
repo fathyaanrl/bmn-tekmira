@@ -537,20 +537,23 @@ createApp({
         });
 
         const filteredPegawai = computed(() => {
+            // Sembunyiin pegawai yang semua asetnya udah "Transfer keluar" (alias udah resign/pindah)
             const pegawaiAktifSaja = pegawaiList.value.filter(pegawai => !pegawaiSudahKeluar(pegawai.id));
-            
-            return pegawaiAktifSaja.filter(pegawai => {
-                // Logika Filter Status Aset BARU
-                if (filterStatusPegawai.value === 'ada' && getPegawaiAllAssets(pegawai.id).length === 0) return false;
-                if (filterStatusPegawai.value === 'kosong' && getPegawaiAllAssets(pegawai.id).length > 0) return false;
 
-                // Pencarian
-                const query = searchQuery.value.toLowerCase().trim();
-                if (!query) return true;
-                return (
-                    String(pegawai.nama).toLowerCase().includes(query) || String(pegawai.nip).toLowerCase().includes(query) || String(pegawai.jabatan).toLowerCase().includes(query)
-                );
-            });
+            // Urutin abjad A-Z berdasarkan nama
+            const urutAbjad = (list) => [...list].sort((a, b) =>
+                String(a.nama).localeCompare(String(b.nama), 'id', { sensitivity: 'base' })
+            );
+
+            const query = searchQuery.value.toLowerCase().trim();
+            if (!query) return urutAbjad(pegawaiAktifSaja);
+
+            const hasilCari = pegawaiAktifSaja.filter(pegawai => (
+                String(pegawai.nama).toLowerCase().includes(query) ||
+                String(pegawai.nip).toLowerCase().includes(query) ||
+                String(pegawai.jabatan).toLowerCase().includes(query)
+            ));
+            return urutAbjad(hasilCari);
         });
 
         // Filter Tabel Riwayat
@@ -975,14 +978,17 @@ createApp({
         const availablePegawaiForTransfer = computed(() => {
             if (!modalSerahTerima.value.asset) return [];
             const currentHolderId = modalSerahTerima.value.asset.pemegangId;
-            return pegawaiList.value.filter(pegawai =>
+            const hasil = pegawaiList.value.filter(pegawai =>
                 Number(pegawai.id) !== Number(currentHolderId) &&
                 !pegawaiSudahKeluar(pegawai.id)
             );
+            // Urutin abjad A-Z berdasarkan nama
+            return hasil.sort((a, b) => String(a.nama).localeCompare(String(b.nama), 'id', { sensitivity: 'base' }));
         });
 
         const stafGudangList = computed(() => {
-            return pegawaiList.value;
+            // Urutin abjad A-Z berdasarkan nama
+            return [...pegawaiList.value].sort((a, b) => String(a.nama).localeCompare(String(b.nama), 'id', { sensitivity: 'base' }));
         });
 
         // =====================================================
@@ -1445,6 +1451,7 @@ createApp({
             const dataDipakai = allAssets.filter(a => a.pemegangId !== null && !(a.keterangan || '').toLowerCase().startsWith('transfer'));
             const dataTransferMasuk = allAssets.filter(a => (a.keterangan || '').toLowerCase().startsWith('transfer masuk'));
             const dataTransferKeluar = allAssets.filter(a => (a.keterangan || '').toLowerCase().startsWith('transfer keluar'));
+            const dataSewa = allAssets.filter(a => (a.keterangan || '').toLowerCase().startsWith('sewa'));
 
             // Daftar sheet yang akan dibuat
             const sheetCategories = [
@@ -1452,7 +1459,8 @@ createApp({
                 { title: 'Di Gudang', data: dataGudang },
                 { title: 'Dipakai', data: dataDipakai },
                 { title: 'Transfer Masuk', data: dataTransferMasuk },
-                { title: 'Transfer Keluar', data: dataTransferKeluar }
+                { title: 'Transfer Keluar', data: dataTransferKeluar },
+                { title: 'Sewa', data: dataSewa }
             ];
 
             const wb = XLSX.utils.book_new();

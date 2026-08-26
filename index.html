@@ -186,19 +186,16 @@
                                 <p class="text-lg font-bold text-slate-800 leading-tight">{{ availableCount }} <span class="text-xs font-normal text-slate-500">unit</span></p>
                             </div>
                         </div>
-                        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-3">
-                            <div class="w-9 h-9 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center font-bold text-sm"><i class="fa-solid fa-circle-xmark"></i></div>
+                        <button type="button" @click="exportExcel" class="bg-white hover:bg-emerald-50 p-3.5 rounded-xl border border-slate-200 hover:border-emerald-300 shadow-sm flex items-center space-x-3 transition text-left w-full">
+                        <div class="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-sm"><i class="fa-solid fa-file-excel"></i></div>
                             <div>
-                                <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Rusak Berat</p>
-                                <p class="text-lg font-bold text-slate-800 leading-tight">{{ visibleAssets.filter(a => a.kondisi === 'Rusak Berat').length }} <span class="text-xs font-normal text-slate-500">unit</span></p>
-                            </div>
+                            <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Export</p>
+                            <p class="text-lg font-bold text-slate-800 leading-tight">Excel</p>
                         </div>
+                        </button>
+
                     </div>
-                    <!-- Export Excel -->
-                    <button type="button" class="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm border border-emerald-700 flex flex-col items-center justify-center shrink-0 w-[68px] h-[68px] transition" title="Export to Excel" @click.prevent="exportExcel">
-                        <i class="fa-solid fa-file-excel text-[22px] mb-1"></i>
-                        <span class="text-[9px] font-bold uppercase tracking-wider">Excel</span>
-                    </button>
+                
                 </div>
 
                 <!-- Panel Nav & Search -->
@@ -904,8 +901,8 @@
                                         <div>
                                             <label class="block text-[10px] font-bold text-slate-600 mb-1">Pihak tekMIRA</label>
                                             <div class="space-y-2">
-                                                <div class="flex items-center space-x-2"><span class="text-xs font-bold text-slate-400">1.</span><select v-model="modalTKTM.pemeriksaTekmira1" class="w-full text-xs p-2 rounded-lg border border-slate-300"><option value="">-- Pilih Pegawai --</option><option v-for="p in pegawaiList" :key="p.id" :value="p.id">{{ p.nama }}</option></select></div>
-                                                <div class="flex items-center space-x-2"><span class="text-xs font-bold text-slate-400">2.</span><select v-model="modalTKTM.pemeriksaTekmira2" class="w-full text-xs p-2 rounded-lg border border-slate-300"><option value="">-- Pilih Pegawai --</option><option v-for="p in pegawaiList" :key="p.id" :value="p.id">{{ p.nama }}</option></select></div>
+                                                <div class="flex items-center space-x-2"><span class="text-xs font-bold text-slate-400">1.</span><select v-model="modalTKTM.pemeriksaTekmira1" class="w-full text-xs p-2 rounded-lg border border-slate-300"><option value="">-- Pilih Pegawai --</option><option v-for="p in modalTKTM.pemeriksaTekmira1" :key="p.id" :value="p.id">{{ p.nama }}</option></select></div>
+                                                <div class="flex items-center space-x-2"><span class="text-xs font-bold text-slate-400">2.</span><select v-model="modalTKTM.pemeriksaTekmira2" class="w-full text-xs p-2 rounded-lg border border-slate-300"><option value="">-- Pilih Pegawai --</option><option v-for="p in modalTKTM.pemeriksaTekmira2" :key="p.id" :value="p.id">{{ p.nama }}</option></select></div>
                                             </div>
                                         </div>
                                     </div>
