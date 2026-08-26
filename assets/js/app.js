@@ -818,55 +818,75 @@ createApp({
         // LOGIKA MODAL TRANSFER KELUAR (TKTM) DARI PEGAWAI
         // =====================================================
         const modalTKTM = ref({
-            show: false,
-            pegawaiId: null,
-            namaPegawai: '',
-            asetList: [],
-            selectedAsetId: '',
-            tujuan: '',
-            nomorSurat: '' // <-- Tambahan state baru
+            show: false, pegawaiId: null, namaPegawai: '', asetList: [], selectedAsetId: '',
+            tujuan: '', nilaiPerolehan: '', tanggal: '', 
+            nomorPenelitian: '', nomorVerifikasi: '',
+            pemeriksaTekmira1: '', pemeriksaTekmira2: '', pemeriksaTujuan1: '', pemeriksaTujuan2: '',
+            petinggiTujuan: '', petinggiTekmira: 'Daman',
+            fotoBarangUrls: [], fotoLabelUrls: [] // <-- Ubah jadi Array (pakai 's')
         });
 
         const openModalTKTM = (pegawai) => {
             const empId = pegawai.id;
             let list = [];
-            
             Object.values(db.value).forEach(kategoriAssets => {
-                const asetAktif = kategoriAssets.filter(a => 
-                    a.pemegangId === empId && 
-                    (!a.keterangan || !String(a.keterangan).toLowerCase().includes('transfer keluar'))
-                );
+                const asetAktif = kategoriAssets.filter(a => Number(a.pemegangId) === Number(empId) && (!a.keterangan || !String(a.keterangan).toLowerCase().includes('transfer keluar')));
                 list = list.concat(asetAktif);
             });
 
-            // Siapkan template nomor surat default
             const bln = String(new Date().getMonth() + 1).padStart(2, '0');
             const thn = new Date().getFullYear();
-            const noSuratDefault = `VRF-TKTM/${bln}/GDG/${thn}`;
-
+            
             modalTKTM.value = {
-                show: true,
-                pegawaiId: empId,
-                namaPegawai: pegawai.nama,
-                asetList: list,
-                selectedAsetId: '', 
-                tujuan: '',
-                nomorSurat: noSuratDefault // <-- Isi otomatis ke modal
+                show: true, pegawaiId: empId, namaPegawai: pegawai.nama, asetList: list, selectedAsetId: '', 
+                tujuan: '', nilaiPerolehan: '', 
+                tanggal: new Date().toISOString().slice(0, 10), 
+                nomorPenelitian: `77.BA/BN.10/DBR/${thn}`, 
+                nomorVerifikasi: `78.BA/BN.10/DBR/${thn}`,
+                pemeriksaTekmira1: '', pemeriksaTekmira2: '', pemeriksaTujuan1: '', pemeriksaTujuan2: '',
+                petinggiTujuan: '', petinggiTekmira: 'Daman',
+                fotoBarangUrls: [], fotoLabelUrls: [] // <-- Reset Array
             };
         };
 
-        const submitTKTM = async () => {
-            const { selectedAsetId, tujuan, asetList, pegawaiId, nomorSurat } = modalTKTM.value;
-            const asset = asetList.find(a => a.id === selectedAsetId);
-            if (!asset) return;
+        const prosesTransferKeluar = (asset) => {
+            modalPegawai.value.show = false;
+            
+            const pegawai = getPegawaiInfo(asset.pemegangId);          
+            if (pegawai) {
+                openModalTKTM(pegawai);
+                modalTKTM.value.selectedAsetId = asset.id;
+            }
+        };
 
-            const combinedKeterangan = `Transfer keluar - ${tujuan.trim()}`;
+        const handleFotoTktm = (event, jenis) => {
+            const files = Array.from(event.target.files);
+            const newUrls = files.map(file => URL.createObjectURL(file));
+
+            if (jenis === 'barang') {
+                // Gabungin array foto lama sama foto yang baru di-upload
+                modalTKTM.value.fotoBarangUrls = [...modalTKTM.value.fotoBarangUrls, ...newUrls];
+            }
+            if (jenis === 'label') {
+                modalTKTM.value.fotoLabelUrls = [...modalTKTM.value.fotoLabelUrls, ...newUrls];
+            }
+            
+            event.target.value = '';
+        };
+
+        const submitTKTM = async () => {
+            const m = modalTKTM.value;
+            const asset = m.asetList.find(a => Number(a.id) === Number(m.selectedAsetId));
+            if (!asset) { showToast('Pilih aset terlebih dahulu!', true); return; }
+
+            const combinedKeterangan = `Transfer keluar - ${m.tujuan.trim()}`;
             const adminGudang = stafGudangList.value[0] || { nama: 'Admin BMN', nip: '-', jabatan: 'Staf' };
-            const oldPegawai = getPegawaiInfo(pegawaiId);
-            const tgl = new Date().toISOString().slice(0, 10);
+            const oldPegawai = getPegawaiInfo(m.pegawaiId);
+            
+            // <-- Tanggal dari input form, bukan dibikin baru lagi
+            const tgl = m.tanggal; 
 
             try {
-                // 1. Lepaskan aset dari pegawai (Pindah ke Gudang & Ubah Keterangan)
                 const payload = {
                     id: asset.id, jenis: asset.jenis, kode_barang: asset.kodeBarang,
                     nup_baru: asset.nup_baru || asset.nup || '', merek: asset.merek,
@@ -876,54 +896,31 @@ createApp({
                 };
                 await apiRequest('aset.php', { method: 'PUT', body: JSON.stringify(payload) });
 
-                // 2. Catat ke tabel Riwayat Surat (MUTASI)
-                await apiRequest('mutasi.php', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        aset_id: asset.id,
-                        tanggal: tgl,
-                        pemegang_lama_id: pegawaiId, 
-                        pemegang_baru_id: null,      
-                        jenis_transaksi: 'LAINNYA',  
-                        kondisi: asset.kondisi,
-                        nomor_bast: nomorSurat, // <-- Menggunakan inputan dari user
-                        keterangan: combinedKeterangan
-                    })
-                });
+                await apiRequest('mutasi.php', { method: 'POST', body: JSON.stringify({ aset_id: asset.id, tanggal: tgl, pemegang_lama_id: m.pegawaiId, pemegang_baru_id: null, jenis_transaksi: 'LAINNYA', kondisi: asset.kondisi, nomor_bast: m.nomorPenelitian, keterangan: 'BA Penelitian Fisik - ' + m.tujuan.trim() }) });
+                await apiRequest('mutasi.php', { method: 'POST', body: JSON.stringify({ aset_id: asset.id, tanggal: tgl, pemegang_lama_id: m.pegawaiId, pemegang_baru_id: null, jenis_transaksi: 'LAINNYA', kondisi: asset.kondisi, nomor_bast: m.nomorVerifikasi, keterangan: 'BA Verifikasi Aset - ' + m.tujuan.trim() }) });
                 
                 await Promise.all([refreshAssets(), refreshHistory()]);
-                modalTKTM.value.show = false;
-                showToast('Aset berhasil ditransfer & Surat Verifikasi dibuat.');
+                m.show = false;
+                showToast('Aset ditransfer & 2 Dokumen berhasil dibuat.');
 
-                // 3. Tampilkan Pop-Up Print (Surat Verifikasi)
                 printData.value = {
-                    show: true,
-                    jenisTransaksi: 'LAINNYA',
-                    printMode: 'VERIFIKASI', 
-                    tanggal: tgl,
-                    kategoriLabel: asset.jenis,
-                    kodeBarang: asset.kodeBarang,
-                    nup: asset.nup_baru || asset.nup,
-                    merekTipe: `${asset.merek} ${asset.tipe}`.trim(),
-                    tahun: asset.tahun,
-                    kondisi: asset.kondisi,
-                    nomorBast: nomorSurat, // <-- Menggunakan inputan dari user
-                    pemegangLamaNama: oldPegawai?.nama || '-',
-                    pemegangLamaNip: oldPegawai?.nip || '-',
-                    pemegangLamaJabatan: oldPegawai?.jabatan || '-',
-                    pemegangBaruNama: tujuan.trim(), 
-                    pemegangBaruNip: '-',
-                    pemegangBaruJabatan: '-',
-                    adminNama: adminGudang.nama,
-                    adminNip: adminGudang.nip,
-                    adminJabatan: adminGudang.jabatan
+                    show: true, jenisTransaksi: 'LAINNYA', printMode: 'PENELITIAN',
+                    tanggal: tgl, kategoriLabel: asset.jenis, kodeBarang: asset.kodeBarang, nup: asset.nup_baru || asset.nup,
+                    merekTipe: `${asset.merek} ${asset.tipe}`.trim(), tahun: asset.tahun, kondisi: asset.kondisi,
+                    nomorPenelitian: m.nomorPenelitian, nomorVerifikasi: m.nomorVerifikasi, nilaiPerolehan: m.nilaiPerolehan,
+                    pemeriksaTekmira1: m.pemeriksaTekmira1 ? getPegawaiName(m.pemeriksaTekmira1) : '-',
+                    pemeriksaTekmira2: m.pemeriksaTekmira2 ? getPegawaiName(m.pemeriksaTekmira2) : '-',
+                    pemeriksaTujuan1: m.pemeriksaTujuan1 || '-', 
+                    pemeriksaTujuan2: m.pemeriksaTujuan2 || '-',
+                    petinggiTujuan: m.petinggiTujuan, petinggiTekmira: m.petinggiTekmira,
+                    fotoBarangUrls: m.fotoBarangUrls, fotoLabelUrls: m.fotoLabelUrls,
+                    pemegangLamaNama: oldPegawai?.nama || '-', pemegangLamaNip: oldPegawai?.nip || '-', pemegangLamaJabatan: oldPegawai?.jabatan || '-',
+                    pemegangBaruNama: m.tujuan.trim(), pemegangBaruNip: '-', pemegangBaruJabatan: '-',
+                    adminNama: adminGudang.nama, adminNip: adminGudang.nip, adminJabatan: adminGudang.jabatan
                 };
 
                 setTimeout(() => document.getElementById('print-section')?.scrollIntoView({ behavior: 'smooth' }), 200);
-
-            } catch (error) {
-                showToast(`Gagal memproses TKTM: ${error.message}`, true);
-            }
+            } catch (error) { showToast(`Gagal memproses TKTM: ${error.message}`, true); }
         };
 
         // =====================================================
@@ -1797,10 +1794,10 @@ createApp({
             modalProfil, formProfil, openProfilModal, saveProfil,
             modalLogout, openLogoutModal, confirmLogout, itemsPerPage,
             exportExcel, getLastMutationDate, asetDipegang, 
-            modalTKTM, openModalTKTM, submitTKTM, filterJenisTransaksi,
+            modalTKTM, openModalTKTM, submitTKTM, handleFotoTktm, filterJenisTransaksi,
 
             filterSurat, filterKondisiRiwayat, filteredHistory, fileInputBukti, filterJenisAset, filterStatusPegawai, triggerUpload, 
-            handleFileUpload, openPdf, hasBukti, selectedHistory, selectAllHistory, hapusBanyakHistory,
+            handleFileUpload, openPdf, hasBukti, selectedHistory, selectAllHistory, hapusBanyakHistory, prosesTransferKeluar
         };
     }
 }).mount('#app');
