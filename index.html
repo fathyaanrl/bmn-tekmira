@@ -901,8 +901,8 @@
                                         <div>
                                             <label class="block text-[10px] font-bold text-slate-600 mb-1">Pihak tekMIRA</label>
                                             <div class="space-y-2">
-                                                <div class="flex items-center space-x-2"><span class="text-xs font-bold text-slate-400">1.</span><select v-model="modalTKTM.pemeriksaTekmira1" class="w-full text-xs p-2 rounded-lg border border-slate-300"><option value="">-- Pilih Pegawai --</option><option v-for="p in modalTKTM.pemeriksaTekmira1" :key="p.id" :value="p.id">{{ p.nama }}</option></select></div>
-                                                <div class="flex items-center space-x-2"><span class="text-xs font-bold text-slate-400">2.</span><select v-model="modalTKTM.pemeriksaTekmira2" class="w-full text-xs p-2 rounded-lg border border-slate-300"><option value="">-- Pilih Pegawai --</option><option v-for="p in modalTKTM.pemeriksaTekmira2" :key="p.id" :value="p.id">{{ p.nama }}</option></select></div>
+                                                <select v-model="modalTKTM.pemeriksaTekmira1" class="w-full text-xs p-2 rounded-lg border border-slate-300"><option value="">-- Pilih Pegawai --</option><option v-for="p in stafGudangList" :key="p.id" :value="p.id">{{ p.nama }}</option></select>
+                                                <select v-model="modalTKTM.pemeriksaTekmira2" class="w-full text-xs p-2 rounded-lg border border-slate-300"><option value="">-- Pilih Pegawai --</option><option v-for="p in stafGudangList" :key="p.id" :value="p.id">{{ p.nama }}</option></select>
                                             </div>
                                         </div>
                                     </div>
