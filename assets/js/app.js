@@ -185,7 +185,31 @@ createApp({
         // =====================================================
         const currentCategory = ref('laptops');
         const currentTab = ref('assets');
-        const showDropdown = ref(false); // Untuk menu titik tiga
+
+        // Fungsi pinter buat pindah tab sekaligus ngereset semua filter
+        const changeTab = (tabName) => {
+            currentTab.value = tabName;
+            printData.value.show = false; // Tutup mode print otomatis
+            
+            // Reset semua kotak pencarian & dropdown filter
+            searchQuery.value = '';
+            filterStatus.value = 'all';
+            filterKondisi.value = 'all';
+            filterKeterangan.value = 'all';
+            filterJenisAset.value = 'all'; 
+            filterStatusPegawai.value = 'all';
+            filterSurat.value = 'all';
+            filterJenisTransaksi.value = 'all';
+            filterKondisiRiwayat.value = 'all';
+
+            // Matiin juga mode "Pilih Banyak" (Checkbox) biar rapi
+            isSelectMode.value = false;
+            selectedAssets.value = [];
+            selectedPegawai.value = [];
+            selectedHistory.value = [];
+        };
+
+        const showDropdown = ref(false); 
         const itemsPerPage = ref(25);
 
         const searchQuery = ref('');
@@ -1520,16 +1544,13 @@ createApp({
         };
 
         const modalLogout = ref({ show: false });
-
         const openLogoutModal = () => {
             modalLogout.value.show = true;
         };
-
         
         const confirmLogout = () => {
 
             modalLogout.value.show = false;
-
             isLoggedIn.value = false;
 
             sessionStorage.removeItem(
@@ -1546,8 +1567,6 @@ createApp({
         // =====================================================
         // EXPORT EXCEL
         // =====================================================
-         // Sama kayak filteredAssets, tapi KHUSUS buat export -> gak nyembunyiin 'Transfer keluar'
-        // walau lagi di filter 'Semua', soalnya laporan Excel emang harus lengkap.
         const assetsForExport = computed(() => {
             return activeAssets.value.filter(asset => {
                 if (filterKeterangan.value !== 'all') {
@@ -1579,51 +1598,70 @@ createApp({
         });
 
         const exportExcel = () => {
-            // 1. Ambil semua data (master) tanpa filter
-            const allAssets = activeAssets.value.sort((a, b) => Number(b.id) - Number(a.id));
+            // 1. Ambil semua data (Copy array) lalu URUTKAN PAKSA dari Terbaru (ID Terbesar) ke Terlama
+            // Karena ini jadi patokan, SEMUA sheet di bawahnya otomatis bakal ikut urutan ini.
+            const allAssets = [...activeAssets.value].sort((a, b) => Number(b.id) - Number(a.id));
 
             if (!allAssets.length) {
                 showToast('Tidak ada data untuk di-export!', true);
                 return;
             }
 
-            // 2. Kelompokkan Data Berdasarkan Kategori/Status
-            const dataGudang = allAssets.filter(a => a.pemegangId === null);
-            const dataDipakai = allAssets.filter(a => a.pemegangId !== null && !(a.keterangan || '').toLowerCase().startsWith('transfer'));
-            const dataTransferMasuk = allAssets.filter(a => (a.keterangan || '').toLowerCase().startsWith('transfer masuk'));
+            // 2. PISAHKAN ASET MATI SURI (TKTM) DENGAN ASET AKTIF
             const dataTransferKeluar = allAssets.filter(a => (a.keterangan || '').toLowerCase().startsWith('transfer keluar'));
-            const dataSewa = allAssets.filter(a => (a.keterangan || '').toLowerCase().startsWith('sewa'));
+            const activeOnly = allAssets.filter(a => !(a.keterangan || '').toLowerCase().startsWith('transfer keluar'));
 
-            // Daftar sheet yang akan dibuat
+            // 3. Kelompokkan Data Aktif Berdasarkan Status
+            const dataGudang = activeOnly.filter(a => a.pemegangId === null);
+            const dataDipakai = activeOnly.filter(a => a.pemegangId !== null);
+            const dataTransferMasuk = activeOnly.filter(a => (a.keterangan || '').toLowerCase().startsWith('transfer masuk'));
+            const dataSewa = activeOnly.filter(a => (a.keterangan || '').toLowerCase().startsWith('sewa'));
+
             const sheetCategories = [
-                { title: 'Semua Data', data: allAssets },
+                { title: 'Semua Aset', data: allAssets },     
                 { title: 'Di Gudang', data: dataGudang },
                 { title: 'Dipakai', data: dataDipakai },
                 { title: 'Transfer Masuk', data: dataTransferMasuk },
-                { title: 'Transfer Keluar', data: dataTransferKeluar },
-                { title: 'Sewa', data: dataSewa }
+                { title: 'Sewa', data: dataSewa },
+                { title: 'Transfer Keluar', data: dataTransferKeluar }
             ];
-
+            
             const wb = XLSX.utils.book_new();
             const judulKategori = categoryLabel.value.toUpperCase();
 
-            // 3. Helper Function untuk Mengisi & Memoles Setiap Sheet
+            // 5. Helper Function untuk Mengisi & Memoles Setiap Sheet
             const createStyledSheet = (sheetTitle, assetList) => {
                 const headerRow = [
                     'NO', 'USER', 'KODE BARANG', 'NUP BARU', 'MERK & TIPE', 'TAHUN', 'TANGGAL BAST', 'KONDISI', 'KETERANGAN'
                 ];
 
-                const dataRows = assetList.map((asset, index) => [
-                    index + 1,
-                    asset.pemegangId ? getPegawaiName(asset.pemegangId) : 'Gudang BMN TekMira',
-                    asset.kodeBarang ? String(asset.kodeBarang) : '-',
-                    asset.nup ? String(asset.nup) : '-',
-                    `${asset.merek || ''} ${asset.tipe || ''}`.trim() || '-',
-                    asset.tahun || '-',
-                    getLastMutationDate(asset),
-                    asset.kondisi || '-',
-                    asset.keterangan || '-'
-                ]);
+                const dataRows = assetList.map((asset, index) => {
+                    // LOGIKA PENCARI NAMA USER (PEGAWAI ASLI)
+                    let namaUser = 'Gudang BMN TekMira'; // Default kalau di gudang
+                    
+                    if (asset.pemegangId) {
+                        namaUser = getPegawaiName(asset.pemegangId);
+                    } else if ((asset.keterangan || '').toLowerCase().includes('transfer keluar')) {
+                        const hist = historyList.value.find(h => h.aset_id === asset.id);
+                        if (hist && hist.pemegangLamaNama && hist.pemegangLamaNama !== 'Gudang BMN TekMira') {
+                            namaUser = hist.pemegangLamaNama;
+                        } else {
+                            namaUser = asset.pemegangNama || '-';
+                        }
+                    }
+
+                    return [
+                        index + 1,
+                        namaUser,
+                        asset.kodeBarang ? String(asset.kodeBarang) : '-',
+                        asset.nup ? String(asset.nup) : '-',
+                        `${asset.merek || ''} ${asset.tipe || ''}`.trim() || '-',
+                        asset.tahun || '-',
+                        getLastMutationDate(asset),
+                        asset.kondisi || '-',
+                        asset.keterangan || '-'
+                    ];
+                });
 
                 const aoa = [
                     [`DAFTAR ASET ${judulKategori} - ${sheetTitle.toUpperCase()}`],
@@ -1705,7 +1743,6 @@ createApp({
                     });
                 }
 
-                // Style Baris Data (Zebra Striping)
                 for (let r = headerRowIndex + 1; r <= lastDataRowIndex; r++) {
                     const isEven = (r - headerRowIndex) % 2 === 0;
                     const bgRowColor = isEven ? 'F8FAFC' : 'FFFFFF';
@@ -1725,7 +1762,6 @@ createApp({
                     }
                 }
 
-                // AutoFilter
                 ws['!autofilter'] = {
                     ref: XLSX.utils.encode_range(
                         { r: headerRowIndex, c: 0 },
@@ -1736,15 +1772,11 @@ createApp({
                 return ws;
             };
 
-            // 4. Generate Semua Sheet dan Masukkan ke Workbook
             sheetCategories.forEach(cat => {
-                // Hanya buat tab jika ada datanya (atau tetap buat meski kosong jika ingin lengkap)
                 const ws = createStyledSheet(cat.title, cat.data);
-                // Nama sheet di Excel maksimal 31 karakter
                 XLSX.utils.book_append_sheet(wb, ws, cat.title.substring(0, 31));
             });
 
-            // 5. Download File Excel
             const namaFile = `Laporan_Aset_${judulKategori.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.xlsx`;
             XLSX.writeFile(wb, namaFile);
 
@@ -1923,7 +1955,7 @@ createApp({
             isLoggedIn, loginUsername, loginPassword, loginError, currentUsername, handleLogin,
             modalForgotPassword, forgotUsername, forgotNewPassword, forgotConfirmPassword, openForgotPassword, resetPassword,
             
-            currentCategory, currentTab, showDropdown, searchQuery, filterStatus, filterKondisi, toast,
+            currentCategory, currentTab, changeTab, showDropdown, searchQuery, filterStatus, filterKondisi, toast,
             categoryLabel, categoryIcon, db, activeAssets, visibleAssets, allAssets, pegawaiList, historyList, assignedCount, availableCount, damagedCount,
             getPegawaiName, getPegawaiNip, getPegawaiInitials, getPegawaiAllAssets, getConditionBadgeClass, getConditionIconClass,
             filteredAssets, filteredPegawai, filterKeterangan,
