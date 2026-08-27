@@ -1626,7 +1626,7 @@ createApp({
                 ]);
 
                 const aoa = [
-                    [`DAFTAR PEMEGANG ${judulKategori} - ${sheetTitle.toUpperCase()}`],
+                    [`DAFTAR ASET ${judulKategori} - ${sheetTitle.toUpperCase()}`],
                     ['BALAI BESAR PENGUJIAN MINERAL DAN BATUBARA TEKMIRA'],
                     [],
                     headerRow,
