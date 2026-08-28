@@ -24,7 +24,6 @@ if ($method === "POST") {
         exit;
     }
     try {
-        // Hapus unit_kerja dari proses Insert
         $stmt = $pdo->prepare("INSERT INTO pegawai (nama, nip, jabatan) VALUES (:nama, :nip, :jabatan)");
         $stmt->execute([
             ":nama" => $input["nama"],

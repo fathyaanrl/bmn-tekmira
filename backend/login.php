@@ -1,9 +1,6 @@
 <?php
-
 session_start();
-
 header("Content-Type: application/json; charset=UTF-8");
-
 require_once "config.php";
 
 $data = json_decode(file_get_contents("php://input"), true);
@@ -20,7 +17,6 @@ if ($usernameInput === "" || $passwordInput === "") {
 }
 
 try {
-
     $stmt = $pdo->prepare("
         SELECT id, username, password
         FROM admin
@@ -29,7 +25,6 @@ try {
     ");
 
     $stmt->execute([$usernameInput]);
-
     $admin = $stmt->fetch();
 
     if (!$admin) {
@@ -40,7 +35,6 @@ try {
         exit;
     }
 
-    // Karena password di database kamu masih plaintext
     if ($passwordInput !== $admin["password"]) {
         echo json_encode([
             "success" => false,
@@ -49,7 +43,6 @@ try {
         exit;
     }
 
-    // Simpan login ke SESSION
     $_SESSION["admin_id"] = $admin["id"];
     $_SESSION["admin_username"] = $admin["username"];
 
@@ -62,7 +55,6 @@ try {
 } catch (PDOException $e) {
 
     http_response_code(500);
-
     echo json_encode([
         "success" => false,
         "message" => "Terjadi kesalahan database.",

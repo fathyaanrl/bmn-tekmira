@@ -47,7 +47,6 @@ if ($method === "POST") {
     $keterangan = !empty($input["keterangan"]) ? $input["keterangan"] : null;
     $nilaiPerolehan = !empty($input["nilai_perolehan"]) ? $input["nilai_perolehan"] : null;
     
-    // Tangkap data nama pemeriksa yang dikirim dari JS
     $lampiranFoto = !empty($input["lampiran_foto"]) ? $input["lampiran_foto"] : null;
 
     $jenisValid = ["PEMINJAMAN", "PENGEMBALIAN", "MUTASI", "LAINNYA"];

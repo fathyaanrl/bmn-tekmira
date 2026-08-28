@@ -13,23 +13,20 @@
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen">
     <div id="app" v-cloak class="flex flex-col min-h-screen pb-12">
-        <!-- ============================= -->
         <!-- HALAMAN LOGIN -->
-        <!-- ============================= -->
-        <div v-if="!isLoggedIn" class="fixed inset-0 bg-slate-100 flex items-center justify-center z-[9999]">
-            <div class="w-full max-w-md px-6">
-                <div class="bg-white rounded-2xl shadow-xl p-8">
+        <div v-if="!isLoggedIn" class="fixed inset-0 flex items-center justify-center z-[9999] bg-cover bg-center" style="background-image: url('assets/img/tekmir.jpg');">
+            <div class="absolute inset-0 bg-slate-900/70"></div>
+            <div class="relative z-10 w-full max-w-md px-6">
+                <div class="bg-white rounded-2xl shadow-xl p-8">    
                     <!-- Logo -->
                     <div class="flex flex-col items-center justify-center space-y-2 mb-6">
                         <img src="assets/img/logo-esdm.png" alt="Logo ESDM" class="h-16 w-auto object-contain">
-
                         <div class="flex flex-col items-center text-center">
                             <h1 class="font-bold text-xl text-slate-900 leading-none">BMN tekMIRA</h1>
                             <p class="text-xs text-slate-500 mt-1">Sistem Pengelolaan Barang Berpemakai Perorangan</p>
                         </div>
                     </div>
 
-                    <!-- USERNAME -->
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-slate-700 mb-2">Username</label>
                         <div class="relative">
@@ -38,7 +35,6 @@
                         </div>
                     </div>
 
-                    <!-- Password -->
                     <div class="mb-2">
                         <label class="block text-sm font-medium text-slate-700 mb-2">Password</label>
                         <div class="relative">
@@ -47,27 +43,22 @@
                         </div>
                     </div>
 
-                    <!-- Lupa Password -->
                     <div class="text-right mb-6">
                         <button type="button" @click="openForgotPassword" class="text-sm text-amber-600 hover:text-amber-700 font-medium">Lupa Password?</button>
                     </div>
 
-                    <!-- BUTTON LOGIN -->
-                     <div class="flex justify-center">
+                    <div class="flex justify-center">
                         <button type="button" @click="handleLogin" class="w-1/2 bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 px-4 text-sm rounded-xl transition cursor-pointer">
                             <i class="fa-solid fa-right-to-bracket mr-2"></i>Login
                         </button>
                     </div>
 
-                    <!-- ERROR -->
                     <p v-if="loginError" class="text-red-500 text-sm text-center mt-4">{{ loginError }}</p>
                 </div>
             </div>
         </div>
 
-        <!-- ============================= -->
         <!-- MODAL LUPA PASSWORD -->
-        <!-- ============================= -->
         <div v-if="modalForgotPassword.show" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[10000]">
             <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-7">
                 <div class="flex justify-between items-start mb-6">
@@ -79,22 +70,18 @@
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
-
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-slate-700 mb-2">Username</label>
                     <input v-model="forgotUsername" type="text" placeholder="Masukkan username" class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400">
                 </div>
-
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-slate-700 mb-2">Password Baru</label>
                     <input v-model="forgotNewPassword" type="password" placeholder="Masukkan password baru" class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400">
                 </div>
-
                 <div class="mb-6">
                     <label class="block text-sm font-medium text-slate-700 mb-2">Konfirmasi Password</label>
                     <input v-model="forgotConfirmPassword" type="password" placeholder="Ulangi password baru" class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400">
                 </div>
-
                 <div class="flex justify-end gap-3">
                     <button @click="modalForgotPassword.show = false" class="px-5 py-3 border border-slate-300 rounded-xl">Batal</button>
                     <button @click="resetPassword" class="px-5 py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl">Reset Password</button>
@@ -102,10 +89,8 @@
             </div>
         </div>
 
-        <!-- ============================= -->
         <!-- DASHBOARD -->
-        <!-- ============================= -->
-        <div v-else>
+        <div v-if="isLoggedIn">
             <!-- Header -->
             <header class="bg-slate-900 text-white shadow-sm sticky top-0 z-30 no-print">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -115,10 +100,8 @@
                             <div class="flex flex-col">
                                 <h1 class="font-bold text-base leading-none">BMN tekMIRA</h1>
                                 <p class="text-[11px] text-slate-400 mt-1">Sistem Pengelolaan Barang Berpemakai Perorangan</p>
-                            </div>
-                               
+                            </div> 
                         </div>
-
                         <div class="flex items-center space-x-2">
                             <button @click="openAsetModal()" class="bg-yellow-600 hover:bg-yellow-500 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow-sm transition flex items-center space-x-1.5">
                                 <i class="fa-solid fa-plus text-xs"></i><span class="hidden sm:inline">Tambah Aset</span>
@@ -126,7 +109,6 @@
                             <button @click="openPegawaiModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3 py-2 rounded-lg shadow-sm transition flex items-center space-x-1.5">
                                 <i class="fa-solid fa-user-plus text-xs"></i><span class="hidden sm:inline">Tambah Pegawai</span>
                             </button>
-                            
                             <!-- Menu Titik Tiga -->
                             <div class="relative ml-2 pl-3 border-l border-slate-700">
                                 <button @click="showDropdown = !showDropdown" class="text-slate-300 hover:text-white hover:bg-slate-800 w-8 h-8 rounded-full flex items-center justify-center transition">
@@ -168,40 +150,77 @@
                     <button @click="toast.show = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
                 </div>
 
-                <!-- Stats Bar -->
-                <div class="flex flex-col md:flex-row gap-3 items-center">
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1 w-full">
-                        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-3">
-                            <div class="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm"><i class="fa-solid fa-boxes-stacked"></i></div>
+                <!-- Stats Bar (Grid 6 Kolom) -->
+                <div class="grid grid-cols-1 lg:grid-cols-6 gap-3 w-full mb-4">
+                    
+                    <!-- 1. Total Aset & Rincian (Makan 3 Porsi Lebar - 50% Layar) -->
+                    <div class="lg:col-span-3 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center p-3">
+                        <!-- Bagian Kiri: Angka Total (Jarak ke garis dipersempit) -->
+                        <div class="flex items-center space-x-2.5 pr-2">
+                            <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-lg shrink-0"><i class="fa-solid fa-boxes-stacked"></i></div>
                             <div>
                                 <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Total Aset</p>
-                                <p class="text-lg font-bold text-slate-800 leading-tight">{{ visibleAssets.length }} <span class="text-xs font-normal text-slate-500">unit</span></p>
+                                <p class="text-xl font-bold text-slate-800 leading-tight">{{ visibleAssets.length }} <span class="text-xs font-normal text-slate-500">unit</span></p>
                             </div>
                         </div>
-                        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-3">
-                            <div class="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-sm"><i class="fa-solid fa-user-check"></i></div>
-                            <div>
-                                <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Dipakai</p>
-                                <p class="text-lg font-bold text-slate-800 leading-tight">{{ assignedCount }} <span class="text-xs font-normal text-slate-500">unit</span></p>
-                            </div>
+                        
+                        <!-- Garis Pembatas Vertikal -->
+                        <div class="h-10 border-l border-slate-200 mx-1"></div>
+                        
+                        <!-- Bagian Kanan: Deretan Badge Rincian (Diperbesar & Diberi flex-1 agar mengisi ruang) -->
+                        <div class="flex flex-1 flex-wrap items-center gap-3 pl-3">
+                            <span class="flex items-center space-x-1.5 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 text-xs font-bold text-slate-600">
+                                <i class="fa-solid fa-laptop text-blue-500"></i>
+                                <span>Lap & NB: {{ visibleAssets.filter(a => a.jenis === 'Laptop' || a.jenis === 'Notebook').length }}</span>
+                            </span>
+                            <span class="flex items-center space-x-1.5 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 text-xs font-bold text-slate-600">
+                                <i class="fa-solid fa-desktop text-emerald-500"></i>
+                                <span>PC: {{ visibleAssets.filter(a => a.jenis === 'PC Unit').length }}</span>
+                            </span>
+                            <span class="flex items-center space-x-1.5 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 text-xs font-bold text-slate-600">
+                                <i class="fa-solid fa-tablet-screen-button text-amber-500"></i>
+                                <span>Tab: {{ visibleAssets.filter(a => a.jenis === 'Tablet').length }}</span>
+                            </span>
+                            <span class="flex items-center space-x-1.5 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 text-xs font-bold text-slate-600">
+                                <i class="fa-solid fa-mobile-screen text-rose-500"></i>
+                                <span>HP: {{ visibleAssets.filter(a => a.jenis === 'Telephone Mobile').length }}</span>
+                            </span>
                         </div>
-                        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-3">
-                            <div class="w-9 h-9 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-sm"><i class="fa-solid fa-warehouse"></i></div>
-                            <div>
-                                <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Di Gudang</p>
-                                <p class="text-lg font-bold text-slate-800 leading-tight">{{ availableCount }} <span class="text-xs font-normal text-slate-500">unit</span></p>
-                            </div>
-                        </div>
-                        <button type="button" @click="exportExcel" class="bg-white hover:bg-emerald-50 p-3.5 rounded-xl border border-slate-200 hover:border-emerald-300 shadow-sm flex items-center space-x-3 transition text-left w-full">
-                        <div class="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-sm"><i class="fa-solid fa-file-excel"></i></div>
-                            <div>
-                            <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Export</p>
-                            <p class="text-lg font-bold text-slate-800 leading-tight">Excel</p>
-                        </div>
-                        </button>
-
                     </div>
-                
+
+                    <!-- 2. Dipakai (1 Porsi) -->
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm flex items-center p-3">
+                        <div class="flex items-center space-x-2.5">
+                            <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-lg shrink-0"><i class="fa-solid fa-user-check"></i></div>
+                            <div>
+                                <p class="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Dipakai</p>
+                                <p class="text-xl font-bold text-slate-800 leading-tight">{{ visibleAssets.filter(a => a.pemegangId).length }} <span class="text-xs font-normal text-slate-500">unit</span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Di Gudang (1 Porsi) -->
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm flex items-center p-3">
+                        <div class="flex items-center space-x-2.5">
+                            <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-lg shrink-0"><i class="fa-solid fa-warehouse"></i></div>
+                            <div>
+                                <p class="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Di Gudang</p>
+                                <p class="text-xl font-bold text-slate-800 leading-tight">{{ visibleAssets.filter(a => !a.pemegangId && !(a.keterangan || '').toLowerCase().startsWith('transfer keluar')).length }} <span class="text-xs font-normal text-slate-500">unit</span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. Export Excel (1 Porsi) -->
+                    <button @click="exportExcel" class="bg-white rounded-xl border border-slate-200 shadow-sm flex items-center p-3 hover:bg-slate-50 transition w-full text-left group">
+                        <div class="flex items-center space-x-2.5">
+                            <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-lg shrink-0 group-hover:scale-110 transition-transform"><i class="fa-solid fa-file-excel"></i></div>
+                            <div>
+                                <p class="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Export</p>
+                                <p class="text-xl font-bold text-slate-800 leading-tight">Excel</p>
+                            </div>
+                        </div>
+                    </button>
+                    
                 </div>
 
                 <!-- Panel Nav & Search -->
@@ -213,7 +232,6 @@
                             <input type="text" v-model="searchQuery" placeholder="Cari data..." class="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-yellow-500 transition"/>
                             <button v-if="searchQuery" @click="searchQuery = ''" class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-circle-xmark"></i></button>
                         </div>
-                        
                         <div v-if="currentTab === 'assets'" class="flex flex-row items-center gap-2 w-full lg:w-auto shrink-0">
                             <select v-model="filterJenisAset" class="w-full lg:w-auto flex-1 lg:flex-none bg-slate-50 border border-slate-200 text-slate-700 px-3 py-2.5 rounded-xl transition font-medium text-[11px] focus:ring-2 focus:ring-yellow-500 cursor-pointer">
                                 <option value="all">Semua Jenis</option>
@@ -276,13 +294,11 @@
                                     <option value="Transfer keluar" class="text-slate-800 bg-white">Transfer Keluar</option>
                                 </select>
                             </div>
-
                             <div v-if="currentTab === 'mutasi'" class="bg-slate-100 p-1 rounded-lg flex flex-wrap items-center gap-0.5 justify-center sm:justify-start w-full sm:w-auto">
                                 <button @click="filterSurat = 'all'" :class="filterSurat === 'all' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'" class="flex-1 sm:flex-none px-3 py-1.5 rounded-md font-medium transition text-[11px] text-center">Semua</button>
                                 <button @click="filterSurat = 'SIP'" :class="filterSurat === 'SIP' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'" class="flex-1 sm:flex-none px-3 py-1.5 rounded-md font-medium transition text-[11px] text-center">SIP</button>
                                 <button @click="filterSurat = 'BAST'" :class="filterSurat === 'BAST' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'" class="flex-1 sm:flex-none px-3 py-1.5 rounded-md font-medium transition text-[11px] text-center">BAST</button>
                             </div>
-
                             <div class="flex items-center space-x-2 w-full sm:w-auto mt-2 sm:mt-0">
                                 <button @click="toggleSelectMode" :class="isSelectMode ? 'bg-slate-200 text-slate-700' : 'bg-white border-slate-300 text-slate-700'" class="w-full sm:w-auto justify-center border px-3.5 py-1.5 rounded-lg font-bold text-[11px] flex items-center space-x-1.5 shadow-sm hover:bg-slate-50 transition"><i class="fa-solid" :class="isSelectMode ? 'fa-xmark' : 'fa-list-check'"></i><span>{{ isSelectMode ? 'Batal' : 'Pilih Data' }}</span></button>
                                 <button v-if="isSelectMode && currentTab === 'assets' && selectedAssets.length > 0" @click="hapusBanyakAset" class="w-full sm:w-auto justify-center bg-rose-50 text-rose-600 border-rose-200 px-3 py-1.5 rounded-lg font-bold text-[11px] flex items-center space-x-1.5 shadow-sm border"><i class="fa-solid fa-trash-can"></i><span>Hapus ({{ selectedAssets.length }})</span></button>
@@ -333,14 +349,11 @@
                                     <td v-if="isSelectMode" class="py-3 px-3 text-center">
                                         <input type="checkbox" :value="asset.id" v-model="selectedAssets" class="cursor-pointer" :disabled="asset.keterangan && asset.keterangan.toLowerCase().includes('transfer keluar')">
                                     </td>
-                                    
                                     <td class="py-3 px-2 text-center text-[11px] font-bold text-slate-400">{{ index + 1 }}</td>
-                                    
                                     <td class="py-3 px-4">
                                         <div class="font-mono text-slate-800 font-bold">{{ asset.kodeBarang }}</div>
                                         <div class="text-[11px] text-slate-500 mt-0.5">NUP: <span class="font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200 font-bold text-slate-800">{{ asset.nup }}</span></div>
                                     </td>
-                                    
                                     <td class="py-3 px-4">
                                         <div class="flex items-center space-x-1.5 mb-0.5">
                                             <span class="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded bg-indigo-100 text-indigo-700">{{ asset.jenis }}</span>
@@ -348,16 +361,13 @@
                                         </div>
                                         <div class="text-[11px] text-slate-500">{{ asset.tipe }}</div>
                                         <div class="text-[10px] text-slate-400 font-mono mt-0.5">Tahun: {{ asset.tahun || '-' }}</div>
-                                    </td>
-                                    
+                                    </td>                                    
                                     <td class="px-4 py-3 whitespace-nowrap text-[11px] text-slate-600 font-medium">
                                         {{ getLastMutationDate(asset) }}
-                                    </td>
-                                    
+                                    </td>                                    
                                     <td class="px-4 py-3 text-[11px] text-slate-500 text-center max-w-[120px] truncate" :title="asset.keterangan">
                                         {{ asset.keterangan || '-' }}
                                     </td>
-                                    
                                     <td class="py-3 px-4 text-center">
                                         <span class="px-2 py-0.5 rounded-full font-semibold text-[10px] inline-flex items-center space-x-1" :class="getConditionBadgeClass(asset.kondisi)">
                                             <i class="fa-solid text-[9px]" :class="getConditionIconClass(asset.kondisi)"></i>
@@ -386,14 +396,13 @@
                                         <template v-else>
                                             <span class="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-200 inline-flex items-center space-x-1 shadow-sm">
                                                 <i class="fa-solid fa-warehouse text-[10px]"></i>
-                                                <span>Di Gudang BMN (Siap)</span>
+                                                <span>Di Gudang BMN</span>
                                             </span>
                                         </template>
-                                    </td>
-                                    
+                                    </td>                                    
                                     <td class="py-3 px-4 text-center">
                                         <div v-if="asset.keterangan && asset.keterangan.toLowerCase().includes('transfer keluar')" class="text-[10px] text-slate-500 font-semibold italic border border-slate-300 bg-slate-200 px-2 py-1.5 rounded-md flex items-center justify-center">
-                                            <i class="fa-solid fa-lock mr-1.5"></i> Dibekukan
+                                            <i class="fa-solid fa-lock mr-1.5"></i> Tanpa Aksi
                                         </div>
                                         <div v-else class="flex items-center justify-center space-x-1">
                                             <button @click="openSerahTerimaModal(asset)" class="bg-slate-900 hover:bg-yellow-600 text-white text-[11px] px-2.5 py-1 rounded-md transition font-medium flex items-center space-x-1 shadow-sm" :title="asset.pemegangId ? 'Kembalikan/Pindah Tangan' : 'Pinjamkan ke Pegawai'">
@@ -478,29 +487,30 @@
                                 <tr class="bg-slate-800 text-slate-200 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-700">
                                     <th v-if="isSelectMode" class="py-3 px-3 w-8 text-center"><input type="checkbox" v-model="selectAllHistory" class="cursor-pointer"></th>
                                     <th class="py-3 px-2 w-8 text-center">No</th>
-                                    <th class="px-4 py-3 text-left font-semibold w-40 cursor-pointer hover:bg-slate-800 transition select-none" @click="toggleHistorySort" title="Klik untuk mengurutkan Terbaru/Terlama">
+                                    <th class="px-3 py-3 text-left font-semibold w-28 cursor-pointer hover:bg-slate-800 transition select-none" @click="toggleHistorySort" title="Klik untuk mengurutkan Terbaru/Terlama">
                                         <div class="flex items-center space-x-2">
-                                            <span>HARI / TANGGAL</span>
+                                            <span>TANGGAL</span>
                                             <i class="fa-solid text-[10px] text-slate-300" :class="sortHistoryOrder === 'desc' ? 'fa-arrow-down-wide-short' : 'fa-arrow-up-short-wide'"></i>
                                         </div>
                                     </th>
                                     <th class="py-2.5 px-4">Nama Barang</th>
-                                    <th class="py-2.5 px-4">User</th>
-                                    <th class="py-2.5 px-4">Mutasi Ke</th>
-                                    <th class="py-3 px-4 text-center w-32">
+                                    <th class="py-2.5 px-4 w-48">User</th>
+                                    <th class="py-2.5 px-4 w-56">Mutasi Ke</th>
+                                    <th class="py-3 px-2 text-center w-24">
                                         <div class="flex items-center justify-center space-x-1.5 relative group cursor-pointer" title="Filter Kondisi">
                                             <span>Kondisi</span>
                                             <i class="fa-solid fa-chevron-down text-[12px] font-black transition-colors" :class="filterKondisiRiwayat !== 'all' ? 'text-blue-400' : 'text-slate-300 group-hover:text-white'"></i>
                                             <select v-model="filterKondisiRiwayat" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer text-slate-900">
-                                                <option value="all">Semua Kondisi</option>
+                                                <option value="all">Semua</option>
                                                 <option value="Baik">Baik</option>
                                                 <option value="Rusak Ringan">Rusak Ringan</option>
                                                 <option value="Rusak Berat">Rusak Berat</option>
                                             </select>
                                         </div>
                                     </th>
-                                    <th class="py-2.5 px-4">Nomor Surat</th>
-                                    <th class="py-2.5 px-4 text-center">Aksi Dokumen</th>
+                                    
+                                    <th class="py-2.5 px-4 w-40">Nomor Surat</th>
+                                    <th class="py-2.5 px-4 text-center w-48">Aksi Dokumen</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100">
@@ -513,7 +523,21 @@
                                         <div class="text-[10px] font-mono text-slate-500">NUP: {{ h.nup }} | {{ h.kategoriLabel }}</div>
                                     </td>
                                     <td class="py-3 px-4 text-slate-600 font-medium">{{ h.pemegangLama }}</td>
-                                    <td class="py-3 px-4 text-yellow-700 font-bold">{{ h.pemegangBaru }}</td>
+                                    <td class="py-3 px-4">
+                                        <template v-if="h.keterangan && (h.keterangan.includes('Penelitian Fisik') || h.keterangan.includes('Verifikasi Aset') || h.keterangan.toLowerCase().includes('transfer keluar'))">
+                                            <div class="flex items-center space-x-2">
+                                                <span class="bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded text-[9px] font-bold border border-rose-200 whitespace-nowrap shrink-0">
+                                                    Transfer Keluar
+                                                </span>
+                                                <span class="text-[11px] font-bold text-slate-700 truncate">
+                                                    Ke: {{ h.keterangan.split(' - ')[1] || 'Instansi Luar' }}
+                                                </span>
+                                            </div>
+                                        </template>
+                                        <template v-else>
+                                            <span class="text-yellow-700 font-bold">{{ h.pemegangBaru }}</span>
+                                        </template>
+                                    </td>
                                     <td class="py-3 px-4 text-center">
                                         <span class="px-2 py-0.5 rounded text-[10px] font-semibold" :class="getConditionBadgeClass(h.kondisi)">{{ h.kondisi }}</span>
                                     </td>
@@ -544,9 +568,7 @@
                 </div>
             </main>
 
-            <!-- ============================================== -->
             <!-- SEMUA MODALS (Pop Up) -->
-            <!-- ============================================== -->
             <!-- Modal Pengaturan -->
             <div v-if="modalPengaturan.show" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 no-print">
                 <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-xl border border-slate-200">
@@ -559,19 +581,18 @@
                     </div>
                     <form @submit.prevent="savePengaturan" class="space-y-3 mt-4">
                         <div>
-                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Nama Kepala (Mengetahui) *</label>
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Nama Kepala (Mengetahui)</label>
                             <input type="text" v-model="formPengaturan.namaKepala" required class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
                         </div>
                         <div>
-                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">NIP *</label>
-                            <input type="text" v-model="formPengaturan.nipKepala" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">NIP</label>
+                            <input type="text" v-model="formPengaturan.nipKepala" required class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
                         </div>
                         <div>
                             <label class="block text-[11px] font-semibold text-slate-700 mb-1">Jabatan Penandatangan *</label>
                             <textarea v-model="formPengaturan.jabatanKepala" required rows="2" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500"></textarea>
                         </div>
-                        
-                        <!-- TAMBAHAN KOLOM KODE SIP -->
+
                         <div class="pt-2 border-t border-slate-100">
                             <label class="block text-[11px] font-semibold text-slate-700 mb-1">Kode Form SIP</label>
                             <input type="text" v-model="formPengaturan.kodeSip" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500" placeholder="Contoh: F. DBR.U.1.02.02">
@@ -685,8 +706,8 @@
                             <label class="block text-[11px] font-semibold text-slate-700 mb-1">Asal Perolehan</label>
                             <select v-model="formAset.kategoriKeterangan" required class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500">
                                 <option value="Pembelian">Pembelian</option>
-                                <option value="Sewa">Sewa </option>
-                                <option value="Transfer masuk">Transfer Masuk (TKTM)</option>
+                                <option value="Sewa">Sewa</option>
+                                <option value="Transfer masuk">Transfer Masuk</option>
                                 <option value="Lainnya">Lainnya</option>
                             </select>
                         </div>
@@ -722,7 +743,7 @@
                             </div>
                             <div>
                                 <label class="block text-[11px] font-semibold text-slate-700 mb-1">Tahun Perolehan</label>
-                                <input type="text" v-model="formAset.tahun" placeholder="e.g. 2026" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
+                                <input type="number" v-model="formAset.tahun" placeholder="e.g. 2026" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
                             </div>
                         </div>
                         <div v-if="formAset.kategoriKeterangan !== 'Sewa'" class="grid grid-cols-2 gap-3 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
@@ -732,7 +753,7 @@
                             </div>
                             <div>
                                 <label class="block text-[11px] font-bold text-slate-700 mb-1">NUP *</label>
-                                <input type="text" v-model="formAset.nup" :required="formAset.kategoriKeterangan !== 'Sewa'" placeholder="No. Urut" class="w-full text-xs p-2 rounded-md border border-slate-300 focus:ring-2 focus:ring-yellow-500">
+                                <input type="number" v-model="formAset.nup" :required="formAset.kategoriKeterangan !== 'Sewa'" placeholder="No. Urut" class="w-full text-xs p-2 rounded-md border border-slate-300 focus:ring-2 focus:ring-yellow-500">
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-3">
@@ -775,7 +796,7 @@
                         </div>
                         <div>
                             <label class="block text-[11px] font-semibold text-slate-700 mb-1">NIP </label>
-                            <input type="text" v-model="formPegawai.nip" required placeholder="Ketik NIP" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
+                            <input type="number" v-model="formPegawai.nip" required placeholder="Ketik NIP" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
                         </div>
                         <div>
                             <label class="block text-[11px] font-semibold text-slate-700 mb-1">Jabatan </label>
@@ -870,7 +891,6 @@
                                 <label class="block text-[11px] font-semibold text-slate-700 mb-1">Nomor SIP (Pihak Kedua)</label>
                                 <input type="text" v-model="formMutasi.nomorSip" class="w-full text-xs p-2 rounded-lg border border-slate-300 bg-slate-50">
                             </div>
-                            <!-- KODE FORM SIP: Cuma muncul kalau BAST kosong (Alias cuma Peminjaman/Pinjamkan) -->
                             <div v-if="formMutasi.nomorSip !== '' && formMutasi.nomorBast === ''">
                                 <label class="block text-[11px] font-semibold text-slate-700 mb-1">Kode Form SIP</label>
                                 <input type="text" v-model="formPengaturan.kodeSip" @change="savePengaturan" placeholder="Cth: F. DBR.U..." class="w-full text-xs p-2 rounded-lg border border-slate-200 bg-slate-100 text-slate-600 focus:bg-white focus:text-slate-900 focus:ring-2 focus:ring-yellow-500 transition cursor-text" title="Teks ini akan muncul di pojok kanan kertas SIP">
@@ -891,7 +911,7 @@
                 <div class="bg-white rounded-2xl max-w-3xl w-full p-5 shadow-xl border border-slate-200 max-h-[90vh] overflow-y-auto custom-scrollbar">
                     <div class="flex justify-between items-center pb-3 border-b border-slate-100 sticky top-0 bg-white z-10">
                         <div>
-                            <h3 class="font-bold text-slate-800 text-base">Proses Transfer Keluar (TKTM) & Surat</h3>
+                            <h3 class="font-bold text-slate-800 text-base">Proses Transfer Keluar & Surat</h3>
                             <p class="text-[11px] text-slate-500">Pilih aset milik <span class="font-bold">{{ modalTKTM.namaPegawai }}</span></p>
                         </div>
                         <button type="button" @click="modalTKTM.show = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-base"></i></button>
@@ -913,7 +933,7 @@
                                     </select>
                                 </div>
                                 <div class="md:col-span-2">
-                                    <label class="block text-[11px] font-semibold text-slate-700 mb-1">Instansi Tujuan (Penerima) *</label>
+                                    <label class="block text-[11px] font-semibold text-slate-700 mb-1">Instansi Tujuan *</label>
                                     <input type="text" v-model="modalTKTM.tujuan" placeholder="Cth: Pusat Survei Geologi" required class="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500">
                                 </div>
                                 <div>
@@ -941,9 +961,9 @@
                                 </div>
 
                                 <div class="space-y-3 bg-blue-50 p-3 rounded-xl border border-blue-100">
-                                    <h4 class="text-[11px] font-bold text-blue-800 border-b border-blue-200 pb-1">Upload Lampiran (Bisa Pilih Banyak Foto)</h4>
+                                    <h4 class="text-[11px] font-bold text-blue-800 border-b border-blue-200 pb-1">Upload Lampiran</h4>
                                     <div>
-                                        <label class="block text-[10px] font-semibold text-blue-700 mb-1">Foto Fisik Barang (Opsional)</label>
+                                        <label class="block text-[10px] font-semibold text-blue-700 mb-1">Foto Fisik Barang</label>
                                         <input type="file" multiple accept="image/*" @change="e => handleFotoTktm(e, 'barang')" class="w-full text-[10px] text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-[10px] file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200">
                                         <!-- Kotak Preview Foto Fisik -->
                                         <div v-if="modalTKTM.fotoBarangUrls && modalTKTM.fotoBarangUrls.length" class="flex gap-2 mt-2 overflow-x-auto pb-1 custom-scrollbar">
@@ -951,7 +971,7 @@
                                         </div>
                                     </div>
                                     <div>
-                                        <label class="block text-[10px] font-semibold text-blue-700 mb-1">Foto Label BMN / QR (Opsional)</label>
+                                        <label class="block text-[10px] font-semibold text-blue-700 mb-1">Foto Label BMN / QR</label>
                                         <input type="file" multiple accept="image/*" @change="e => handleFotoTktm(e, 'label')" class="w-full text-[10px] text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-[10px] file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200">
                                         <!-- Kotak Preview Foto Label -->
                                         <div v-if="modalTKTM.fotoLabelUrls && modalTKTM.fotoLabelUrls.length" class="flex gap-2 mt-2 overflow-x-auto pb-1 custom-scrollbar">
@@ -964,7 +984,7 @@
                             <!-- TIM PEMERIKSA & PETINGGI -->
                             <div class="space-y-4">
                                 <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                    <h4 class="text-[11px] font-bold text-slate-700 border-b border-slate-200 pb-1 mb-3">Tim Pemeriksa Fisik (Untuk Surat Penelitian)</h4>
+                                    <h4 class="text-[11px] font-bold text-slate-700 border-b border-slate-200 pb-1 mb-3">Tim Pemeriksa Fisik (Surat Penelitian)</h4>
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
                                         <div>
                                             <label class="block text-[10px] font-bold text-slate-600 mb-1">Pihak Satker Lain</label>
@@ -988,7 +1008,7 @@
                                 </div>
 
                                 <div class="bg-indigo-50 p-3 rounded-xl border border-indigo-100">
-                                    <h4 class="text-[11px] font-bold text-indigo-800 border-b border-indigo-200 pb-1 mb-3">Pejabat Penandatangan (Untuk Surat Verifikasi)</h4>
+                                    <h4 class="text-[11px] font-bold text-indigo-800 border-b border-indigo-200 pb-1 mb-3">Pejabat Penandatangan (Surat Verifikasi)</h4>
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
                                             <label class="block text-[10px] font-bold text-indigo-700 mb-1">Ka. Bag. Umum Instansi Tujuan</label>
@@ -1005,7 +1025,7 @@
                             <div class="pt-2 flex justify-end space-x-2 sticky bottom-0 bg-white py-2 border-t border-slate-100">
                                 <button type="button" @click="modalTKTM.show = false" class="px-4 py-2 rounded-lg text-xs font-medium border border-slate-300 hover:bg-slate-50">Batal</button>
                                 <button type="submit" class="px-5 py-2 rounded-lg text-xs font-bold bg-orange-600 hover:bg-orange-700 text-white shadow-md flex items-center space-x-2">
-                                    <i class="fa-solid fa-truck-fast"></i><span>Proses & Buat Dokumen</span>
+                                    <i class="fa-solid fa-truck-fast"></i><span>Proses & Buat Surat</span>
                                 </button>
                             </div>
                         </div>
@@ -1015,60 +1035,55 @@
 
             <!-- PRINT BAST / SURAT IZIN PREVIEW -->
             <div id="print-section" v-if="printData.show" class="bg-white mx-auto border shadow-2xl relative my-10 text-black w-[210mm] min-h-[297mm] pt-[1cm] pb-[2cm]" style="font-family: Arial, sans-serif;">
-                
                 <div class="flex items-center justify-between no-print mb-8 px-[1cm]">
                     <div class="flex items-center space-x-2">
-                        <!-- Kumpulan Tombol BAST/SIP (Otomatis menyesuaikan Transaksi) -->
-                        <template v-if="printData.jenisTransaksi === 'MUTASI' || printData.jenisTransaksi === 'PENGEMBALIAN' || printData.jenisTransaksi === 'PEMINJAMAN'">
-                            
-                            <!-- Tombol BAST: Cuma Muncul jika PENGEMBALIAN (Pegawai ke Gudang) atau MUTASI -->
+                        <template v-if="printData.jenisTransaksi === 'MUTASI' || printData.jenisTransaksi === 'PENGEMBALIAN' || printData.jenisTransaksi === 'PEMINJAMAN'"> 
+                            <!-- Tombol BAST -->
                             <button v-if="printData.jenisTransaksi === 'PENGEMBALIAN' || printData.jenisTransaksi === 'MUTASI'" 
                                     @click="printData.printMode = 'BAST'" 
                                     :class="printData.printMode === 'BAST' ? 'bg-[#5A55F5] text-white' : 'bg-[#E2E8F0] text-slate-600 hover:bg-slate-300'" 
                                     class="px-4 py-2.5 rounded-lg font-bold text-[13px] transition flex items-center space-x-2">
                                 <i class="fa-solid fa-file-contract"></i>
-                                <span v-if="printData.jenisTransaksi === 'MUTASI'">1. Kertas BAST</span>
+                                <span v-if="printData.jenisTransaksi === 'MUTASI'">1. BAST</span>
                                 <span v-else>Kertas BAST</span>
                             </button>
 
-                            <!-- Tombol SIP: Cuma Muncul jika PEMINJAMAN (Gudang ke Pegawai) atau MUTASI -->
+                            <!-- Tombol SIP -->
                             <button v-if="printData.jenisTransaksi === 'PEMINJAMAN' || printData.jenisTransaksi === 'MUTASI'" 
                                     @click="printData.printMode = 'SIP'" 
                                     :class="printData.printMode === 'SIP' ? 'bg-[#5A55F5] text-white' : 'bg-[#E2E8F0] text-slate-600 hover:bg-slate-300'" 
                                     class="px-4 py-2.5 rounded-lg font-bold text-[13px] transition flex items-center space-x-2">
                                 <i class="fa-solid fa-file-signature"></i>
-                                <span v-if="printData.jenisTransaksi === 'MUTASI'">2. Kertas SIP</span>
+                                <span v-if="printData.jenisTransaksi === 'MUTASI'">2. SIP</span>
                                 <span v-else>Kertas SIP</span>
                             </button>
                         </template>
 
                         <template v-if="printData.printMode === 'PENELITIAN' || printData.printMode === 'VERIFIKASI'">
                             <button @click="printData.printMode = 'PENELITIAN'" :class="printData.printMode === 'PENELITIAN' ? 'bg-[#5A55F5] text-white' : 'bg-[#E2E8F0] text-slate-600 hover:bg-slate-300'" class="px-4 py-2.5 rounded-lg font-bold text-[13px] transition flex items-center space-x-2">
-                                <i class="fa-solid fa-magnifying-glass-chart"></i><span>1. Kertas Penelitian</span>
+                                <i class="fa-solid fa-magnifying-glass-chart"></i><span>1.Penelitian</span>
                             </button>
                             <button @click="printData.printMode = 'VERIFIKASI'" :class="printData.printMode === 'VERIFIKASI' ? 'bg-[#5A55F5] text-white' : 'bg-[#E2E8F0] text-slate-600 hover:bg-slate-300'" class="px-4 py-2.5 rounded-lg font-bold text-[13px] transition flex items-center space-x-2">
-                                <i class="fa-solid fa-file-shield"></i><span>2. Kertas Verifikasi</span>
+                                <i class="fa-solid fa-file-shield"></i><span>2.Verifikasi</span>
                             </button>
                         </template>
                     </div>
 
                     <div class="flex items-center space-x-3">
                         <button @click="jalankanPrint" class="bg-[#D97706] hover:bg-[#B45309] text-white px-5 py-2.5 rounded-lg font-bold text-[14px] transition flex items-center space-x-2">
-                            <i class="fa-solid fa-print"></i><span>Cetak Kertas Ini</span>
+                            <i class="fa-solid fa-print"></i><span>Cetak Dokumen</span>
                         </button>
                         <button @click="tutupPrint" class="bg-[#E2E8F0] hover:bg-slate-300 text-slate-800 w-10 h-10 rounded-lg font-bold transition flex items-center justify-center">
                             <i class="fa-solid fa-xmark text-lg"></i>
                         </button>
                     </div>
                 </div>
-                
-                <!-- ========================================== -->
+
                 <!-- BAGIAN 1: KOP SURAT (Normal) -->
-                <!-- ========================================== -->
                 <div class="px-[1cm]">
                     <div class="flex flex-row items-center justify-between border-b-[2px] border-black pb-2 mb-8">
-                        <div class="w-[180px] flex-shrink-0 pr-2 -mt-8">
-                            <img src="assets/logo.png" alt="Kementerian ESDM" class="w-full h-auto object-contain" />
+                        <div class="w-[180px] flex-shrink-0 pr-2 -mt-9">
+                            <img src="assets/img/logo.png" alt="Kementerian ESDM" class="w-full h-auto object-contain" />
                         </div>
                         <div class="flex-grow text-left">
                             <h1 class="text-[11px] uppercase leading-tight whitespace-nowrap mt-1">Kementerian Energi dan Sumber Daya Mineral Republik Indonesia</h1>
@@ -1085,9 +1100,7 @@
                     </div>
                 </div>
 
-                <!-- ========================================== -->
                 <!-- BAGIAN 2: ISI SURAT -->
-                <!-- ========================================== -->
                 <div class="px-[2.5cm]">
                     <!-- BAST -->
                     <template v-if="printData.printMode === 'BAST'">
@@ -1133,40 +1146,38 @@
                             </table>
                             <p>Demikian Berita Acara Serah Terima Barang Milik Negara ini dibuat untuk dapat diproses lebih lanjut.</p>
                             <!-- TANDA TANGAN BAST -->
-                        <div class="mt-12 flex justify-between w-full text-center break-inside-avoid">
-                            <div class="w-1/2 flex flex-col justify-between h-40">
-                                <div>
-                                    <p class="mt-4">Yang Menerima,<br>PIHAK KEDUA</p>
+                            <div class="mt-12 flex justify-between w-full text-center break-inside-avoid">
+                                <div class="w-1/2 flex flex-col justify-between h-40">
+                                    <div>
+                                        <p class="mt-4">Yang Menerima,<br>PIHAK KEDUA</p>
+                                    </div>
+                                    <p class="font-bold underline">{{ printData.adminNama }}</p>
                                 </div>
-                                <p class="font-bold underline">{{ printData.adminNama }}</p>
-                            </div>
-                            <div class="w-1/2 flex flex-col justify-between h-40">
-                                <div>
-                                    <p>Bandung, {{ formatTanggalIndo(printData.tanggal) }}</p>
-                                    <p>Yang Menyerahkan,<br>PIHAK PERTAMA</p>
+                                <div class="w-1/2 flex flex-col justify-between h-40">
+                                    <div>
+                                        <p>Bandung, {{ formatTanggalIndo(printData.tanggal) }}</p>
+                                        <p>Yang Menyerahkan,<br>PIHAK PERTAMA</p>
+                                    </div>
+                                    <p class="font-bold underline">{{ printData.pemegangLamaNama }}</p>
                                 </div>
-                                <p class="font-bold underline">{{ printData.pemegangLamaNama }}</p>
                             </div>
-                        </div>
                         </div>
                     </template>
 
                     <!-- SIP -->
                     <template v-if="printData.printMode === 'SIP'">
-                        <!-- KOTAK KODE SIP (Muncul di bawah border Kop) -->
+                        <!-- KODE FORM SIP-->
                         <div v-if="formPengaturan.kodeSip" class="flex justify-end -mt-4 mb-4">
                             <div class="border border-black px-2 py-1 text-[11px] font-bold bg-white">
                                 {{ formPengaturan.kodeSip }}
                             </div>
                         </div>
-
                         <div class="text-center mb-6">
                             <h2 class="text-[15px] font-bold uppercase underline">Surat Izin Pemakaian Barang Milik Negara</h2>
                             <p class="text-sm mt-1">Nomor : {{ printData.nomorSip || '-' }}</p>
                         </div>
                         <div class="text-[13px] space-y-4 text-justify leading-relaxed">
                             <p>Izin pemakaian barang inventaris kantor Balai Besar Pengujian Mineral dan Batubara tekMIRA berupa :</p>
-                            
                             <table class="w-full ml-10">
                                 <tr><td class="w-44 pb-1">1. Nama Barang</td><td class="w-4 pb-1">:</td><td class="pb-1">{{ printData.kategoriLabel }}</td></tr>
                                 <tr><td class="w-44 pb-1">2. Merk/Type</td><td class="w-4 pb-1">:</td><td class="pb-1">{{ printData.merekTipe }}</td></tr>
@@ -1176,7 +1187,6 @@
                                 <tr><td class="w-44 pb-1">6. Pemakai</td><td class="w-4 pb-1">:</td><td class="pb-1">{{ printData.pemegangBaruNama }}</td></tr>
                                 <tr><td class="w-44 pb-1">7. Bidang/Bagian</td><td class="w-4 pb-1">:</td><td class="pb-1">{{ printData.pemegangBaruJabatan || '-' }}</td></tr>
                             </table>
-
                             <p class="mt-5">Selanjutnya barang inventaris tersebut agar dapat dipergunakan untuk keperluan dinas pada Kantor Balai Besar Pengujian Mineral dan Batubara tekMIRA pemakai/pengguna barang wajib memelihara dengan sebaik-baiknya dan bertanggung jawab penuh atas hilang/musnahnya barang inventaris tersebut.</p>
                             <!-- TANDA TANGAN SIP -->
                             <div class="mt-12 flex justify-between w-full text-center break-inside-avoid">
@@ -1193,8 +1203,7 @@
                                     </div>
                                     <p class="font-bold underline">{{ printData.pemegangBaruNama }}</p>
                                 </div>
-                            </div>
-                            
+                            </div>    
                             <div class="mt-6 text-center w-full break-inside-avoid">
                                 <br>
                                 <p>Mengetahui :</p>
@@ -1244,10 +1253,9 @@
                             <div class="flex justify-between w-full mt-4 break-inside-avoid">
                                 <div class="w-1/2 text-center font-bold flex flex-col">
                                     <div class="h-16 flex items-center justify-center">
-                                        <!-- Uppercase dihapus -->
                                         <p>{{ printData.pemegangBaruNama }}</p>
                                     </div>
-                                    <div class="text-left pl-12 font-normal flex flex-col justify-between h-32 mt-4">
+                                    <div class="text-left pl-12 font-normal mt-6 space-y-10">
                                         <p>1. {{ printData.pemeriksaTujuan1 }}</p>
                                         <p>2. {{ printData.pemeriksaTujuan2 }}</p>
                                     </div>
@@ -1256,7 +1264,7 @@
                                     <div class="h-16 flex items-center justify-center">
                                         <p>Balai Besar Pengujian Mineral dan<br>Batubara <i>tek</i>MIRA</p>
                                     </div>
-                                    <div class="text-left pl-12 font-normal flex flex-col justify-between h-32 mt-4">
+                                    <div class="text-left pl-12 font-normal mt-6 space-y-10">
                                         <p>1. {{ printData.pemeriksaTekmira1 }}</p>
                                         <p>2. {{ printData.pemeriksaTekmira2 }}</p>
                                     </div>
@@ -1283,7 +1291,7 @@
                                     </div>
                                 </div>
                                 <div class="w-full mt-6">
-                                    <p class="font-bold text-sm mb-2">Foto Label BMN / QR:</p>
+                                    <p class="font-bold text-sm mb-2">Foto Label / QR:</p>
                                     <div class="flex flex-wrap gap-4 justify-center">
                                         <div v-for="(url, idx) in printData.fotoLabelUrls" :key="'lbl_p'+idx" class="w-48 h-32 border-2 border-black p-1 flex items-center justify-center bg-gray-100 overflow-hidden">
                                             <img :src="url" class="max-w-full max-h-full object-contain">
@@ -1331,7 +1339,6 @@
                             </table>
                             <p class="indent-10">Demikian Berita Acara ini dibuat untuk dapat di pergunakan sebagaimana mestinya dan apabila ditemukan kesalahan di kemudian hari, akan diperbaiki sebagaimana mestinya.</p>
                             <br>
-                            <!-- TANDA TANGAN VERIFIKASI -->
                             <div class="flex justify-between w-full mt-12 break-inside-avoid">
                                 <div class="w-1/2 text-center flex flex-col justify-between h-40">
                                     <div>
@@ -1385,12 +1392,10 @@
                 </div>
             </div>
         </div>
-        <!-- Input file rahasia buat upload PDF -->
+        <!-- Input buat upload PDF -->
         <input type="file" ref="fileInputBukti" @change="handleFileUpload" accept=".pdf" class="hidden">
     </div>
 
-
-    <!-- Link file JS Eksternal -->
     <script src="assets/js/app.js"></script>
 </body>
 </html>

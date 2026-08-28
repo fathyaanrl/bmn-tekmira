@@ -13,7 +13,6 @@ if (!is_dir($uploadDir)) {
     mkdir($uploadDir, 0777, true);
 }
 
-// Ambil data nama pemeriksa yang udah disimpen sebelumnya di mutasi.php
 $stmt = $pdo->prepare("SELECT lampiran_foto FROM mutasi WHERE id = ?");
 $stmt->execute([$id]);
 $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -52,7 +51,6 @@ if (isset($_FILES['foto_label']) && !empty($_FILES['foto_label']['name'][0])) {
     }
 }
 
-// Gabungin foto sama nama pemeriksa, terus simpan ulang
 $existingData['barang'] = $savedFiles['barang'];
 $existingData['label'] = $savedFiles['label'];
 $jsonFiles = json_encode($existingData);

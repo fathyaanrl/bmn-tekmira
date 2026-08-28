@@ -11,7 +11,6 @@ if ($method === "POST") {
     }
 
     try {
-        // Hapus paksa isi semua tabel kembali ke 0
         $pdo->exec("SET FOREIGN_KEY_CHECKS = 0;");
         $pdo->exec("TRUNCATE TABLE mutasi;");
         $pdo->exec("TRUNCATE TABLE aset;");
