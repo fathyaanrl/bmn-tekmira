@@ -1565,6 +1565,35 @@ createApp({
         };
 
         // =====================================================
+        // MODAL RESET (KOSONGKAN DATA)
+        // =====================================================
+        const modalReset = ref({ show: false, konfirmasi: '' });
+        
+        const openResetModal = () => {
+            modalReset.value = { show: true, konfirmasi: '' };
+        };
+
+        const prosesResetData = async () => {
+            if (modalReset.value.konfirmasi !== 'HAPUS SEMUA') {
+                showToast('Teks konfirmasi tidak sesuai! Ketik HAPUS SEMUA', true);
+                return;
+            }
+
+            try {
+                const res = await apiRequest('reset.php', { method: 'POST', body: JSON.stringify({ confirm: true }) });
+                if (res.success) {
+                    showToast('BOOM! Semua data berhasil dikosongkan.');
+                    modalReset.value.show = false;
+                    await loadDataFromBackend(); // Refresh biar layarnya langsung bersih
+                } else {
+                    showToast(res.message || 'Gagal reset data!', true);
+                }
+            } catch (error) {
+                showToast(`Gagal mereset: ${error.message}`, true);
+            }
+        };
+
+        // =====================================================
         // EXPORT EXCEL
         // =====================================================
         const assetsForExport = computed(() => {
@@ -1972,7 +2001,8 @@ createApp({
             
             modalPengaturan, formPengaturan, openPengaturanModal, savePengaturan,
             modalProfil, formProfil, openProfilModal, saveProfil,
-            modalLogout, openLogoutModal, confirmLogout, itemsPerPage,
+            modalLogout, openLogoutModal, confirmLogout, itemsPerPage, 
+            modalReset, openResetModal, prosesResetData,
             exportExcel, getLastMutationDate, asetDipegang, sortAssetOrder, toggleAssetSort,
             modalTKTM, openModalTKTM, submitTKTM, handleFotoTktm, filterJenisTransaksi,
 

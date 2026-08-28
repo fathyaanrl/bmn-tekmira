@@ -25,7 +25,7 @@
                             <i class="fa-solid fa-laptop text-white text-2xl"></i>
                         </div>
                         <h1 class="text-2xl font-bold text-slate-800">BMN tekMIRA</h1>
-                        <p class="text-sm text-slate-500 mt-1">Sistem Informasi Barang Milik Negara</p>
+                        <p class="text-sm text-slate-500 mt-1">Pengelolaan Berpemakaian Perorangan</p>
                     </div>
 
                     <!-- USERNAME -->
@@ -140,6 +140,10 @@
                                     </button>
                                     <button @click="openPengaturanModal(); showDropdown = false" class="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition flex items-center space-x-2.5">
                                         <i class="fa-solid fa-file-signature w-4 text-center"></i><span>Pengaturan Dokumen</span>
+                                    </button>
+                                    <div class="border-t border-slate-100 my-1"></div>
+                                    <button @click="openResetModal(); showDropdown = false" class="w-full text-left px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 transition flex items-center space-x-2.5">
+                                        <i class="fa-solid fa-bomb w-4 text-center"></i><span>Kosongkan Data</span>
                                     </button>
                                     <div class="border-t border-slate-100 my-1"></div>
                                     <button @click="openLogoutModal(); showDropdown = false" class="w-full text-left px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 transition flex items-center space-x-2.5">
@@ -616,6 +620,27 @@
                 </div>
             </div>
 
+            <!-- Modal Kosongkan Data -->
+            <div v-if="modalReset.show" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 no-print">
+                <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-200 text-center">
+                    <div class="w-16 h-16 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fa-solid fa-bomb text-2xl"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-800 text-lg mb-2">Kosongkan Semua Data?</h3>
+                    <p class="text-xs text-slate-500 mb-4">Peringatan: Seluruh data Aset, Pegawai, Riwayat Surat, dan Foto akan dihapus permanen untuk memulai sistem dari 0. Tindakan ini tidak bisa dibatalkan.</p>
+                    
+                    <div class="mb-5 text-left bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <label class="block text-[10px] font-bold text-rose-600 mb-1">Ketik "HAPUS SEMUA" untuk konfirmasi:</label>
+                        <input type="text" v-model="modalReset.konfirmasi" class="w-full text-xs p-2.5 rounded-lg border border-rose-200 focus:ring-2 focus:ring-rose-500 font-bold text-rose-700 bg-white placeholder-rose-200" placeholder="HAPUS SEMUA">
+                    </div>
+
+                    <div class="flex justify-center space-x-3">
+                        <button @click="modalReset.show = false" class="flex-1 px-4 py-2.5 rounded-xl text-xs font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50 transition">Batal</button>
+                        <button @click="prosesResetData" class="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-sm transition">Ya, Kosongkan</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Modal Logout -->
             <div v-if="modalLogout.show" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 no-print">
                 <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-200 text-center">
@@ -744,15 +769,15 @@
                     <form @submit.prevent="savePegawai" class="space-y-3 mt-4">
                         <div>
                             <label class="block text-[11px] font-semibold text-slate-700 mb-1">Nama Lengkap *</label>
-                            <input type="text" v-model="formPegawai.nama" required class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
+                            <input type="text" v-model="formPegawai.nama" required placeholder="Ketik nama lengkap" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
                         </div>
                         <div>
-                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">NIP *</label>
-                            <input type="text" v-model="formPegawai.nip" required class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">NIP </label>
+                            <input type="text" v-model="formPegawai.nip" required placeholder="Ketik NIP" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
                         </div>
                         <div>
-                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Jabatan *</label>
-                            <input list="daftar-jabatan" type="text" v-model="formPegawai.jabatan" required placeholder="Pilih dari daftar atau ketik baru..." class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Jabatan </label>
+                            <input list="daftar-jabatan" type="text" v-model="formPegawai.jabatan" required placeholder="Ketik jabatan" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
                         </div>
                         
                         <!-- List Aset Dipegang (Transfer Keluar) -->
