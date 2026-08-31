@@ -182,7 +182,7 @@ createApp({
 
         const changeTab = (tabName) => {
             currentTab.value = tabName;
-            printData.value.show = false; 
+            printData.value = { show: false }; 
             
             searchQuery.value = '';
             filterStatus.value = 'all';
@@ -923,7 +923,6 @@ createApp({
                 await apiRequest('aset.php', { method: 'PUT', body: JSON.stringify(payload) });
 
                 const resMutasi1 = await apiRequest('mutasi.php', { method: 'POST', body: JSON.stringify({ aset_id: asset.id, tanggal: tgl, pemegang_lama_id: m.pegawaiId, pemegang_baru_id: null, jenis_transaksi: 'LAINNYA', kondisi: asset.kondisi, nomor_bast: m.nomorPenelitian, keterangan: 'BA Penelitian Fisik - ' + m.tujuan.trim(), nilai_perolehan: m.nilaiPerolehan, lampiran_foto: metadataNames }) });
-                
                 const resMutasi2 = await apiRequest('mutasi.php', { method: 'POST', body: JSON.stringify({ aset_id: asset.id, tanggal: tgl, pemegang_lama_id: m.pegawaiId, pemegang_baru_id: null, jenis_transaksi: 'LAINNYA', kondisi: asset.kondisi, nomor_bast: m.nomorVerifikasi, keterangan: 'BA Verifikasi Aset - ' + m.tujuan.trim(), nilai_perolehan: m.nilaiPerolehan, lampiran_foto: metadataNames }) });
                 
                 const uploadPhotos = async (mutasiId) => {
@@ -1402,7 +1401,6 @@ createApp({
         const passwordBaru = formProfil.value.newPass;
         const konfirmasi = formProfil.value.confirmPass;
 
-        // Username wajib diisi
         if (!usernameBaru) {
             showToast('Username tidak boleh kosong!', true);
             return;
@@ -1566,7 +1564,6 @@ createApp({
         return;
     }
 
-    // Ambil aset yang sedang dipegang pegawai
     const asetPegawai = getPegawaiAllAssets(pegawai.id);
 
     if (!asetPegawai || asetPegawai.length === 0) {
@@ -1576,10 +1573,7 @@ createApp({
 
     const wb = XLSX.utils.book_new();
 
-    // ===============================
     // FORMAT SAMA DENGAN EXPORT LAMA
-    // ===============================
-
     const headerRow = [
         'NO',
         'USER',
@@ -1606,7 +1600,6 @@ createApp({
         ];
     });
 
-    // Judul sama seperti export sebelumnya
     const judulPegawai = `ASET PEGAWAI - ${pegawai.nama || ''}`.toUpperCase();
 
     const aoa = [
@@ -1623,10 +1616,7 @@ createApp({
     const headerRowIndex = 3;
     const lastDataRowIndex = headerRowIndex + dataRows.length;
 
-    // ===============================
     // MERGE JUDUL
-    // ===============================
-
     ws['!merges'] = [
         {
             s: { r: 0, c: 0 },
@@ -1637,11 +1627,6 @@ createApp({
             e: { r: 1, c: colCount - 1 }
         }
     ];
-
-    // ===============================
-    // LEBAR KOLOM
-    // SAMA DENGAN EXPORT LAMA
-    // ===============================
 
     ws['!cols'] = [
         { wch: 6 },   // NO
@@ -1654,11 +1639,6 @@ createApp({
         { wch: 14 },  // KONDISI
         { wch: 35 }   // KETERANGAN
     ];
-
-    // ===============================
-    // TINGGI BARIS
-    // SAMA DENGAN EXPORT LAMA
-    // ===============================
 
     const rowHeights = [];
 
@@ -1677,10 +1657,7 @@ createApp({
 
     ws['!rows'] = rowHeights;
 
-    // ===============================
     // BORDER
-    // ===============================
-
     const borderSubtle = {
         top: {
             style: 'thin',
@@ -1700,10 +1677,7 @@ createApp({
         }
     };
 
-    // ===============================
     // HELPER STYLE
-    // ===============================
-
     const setCellStyle = (r, c, style) => {
         const addr = XLSX.utils.encode_cell({
             r,
@@ -1723,11 +1697,7 @@ createApp({
         };
     };
 
-    // ===============================
     // STYLE JUDUL
-    // SAMA DENGAN EXPORT LAMA
-    // ===============================
-
     setCellStyle(0, 0, {
         font: {
             bold: true,
@@ -1741,10 +1711,7 @@ createApp({
         }
     });
 
-    // ===============================
     // STYLE SUBJUDUL
-    // ===============================
-
     setCellStyle(1, 0, {
         font: {
             bold: true,
@@ -1758,11 +1725,7 @@ createApp({
         }
     });
 
-    // ===============================
     // STYLE HEADER
-    // DARK SLATE
-    // ===============================
-
     for (let c = 0; c < colCount; c++) {
         setCellStyle(headerRowIndex, c, {
             font: {
@@ -1783,11 +1746,7 @@ createApp({
         });
     }
 
-    // ===============================
     // STYLE DATA
-    // SAMA DENGAN EXPORT LAMA
-    // ===============================
-
     for (
         let r = headerRowIndex + 1;
         r <= lastDataRowIndex;
@@ -1804,7 +1763,6 @@ createApp({
             let alignHoriz = 'center';
 
             // USER, MERK & TIPE, KETERANGAN
-            // dibuat rata kiri seperti export lama
             if (
                 c === 1 ||
                 c === 4 ||
@@ -1832,11 +1790,7 @@ createApp({
         }
     }
 
-    // ===============================
     // AUTOFILTER
-    // SAMA DENGAN EXPORT LAMA
-    // ===============================
-
     ws['!autofilter'] = {
         ref: XLSX.utils.encode_range(
             {
@@ -1850,10 +1804,7 @@ createApp({
         )
     };
 
-    // ===============================
     // NAMA SHEET
-    // ===============================
-
     XLSX.utils.book_append_sheet(
         wb,
         ws,
@@ -2234,7 +2185,6 @@ createApp({
 
             exportExcel, exportPegawaiExcel, getLastMutationDate, asetDipegang, sortAssetOrder, toggleAssetSort,
             modalTKTM, openModalTKTM, submitTKTM, handleFotoTktm, filterJenisTransaksi,removeFotoTktm,
-            
 
             filterSurat, filterKondisiRiwayat, filteredHistory, fileInputBukti, filterJenisAset, filterStatusPegawai, triggerUpload, 
             handleFileUpload, openPdf, hasBukti, selectedHistory, selectAllHistory, hapusBanyakHistory, prosesTransferKeluar

@@ -1,4 +1,12 @@
 <?php
+session_start();
+// Barikade Keamanan Endpoint
+if (!isset($_SESSION["admin_username"])) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => 'Akses ditolak! Sesi login tidak valid.']);
+    exit; // Hentikan eksekusi script di bawahnya
+}
+
 require_once "config.php";
 header("Content-Type: application/json; charset=UTF-8");
 $method = $_SERVER["REQUEST_METHOD"];

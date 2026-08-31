@@ -27,12 +27,25 @@ $savedFiles = [
     'label' => $existingData['label'] ?? []
 ];
 
+$finfo = finfo_open(FILEINFO_MIME_TYPE);
+$allowedImageTypes = ['image/jpeg' => 'jpg', 'image/png' => 'png'];
+
 // Proses foto fisik barang
 if (isset($_FILES['foto_barang']) && !empty($_FILES['foto_barang']['name'][0])) {
     foreach ($_FILES['foto_barang']['name'] as $key => $name) {
+        if ($_FILES['foto_barang']['error'][$key] !== UPLOAD_ERR_OK) continue;
+        
         $tmpName = $_FILES['foto_barang']['tmp_name'][$key];
-        $ext = pathinfo($name, PATHINFO_EXTENSION);
-        $newName = "barang_{$id}_" . time() . "_{$key}." . $ext;
+        
+        // Batas maksimal 3MB per foto
+        if ($_FILES['foto_barang']['size'][$key] > 3 * 1024 * 1024) continue;
+        
+        $mimeType = finfo_file($finfo, $tmpName);
+        if (!array_key_exists($mimeType, $allowedImageTypes)) continue;
+
+        $ext = $allowedImageTypes[$mimeType];
+        $newName = "barang_{$id}_" . uniqid() . "_{$key}." . $ext;
+        
         if (move_uploaded_file($tmpName, $uploadDir . $newName)) {
             $savedFiles['barang'][] = "uploads/tktm/" . $newName;
         }
@@ -42,14 +55,25 @@ if (isset($_FILES['foto_barang']) && !empty($_FILES['foto_barang']['name'][0])) 
 // Proses foto label BMN
 if (isset($_FILES['foto_label']) && !empty($_FILES['foto_label']['name'][0])) {
     foreach ($_FILES['foto_label']['name'] as $key => $name) {
+        if ($_FILES['foto_label']['error'][$key] !== UPLOAD_ERR_OK) continue;
+        
         $tmpName = $_FILES['foto_label']['tmp_name'][$key];
-        $ext = pathinfo($name, PATHINFO_EXTENSION);
-        $newName = "label_{$id}_" . time() . "_{$key}." . $ext;
+        
+        if ($_FILES['foto_label']['size'][$key] > 3 * 1024 * 1024) continue;
+        
+        $mimeType = finfo_file($finfo, $tmpName);
+        if (!array_key_exists($mimeType, $allowedImageTypes)) continue;
+
+        $ext = $allowedImageTypes[$mimeType];
+        $newName = "label_{$id}_" . uniqid() . "_{$key}." . $ext;
+        
         if (move_uploaded_file($tmpName, $uploadDir . $newName)) {
             $savedFiles['label'][] = "uploads/tktm/" . $newName;
         }
     }
 }
+
+finfo_close($finfo);
 
 $existingData['barang'] = $savedFiles['barang'];
 $existingData['label'] = $savedFiles['label'];

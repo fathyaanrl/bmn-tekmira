@@ -14,8 +14,9 @@ if ($id === '') {
 
 $file = $_FILES['file_pdf'];
 
-if ($file['type'] !== 'application/pdf') {
-    echo json_encode(['status' => 'error', 'message' => 'File harus format PDF!']);
+// Cek apakah file tidak korup saat proses transfer
+if ($file['error'] !== UPLOAD_ERR_OK) {
+    echo json_encode(['status' => 'error', 'message' => 'File rusak atau gagal diunggah.']);
     exit;
 }
 
@@ -23,6 +24,15 @@ if ($file['type'] !== 'application/pdf') {
 $maxSize = 10 * 1024 * 1024;
 if ($file['size'] > $maxSize) {
     echo json_encode(['status' => 'error', 'message' => 'Ukuran file maksimal 10MB.']);
+    exit;
+}
+
+$finfo = finfo_open(FILEINFO_MIME_TYPE);
+$mimeType = finfo_file($finfo, $file['tmp_name']);
+finfo_close($finfo);
+
+if ($mimeType !== 'application/pdf') {
+    echo json_encode(['status' => 'error', 'message' => 'Sistem menolak! File harus berformat PDF asli.']);
     exit;
 }
 
@@ -36,7 +46,8 @@ if (!is_dir($targetDir)) {
 $targetFile = $targetDir . 'bukti_' . $id . '.pdf';
 
 if (move_uploaded_file($file['tmp_name'], $targetFile)) {
-    echo json_encode(['status' => 'success', 'message' => 'File berhasil diupload.']);
+    echo json_encode(['status' => 'success', 'message' => 'File berhasil diupload dengan aman.']);
 } else {
-    echo json_encode(['status' => 'error', 'message' => 'Gagal menyimpan file ke server. Cek permission folder uploads/surat/.']);
+    echo json_encode(['status' => 'error', 'message' => 'Gagal menyimpan file ke server.']);
 }
+?>
