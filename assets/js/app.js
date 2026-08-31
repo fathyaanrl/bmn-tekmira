@@ -1559,6 +1559,325 @@ createApp({
             }).sort((a, b) => Number(b.id) - Number(a.id));
         });
 
+        // EXPORT EXCEL PEGAWAI
+        const exportPegawaiExcel = (pegawai) => {
+    if (!pegawai) {
+        showToast('Data pegawai tidak ditemukan!', true);
+        return;
+    }
+
+    // Ambil aset yang sedang dipegang pegawai
+    const asetPegawai = getPegawaiAllAssets(pegawai.id);
+
+    if (!asetPegawai || asetPegawai.length === 0) {
+        showToast(`${pegawai.nama} tidak memiliki aset untuk di-export!`, true);
+        return;
+    }
+
+    const wb = XLSX.utils.book_new();
+
+    // ===============================
+    // FORMAT SAMA DENGAN EXPORT LAMA
+    // ===============================
+
+    const headerRow = [
+        'NO',
+        'USER',
+        'KODE BARANG',
+        'NUP BARU',
+        'MERK & TIPE',
+        'TAHUN',
+        'TANGGAL BAST',
+        'KONDISI',
+        'KETERANGAN'
+    ];
+
+    const dataRows = asetPegawai.map((asset, index) => {
+        return [
+            index + 1,
+            pegawai.nama || '-',
+            asset.kodeBarang ? String(asset.kodeBarang) : '-',
+            asset.nup ? String(asset.nup) : '-',
+            `${asset.merek || ''} ${asset.tipe || ''}`.trim() || '-',
+            asset.tahun || '-',
+            getLastMutationDate(asset),
+            asset.kondisi || '-',
+            asset.keterangan || '-'
+        ];
+    });
+
+    // Judul sama seperti export sebelumnya
+    const judulPegawai = `ASET PEGAWAI - ${pegawai.nama || ''}`.toUpperCase();
+
+    const aoa = [
+        [judulPegawai],
+        ['BALAI BESAR PENGUJIAN MINERAL DAN BATUBARA TEKMIRA'],
+        [],
+        headerRow,
+        ...dataRows
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+    const colCount = headerRow.length;
+    const headerRowIndex = 3;
+    const lastDataRowIndex = headerRowIndex + dataRows.length;
+
+    // ===============================
+    // MERGE JUDUL
+    // ===============================
+
+    ws['!merges'] = [
+        {
+            s: { r: 0, c: 0 },
+            e: { r: 0, c: colCount - 1 }
+        },
+        {
+            s: { r: 1, c: 0 },
+            e: { r: 1, c: colCount - 1 }
+        }
+    ];
+
+    // ===============================
+    // LEBAR KOLOM
+    // SAMA DENGAN EXPORT LAMA
+    // ===============================
+
+    ws['!cols'] = [
+        { wch: 6 },   // NO
+        { wch: 26 },  // USER
+        { wch: 18 },  // KODE BARANG
+        { wch: 12 },  // NUP BARU
+        { wch: 30 },  // MERK & TIPE
+        { wch: 10 },  // TAHUN
+        { wch: 24 },  // TANGGAL BAST
+        { wch: 14 },  // KONDISI
+        { wch: 35 }   // KETERANGAN
+    ];
+
+    // ===============================
+    // TINGGI BARIS
+    // SAMA DENGAN EXPORT LAMA
+    // ===============================
+
+    const rowHeights = [];
+
+    rowHeights[0] = { hpt: 24 };
+    rowHeights[1] = { hpt: 20 };
+    rowHeights[2] = { hpt: 10 };
+    rowHeights[headerRowIndex] = { hpt: 26 };
+
+    for (
+        let r = headerRowIndex + 1;
+        r <= lastDataRowIndex;
+        r++
+    ) {
+        rowHeights[r] = { hpt: 22 };
+    }
+
+    ws['!rows'] = rowHeights;
+
+    // ===============================
+    // BORDER
+    // ===============================
+
+    const borderSubtle = {
+        top: {
+            style: 'thin',
+            color: { rgb: 'CBD5E1' }
+        },
+        bottom: {
+            style: 'thin',
+            color: { rgb: 'CBD5E1' }
+        },
+        left: {
+            style: 'thin',
+            color: { rgb: 'CBD5E1' }
+        },
+        right: {
+            style: 'thin',
+            color: { rgb: 'CBD5E1' }
+        }
+    };
+
+    // ===============================
+    // HELPER STYLE
+    // ===============================
+
+    const setCellStyle = (r, c, style) => {
+        const addr = XLSX.utils.encode_cell({
+            r,
+            c
+        });
+
+        if (!ws[addr]) {
+            ws[addr] = {
+                t: 's',
+                v: ''
+            };
+        }
+
+        ws[addr].s = {
+            ...(ws[addr].s || {}),
+            ...style
+        };
+    };
+
+    // ===============================
+    // STYLE JUDUL
+    // SAMA DENGAN EXPORT LAMA
+    // ===============================
+
+    setCellStyle(0, 0, {
+        font: {
+            bold: true,
+            sz: 14,
+            color: { rgb: '1E293B' },
+            name: 'Calibri'
+        },
+        alignment: {
+            horizontal: 'center',
+            vertical: 'center'
+        }
+    });
+
+    // ===============================
+    // STYLE SUBJUDUL
+    // ===============================
+
+    setCellStyle(1, 0, {
+        font: {
+            bold: true,
+            sz: 11,
+            color: { rgb: '475569' },
+            name: 'Calibri'
+        },
+        alignment: {
+            horizontal: 'center',
+            vertical: 'center'
+        }
+    });
+
+    // ===============================
+    // STYLE HEADER
+    // DARK SLATE
+    // ===============================
+
+    for (let c = 0; c < colCount; c++) {
+        setCellStyle(headerRowIndex, c, {
+            font: {
+                bold: true,
+                color: { rgb: 'FFFFFF' },
+                sz: 11,
+                name: 'Calibri'
+            },
+            alignment: {
+                horizontal: 'center',
+                vertical: 'center',
+                wrapText: true
+            },
+            fill: {
+                fgColor: { rgb: '1E293B' }
+            },
+            border: borderSubtle
+        });
+    }
+
+    // ===============================
+    // STYLE DATA
+    // SAMA DENGAN EXPORT LAMA
+    // ===============================
+
+    for (
+        let r = headerRowIndex + 1;
+        r <= lastDataRowIndex;
+        r++
+    ) {
+        const isEven =
+            (r - headerRowIndex) % 2 === 0;
+
+        const bgRowColor =
+            isEven ? 'F8FAFC' : 'FFFFFF';
+
+        for (let c = 0; c < colCount; c++) {
+
+            let alignHoriz = 'center';
+
+            // USER, MERK & TIPE, KETERANGAN
+            // dibuat rata kiri seperti export lama
+            if (
+                c === 1 ||
+                c === 4 ||
+                c === 8
+            ) {
+                alignHoriz = 'left';
+            }
+
+            setCellStyle(r, c, {
+                font: {
+                    sz: 10,
+                    name: 'Calibri',
+                    color: { rgb: '334155' }
+                },
+                alignment: {
+                    horizontal: alignHoriz,
+                    vertical: 'center',
+                    wrapText: true
+                },
+                fill: {
+                    fgColor: { rgb: bgRowColor }
+                },
+                border: borderSubtle
+            });
+        }
+    }
+
+    // ===============================
+    // AUTOFILTER
+    // SAMA DENGAN EXPORT LAMA
+    // ===============================
+
+    ws['!autofilter'] = {
+        ref: XLSX.utils.encode_range(
+            {
+                r: headerRowIndex,
+                c: 0
+            },
+            {
+                r: headerRowIndex,
+                c: colCount - 1
+            }
+        )
+    };
+
+    // ===============================
+    // NAMA SHEET
+    // ===============================
+
+    XLSX.utils.book_append_sheet(
+        wb,
+        ws,
+        'Aset Pegawai'
+    );
+
+    // ===============================
+    // NAMA FILE
+    // ===============================
+
+    const namaBersih = (pegawai.nama || 'Pegawai')
+        .replace(/[\\/:*?"<>|]/g, '')
+        .replace(/\s+/g, '_');
+
+    const namaFile =
+        `Laporan_Aset_${namaBersih}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+
+    XLSX.writeFile(wb, namaFile);
+
+    showToast(
+        `Laporan aset ${pegawai.nama} berhasil di-export!`
+    );
+        };
+
         const exportExcel = () => {
             const allAssets = [...activeAssets.value].sort((a, b) => Number(b.id) - Number(a.id));
 
@@ -1912,8 +2231,13 @@ createApp({
             modalProfil, formProfil, openProfilModal, saveProfil, 
             modalLogout, openLogoutModal, confirmLogout, itemsPerPage, 
             modalReset, openResetModal, prosesResetData,
+<<<<<<< HEAD
             exportExcel, getLastMutationDate, asetDipegang, sortAssetOrder, toggleAssetSort,
             modalTKTM, openModalTKTM, submitTKTM, handleFotoTktm, filterJenisTransaksi,removeFotoTktm,
+=======
+            exportExcel, exportPegawaiExcel, getLastMutationDate, asetDipegang, sortAssetOrder, toggleAssetSort,
+            modalTKTM, openModalTKTM, submitTKTM, handleFotoTktm, filterJenisTransaksi,
+>>>>>>> ca0f3d2 (Excel pegawai)
 
             filterSurat, filterKondisiRiwayat, filteredHistory, fileInputBukti, filterJenisAset, filterStatusPegawai, triggerUpload, 
             handleFileUpload, openPdf, hasBukti, selectedHistory, selectAllHistory, hapusBanyakHistory, prosesTransferKeluar
