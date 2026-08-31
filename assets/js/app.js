@@ -1,7 +1,6 @@
 const { createApp, ref, computed, onMounted } = Vue;
 
 createApp({
-
     setup() {
         //login
         const isLoggedIn = ref(
@@ -22,81 +21,88 @@ createApp({
 
         const forgotUsername = ref('');
         const forgotNewPassword = ref('');
+        const forgotPin = ref('');
         const forgotConfirmPassword = ref('');
+        const forgotError = ref('');
 
         const openForgotPassword = () => {
             forgotUsername.value = '';
             forgotNewPassword.value = '';
+            forgotPin.value = '';
             forgotConfirmPassword.value = '';
+            forgotError.value = '';
 
             modalForgotPassword.value.show = true;
         };
 
+        const closeForgotPassword = () => {
+            forgotUsername.value = '';
+            forgotPin.value = '';
+            forgotNewPassword.value = '';
+            forgotConfirmPassword.value = '';
+            forgotError.value = '';
+
+            modalForgotPassword.value.show = false;
+        };
+
         const resetPassword = async () => {
+            forgotError.value = '';
+
             const username = forgotUsername.value.trim();
+            const pin = forgotPin.value.trim();
             const newPassword = forgotNewPassword.value;
             const confirmPassword = forgotConfirmPassword.value;
 
             if (!username) {
-                showToast('Username wajib diisi!', true);
+                forgotError.value = 'Username salah diisi!';
+                return;
+            }
+
+            if (!pin) {
+                forgotError.value = 'PIN Darurat salah diisi!';
                 return;
             }
 
             if (!newPassword) {
-                showToast('Password baru wajib diisi!', true);
+                forgotError.value = 'Password baru wajib diisi!';
                 return;
             }
 
             if (newPassword !== confirmPassword) {
-                showToast('Konfirmasi password tidak cocok!', true);
+                forgotError.value = 'Konfirmasi password tidak cocok!';
                 return;
             }
 
             try {
-
                 const result = await apiRequest('password.php', {
                     method: 'POST',
-
                     body: JSON.stringify({
                         username: username,
+                        pin: pin, 
                         password_baru: newPassword
                     })
                 });
 
                 if (result.success) {
-
                     modalForgotPassword.value.show = false;
 
                     forgotUsername.value = '';
+                    forgotPin.value = ''; 
                     forgotNewPassword.value = '';
                     forgotConfirmPassword.value = '';
 
-                    showToast(
-                        'Password berhasil direset! Silakan login kembali.'
-                    );
-
+                    showToast('Password berhasil direset! Silakan login kembali.');
                 } else {
-
-                    showToast(
-                        result.message || 'Gagal mereset password!',
-                        true
-                    );
+                    forgotError.value = result.message || 'Gagal mereset password!';
                 }
 
             } catch (error) {
-
                 console.error('Reset password gagal:', error);
-
-                showToast(
-                    error.message || 'Gagal mereset password!',
-                    true
-                );
+                forgotError.value = error.message || 'Gagal terhubung ke server!';
             }
         };
 
-        // =====================================================
         // FUNCTION LOGIN
-        // =====================================================
         const handleLogin = async () => {
 
             const usernameInput = loginUsername.value.trim();
@@ -124,10 +130,8 @@ createApp({
                     isLoggedIn.value = true;
                     loginError.value = '';
 
-                    // SIMPAN STATUS LOGIN
                     sessionStorage.setItem('bmn_logged_in', 'true');
 
-                    // SIMPAN USERNAME
                     currentUsername.value = result.username;
                     localStorage.setItem(
                         'bmn_username',
@@ -138,13 +142,10 @@ createApp({
                     loginPassword.value = '';
 
                     await loadDataFromBackend();
-
                 }
 
             } catch (error) {
-
                 console.error('Login gagal:', error);
-
                 isLoggedIn.value = false;
 
                 loginError.value =
@@ -152,9 +153,7 @@ createApp({
             }
         };
 
-        // =====================================================
         // CEK LOGIN SAAT RELOAD
-        // =====================================================
         const checkLogin = () => {
 
             const loggedIn =
@@ -167,10 +166,6 @@ createApp({
             }
         };
 
-
-        // =====================================================
-        // SAAT APLIKASI DIBUKA / RELOAD
-        // =====================================================
         onMounted(async () => {
 
             checkLogin();
@@ -180,18 +175,15 @@ createApp({
             }
 
         });
-        // =====================================================
+
         // STATE UTAMA
-        // =====================================================
         const currentCategory = ref('laptops');
         const currentTab = ref('assets');
 
-        // Fungsi pinter buat pindah tab sekaligus ngereset semua filter
         const changeTab = (tabName) => {
             currentTab.value = tabName;
-            printData.value.show = false; // Tutup mode print otomatis
+            printData.value.show = false; 
             
-            // Reset semua kotak pencarian & dropdown filter
             searchQuery.value = '';
             filterStatus.value = 'all';
             filterKondisi.value = 'all';
@@ -202,7 +194,6 @@ createApp({
             filterJenisTransaksi.value = 'all';
             filterKondisiRiwayat.value = 'all';
 
-            // Matiin juga mode "Pilih Banyak" (Checkbox) biar rapi
             isSelectMode.value = false;
             selectedAssets.value = [];
             selectedPegawai.value = [];
@@ -256,9 +247,7 @@ createApp({
 
         const API_BASE = 'backend';
 
-        // =====================================================
         // TOAST & API
-        // =====================================================
         const showToast = (message, isError = false) => {
             toast.value = { show: true, message, isError };
             setTimeout(() => { toast.value.show = false; }, 4000);
@@ -290,9 +279,7 @@ createApp({
             }
         };
 
-        // =====================================================
         // NORMALIZE DATA
-        // =====================================================
         const normalizeAsset = (row) => {
             const jenis = row.jenis || row.nama_barang || 'Laptop';
             const jenisLower = String(jenis).toLowerCase();
@@ -370,9 +357,7 @@ createApp({
             };
         };
 
-        // =====================================================
         // LOAD & REFRESH DATA
-        // =====================================================
         const loadDataFromBackend = async () => {
             try {
                 const [asetResponse, pegawaiResponse, mutasiResponse] = await Promise.all([
@@ -414,10 +399,8 @@ createApp({
             historyList.value = (response.data || []).map(normalizeHistory);
         };
 
-        // =====================================================
-        // BUKTI SURAT (file PDF hasil upload, dicek dari FOLDER, bukan dari DB)
-        // =====================================================
-        const buktiIds = ref([]); // isinya kumpulan ID yang udah punya file bukti_<id>.pdf
+        // BUKTI SURAT (file PDF hasil upload dari FOLDER)
+        const buktiIds = ref([]); 
 
         const refreshBuktiList = async () => {
             try {
@@ -429,13 +412,9 @@ createApp({
             }
         };
 
-        // Dipanggil dari template: cek apakah baris riwayat ini udah ada file buktinya
         const hasBukti = (id) => buktiIds.value.includes(Number(id));
 
-        // =====================================================
-        // CATEGORY & STATISTICS
-        // =====================================================
-        
+        // CATEGORY & STATISTICS        
         const activeAssets = computed(() => allAssets.value);
 
         const allAssets = computed(() => [
@@ -444,8 +423,6 @@ createApp({
             ...db.value.tablets
         ]);
 
-        // Aset yang "beneran keliatan" -> udah dibuang yang berketerangan 'Transfer keluar'
-        // Dipakai khusus buat kartu statistik di atas, biar gak ikut kehitung
         const visibleAssets = computed(() =>
             activeAssets.value.filter(asset =>
                 !(asset.keterangan && String(asset.keterangan).toLowerCase().includes('transfer keluar'))
@@ -476,9 +453,7 @@ createApp({
             visibleAssets.value.filter(asset => asset.kondisi !== 'Baik').length
         );
         
-        // =====================================================
         // PEGAWAI INFO
-        // =====================================================
         const getPegawaiInfo = (id) => pegawaiList.value.find(pegawai => Number(pegawai.id) === Number(id)) || null;
         const getPegawaiName = (id) => getPegawaiInfo(id)?.nama || '-';
         const getPegawaiNip = (id) => getPegawaiInfo(id)?.nip || '-';
@@ -501,33 +476,25 @@ createApp({
             return result;
         };
 
-        // =====================================================
         // AMBIL TANGGAL BAST TERAKHIR / TANGGAL INPUT BARU
-        // =====================================================
         const getLastMutationDate = (asset) => {
-            // Cari riwayat mutasi berdasarkan ID aset
             const history = historyList.value.filter(h => h.aset_id === asset.id && h.tanggal && h.tanggal !== '0000-00-00');
             
-            // 1. Kalau ada riwayat mutasi/BAST, ambil yang paling baru
             if (history.length > 0) {
                 history.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
                 return formatTanggalIndo(history[0].tanggal);
             }
             
-            // 2. Kalau NGGAK ADA riwayat mutasi, cek apakah ini barang baru di-input (ada created_at)
             if (asset.created_at && asset.created_at !== '0000-00-00 00:00:00') {
                 // Biasanya formatnya "2026-08-14 10:30:00", kita potong ambil tanggalnya aja
                 const tglInput = asset.created_at.split(' ')[0];
                 return formatTanggalIndo(tglInput);
             }
             
-            // 3. Kalau bener-bener data mentah/lama yang nggak punya history dan created_at
             return '10 Agustus 2026';
         };
 
-        // =====================================================
         // BADGES & ICONS
-        // =====================================================
         const getConditionBadgeClass = kondisi => {
             if (kondisi === 'Baik') return 'bg-emerald-100 text-emerald-800';
             if (kondisi === 'Rusak Ringan') return 'bg-amber-100 text-amber-800';
@@ -540,9 +507,7 @@ createApp({
             return 'fa-circle-xmark text-rose-600';
         };
 
-        // =====================================================
         // FILTERS
-        // =====================================================
         const filteredAssets = computed(() => {
             return activeAssets.value.filter(asset => {
                 if (filterKeterangan.value !== 'all' && !(asset.keterangan || '').toLowerCase().startsWith(filterKeterangan.value.toLowerCase())) return false;
@@ -601,7 +566,7 @@ createApp({
         const filteredHistory = computed(() => {
             let result = [...historyList.value];
 
-            // 1. Filter Jenis Surat 
+            // Filter Jenis Surat 
             if (filterSurat.value === 'SIP') {
                 result = result.filter(h => h.nomorBast && String(h.nomorBast).includes('/GDG/'));
             } else if (filterSurat.value === 'BAST') {
@@ -612,17 +577,17 @@ createApp({
                 result = result.filter(h => h.keterangan && String(h.keterangan).includes('Penelitian Fisik'));
             }
 
-            // 2. Filter Jenis Transaksi
+            // Filter Jenis Transaksi
             if (filterJenisTransaksi.value !== 'all') {
                 result = result.filter(h => h.jenisTransaksi === filterJenisTransaksi.value);
             }
 
-            // 3. Filter Kondisi
+            // Filter Kondisi
             if (filterKondisiRiwayat.value !== 'all') {
                 result = result.filter(h => h.kondisi === filterKondisiRiwayat.value);
             }
 
-            // 4. Pencarian Kata Kunci
+            // Pencarian Kata Kunci
             const query = searchQuery.value.toLowerCase().trim();
             if (query) {
                 result = result.filter(h => 
@@ -664,29 +629,24 @@ createApp({
             formData.append('file_pdf', file);
 
             try {
-                // Tembak pakai tanda kutip backtick ` 
                 const response = await fetch(`${API_BASE}/upload_bukti.php`, { method: 'POST', body: formData });
                 
-                // KITA BACA MENTAHNYA DULU
                 const textResult = await response.text(); 
                 
-                // Kalau PHP-nya tetep nge-blank
                 if (!textResult || textResult.trim() === '') {
                     showToast('Server PHP nge-blank! Coba upload file PDF yang lebih kecil.', true);
                     return;
                 }
 
-                // Terjemahin ke JSON
                 const result = JSON.parse(textResult);
                 
                 if (result.status === 'success') {
                     showToast('Yey! Bukti TTD berhasil diupload.');
                     await refreshBuktiList(); 
                 } else {
-                    showToast(result.message, true); // Nampilin error aslinya dari PHP
+                    showToast(result.message, true); 
                 }
             } catch (error) {
-                // Kalau muncul pesan merah aneh, ini bakal nangkep
                 showToast(`Gagal! Cek tulisan merah di atas atau klik F12.`, true);
                 console.error("Error dari server:", error);
             } finally {
@@ -698,9 +658,7 @@ createApp({
             if (id) window.open(`uploads/surat/bukti_${id}.pdf`, '_blank');
         };
 
-        // =====================================================
         // FITUR PILIH & HAPUS BANYAK
-        // =====================================================
         const toggleSelectMode = () => {
             isSelectMode.value = !isSelectMode.value;
             if (!isSelectMode.value) {
@@ -724,9 +682,7 @@ createApp({
             set: (val) => { selectedHistory.value = val ? filteredHistory.value.map(h => h.id) : []; }
         });
 
-        // =====================================================
         // MODAL ASET
-        // =====================================================
         const modalAset = ref({ show: false, isEdit: false, editId: null });
         const formAset = ref({ jenis: '', kodeBarang: '', nup: '', merek: '', tipe: '', tahun: '', keterangan: '', kondisi: 'Baik', 
             kategoriKeterangan: 'Pembelian', detailKeterangan: ''});
@@ -748,12 +704,9 @@ createApp({
             }
         };
 
-        // =====================================================
         // MODAL ASET
-        // =====================================================
         const openAsetModal = (item = null) => {
             if (item) {
-                // Logika pinter buat misahin teks "Kategori - Detail" kalau lagi mau ngedit
                 let parsedKategori = 'Lainnya';
                 let parsedDetail = item.keterangan || '';
                 
@@ -761,7 +714,6 @@ createApp({
                 for (const cat of categories) {
                     if (item.keterangan && item.keterangan.startsWith(cat)) {
                         parsedKategori = cat;
-                        // Hapus kata kategorinya dan tanda strip, sisa teksnya masuk ke kotak detail
                         parsedDetail = item.keterangan.substring(cat.length).replace(/^ \- /, '').trim();
                         break;
                     }
@@ -789,7 +741,6 @@ createApp({
 
         const saveAset = async () => {
             try {
-                // GABUNGIN DULU KETERANGANNYA DI SINI SEBELUM DIKIRIM KE DB
                 let combinedKeterangan = formAset.value.kategoriKeterangan;
                 if (formAset.value.detailKeterangan && formAset.value.detailKeterangan.trim() !== '') {
                     combinedKeterangan += ` - ${formAset.value.detailKeterangan}`;
@@ -805,7 +756,7 @@ createApp({
                     tahun: formAset.value.tahun,
                     kondisi: formAset.value.kondisi,
                     kondisi_asli: formAset.value.kondisi,
-                    keterangan: combinedKeterangan, // <--- MASUKIN HASIL GABUNGAN KE SINI
+                    keterangan: combinedKeterangan, 
                     pemegang_id: formAset.value.pemegangId ?? null,
                     pemegang_nama_sumber: formAset.value.pemegangNama || null
                 };
@@ -823,9 +774,7 @@ createApp({
             }
         };
 
-        // =====================================================
         // MODAL PEGAWAI
-        // =====================================================
         const modalPegawai = ref({ show: false, isEdit: false, editId: null });
         const formPegawai = ref({ nama: '', nip: '', jabatan: '' });
 
@@ -865,9 +814,7 @@ createApp({
             }
         };
 
-        // =====================================================
         // LOGIKA MODAL TRANSFER KELUAR (TKTM) DARI PEGAWAI
-        // =====================================================
         const modalTKTM = ref({
             show: false, pegawaiId: null, namaPegawai: '', asetList: [], selectedAsetId: '',
             tujuan: '', nilaiPerolehan: '', tanggal: '', 
@@ -939,7 +886,6 @@ createApp({
             const tgl = m.tanggal; 
 
             try {
-                // Bungkus nama-nama pemeriksa jadi JSON buat disimpen ke database
                 const metadataNames = JSON.stringify({
                     pemeriksaTekmira1: m.pemeriksaTekmira1 ? getPegawaiName(m.pemeriksaTekmira1) : '',
                     pemeriksaTekmira2: m.pemeriksaTekmira2 ? getPegawaiName(m.pemeriksaTekmira2) : '',
@@ -949,7 +895,6 @@ createApp({
                     petinggiTekmira: m.petinggiTekmira || ''
                 });
 
-                // Update aset ke gudang
                 const payload = {
                     id: asset.id, jenis: asset.jenis, kode_barang: asset.kodeBarang,
                     nup_baru: asset.nup_baru || asset.nup || '', merek: asset.merek,
@@ -959,12 +904,10 @@ createApp({
                 };
                 await apiRequest('aset.php', { method: 'PUT', body: JSON.stringify(payload) });
 
-                // Bikin mutasi 1 & 2 (Ditambah metadata nama)
                 const resMutasi1 = await apiRequest('mutasi.php', { method: 'POST', body: JSON.stringify({ aset_id: asset.id, tanggal: tgl, pemegang_lama_id: m.pegawaiId, pemegang_baru_id: null, jenis_transaksi: 'LAINNYA', kondisi: asset.kondisi, nomor_bast: m.nomorPenelitian, keterangan: 'BA Penelitian Fisik - ' + m.tujuan.trim(), nilai_perolehan: m.nilaiPerolehan, lampiran_foto: metadataNames }) });
                 
                 const resMutasi2 = await apiRequest('mutasi.php', { method: 'POST', body: JSON.stringify({ aset_id: asset.id, tanggal: tgl, pemegang_lama_id: m.pegawaiId, pemegang_baru_id: null, jenis_transaksi: 'LAINNYA', kondisi: asset.kondisi, nomor_bast: m.nomorVerifikasi, keterangan: 'BA Verifikasi Aset - ' + m.tujuan.trim(), nilai_perolehan: m.nilaiPerolehan, lampiran_foto: metadataNames }) });
                 
-                // UPLOAD FOTO KE SERVER
                 const uploadPhotos = async (mutasiId) => {
                     if (m.fotoBarangFiles.length === 0 && m.fotoLabelFiles.length === 0) return;
                     const formData = new FormData();
@@ -981,7 +924,6 @@ createApp({
                 m.show = false;
                 showToast('Aset ditransfer, Surat & Foto berhasil disimpan.');
 
-                // Tampilkan ke layar (Data sementara buat preview langsung)
                 printData.value = {
                     show: true, jenisTransaksi: 'LAINNYA', printMode: 'PENELITIAN',
                     tanggal: tgl, kategoriLabel: asset.jenis, kodeBarang: asset.kodeBarang, nup: asset.nup_baru || asset.nup,
@@ -1002,19 +944,14 @@ createApp({
             } catch (error) { showToast(`Gagal memproses TKTM: ${error.message}`, true); }
         };
 
-        // =====================================================
         // AMBIL ASET YANG DIPEGANG PEGAWAI (Khusus di Modal Pegawai)
-        //=====================================================
         const asetDipegang = computed(() => {
-            // Pastikan modal pegawai lagi dalam mode Edit
             if (!modalPegawai.value || !modalPegawai.value.isEdit) return [];
             
             const empId = modalPegawai.value.editId;
             let list = [];
             
-            // Tarik dari semua kategori (Laptop, PC, Tablet)
             Object.values(db.value).forEach(kategoriAssets => {
-                // Jangan masukin yang udah ditransfer keluar sebelumnya
                 const asetAktif = kategoriAssets.filter(a => 
                     a.pemegangId === empId && 
                     (!a.keterangan || !String(a.keterangan).toLowerCase().includes('transfer keluar'))
@@ -1025,9 +962,7 @@ createApp({
             return list;
         });
 
-        // =====================================================
         // MODAL SERAH TERIMA & SURAT
-        // =====================================================
         const modalSerahTerima = ref({ show: false, asset: null });
         const formMutasi = ref({ pemegangBaruId: '', adminGudangId: '', tanggal: new Date().toISOString().slice(0, 10), kondisi: 'Baik', nomorBast: '', nomorSip: '' });
         const printData = ref({ show: false });
@@ -1039,16 +974,15 @@ createApp({
             generateNomorSurat();
         };
 
-        // Cek: pegawai ini masih aktif atau semua asetnya udah "Transfer keluar" (alias udah resign/pindah)?
         const pegawaiSudahKeluar = (pegawaiId) => {
             const punyaAsetPernah = allAssets.value.some(asset => Number(asset.pemegangId) === Number(pegawaiId));
-            if (!punyaAsetPernah) return false; // Belum pernah pegang aset sama sekali -> pegawai baru, bukan "udah keluar"
+            if (!punyaAsetPernah) return false; 
 
             const masihAdaAsetAktif = allAssets.value.some(asset =>
                 Number(asset.pemegangId) === Number(pegawaiId) &&
                 (!asset.keterangan || !String(asset.keterangan).toLowerCase().includes('transfer keluar'))
             );
-            return !masihAdaAsetAktif; // Kalau gak ada satupun aset aktif tersisa -> dianggap udah keluar
+            return !masihAdaAsetAktif; 
         };
 
         const availablePegawaiForTransfer = computed(() => {
@@ -1067,9 +1001,7 @@ createApp({
             return [...pegawaiList.value].sort((a, b) => String(a.nama).localeCompare(String(b.nama), 'id', { sensitivity: 'base' }));
         });
 
-        // =====================================================
         // AUTO-GENERATE NOMOR SURAT (RESET PER TAHUN, SIP & BAST PISAH)
-        // =====================================================
         const generateNomorSurat = () => {
             const asset = modalSerahTerima.value.asset;
             if (!asset) return;
@@ -1147,7 +1079,7 @@ createApp({
 
             try {
                 if (jenisTransaksi === 'MUTASI') {
-                    // 1. Eksekusi BAST 
+                    // BAST 
                     await apiRequest('mutasi.php', {
                         method: 'POST',
                         body: JSON.stringify({
@@ -1162,7 +1094,7 @@ createApp({
                         })
                     });
 
-                    // 2. Eksekusi SIP 
+                    // SIP 
                     await apiRequest('mutasi.php', {
                         method: 'POST',
                         body: JSON.stringify({
@@ -1207,7 +1139,7 @@ createApp({
                 printData.value = {
                     show: true,
                     jenisTransaksi: jenisTransaksi,
-                    printMode: jenisTransaksi === 'PEMINJAMAN' ? 'SIP' : 'BAST', // <-- TAMBAHAN BARU INI
+                    printMode: jenisTransaksi === 'PEMINJAMAN' ? 'SIP' : 'BAST', 
                     tanggal: formMutasi.value.tanggal,
                     kategoriLabel: updatedAsset.jenis,
                     kodeBarang: updatedAsset.kodeBarang,
@@ -1227,7 +1159,6 @@ createApp({
                     adminNip: adminGudang.nip,
                     adminJabatan: adminGudang.jabatan
                 };
-                // Kita kasih waktu loading (200ms) biar halamannya muncul dulu baru di-scroll
                 setTimeout(() => {
                     const printArea = document.getElementById('print-section');
                     if (printArea) {
@@ -1249,7 +1180,6 @@ createApp({
             let jenisTrans = record.jenisTransaksi || '';
             let tujuanTktm = '-';
 
-            // Deteksi jenis surat dari Keterangan / Transaksi yang tersimpan di DB
             if (record.keterangan && record.keterangan.includes('Penelitian Fisik')) {
                 jenisTrans = 'LAINNYA';
                 nPenelitian = record.nomorBast;
@@ -1261,11 +1191,11 @@ createApp({
                 targetPrintMode = 'VERIFIKASI';
                 tujuanTktm = record.keterangan.split(' - ')[1] || '-';
             } else if (jenisTrans === 'PEMINJAMAN' || (record.nomorBast && String(record.nomorBast).includes('/GDG/'))) {
-                jenisTrans = 'PEMINJAMAN'; // Khusus Gudang -> Pegawai
+                jenisTrans = 'PEMINJAMAN';
                 nSip = record.nomorBast;
                 targetPrintMode = 'SIP';
             } else {
-                jenisTrans = 'PENGEMBALIAN'; // Khusus Pegawai -> Gudang
+                jenisTrans = 'PENGEMBALIAN'; 
                 nBast = record.nomorBast;
                 targetPrintMode = 'BAST';
             }
@@ -1404,7 +1334,6 @@ createApp({
             const thnTeks = terbilang(thn).trim();
             const blnNama = bulanArr[bln - 1];
             
-            // Cuma balikin teksnya aja, nggak pakai kurung & angka
             return `${hari} tanggal ${tglTeks} bulan ${blnNama} tahun ${thnTeks}`;
         };
 
@@ -1418,9 +1347,7 @@ createApp({
         const tutupPrint = () => { printData.value.show = false; };
         const jalankanPrint = () => { window.print(); };
 
-        // =====================================================
         // MODAL PENGATURAN DOKUMEN
-        // =====================================================
         const modalPengaturan = ref({ show: false });
         const savedPengaturan = JSON.parse(localStorage.getItem('bmn_pengaturan_dokumen') || 'null');
         
@@ -1438,9 +1365,7 @@ createApp({
             showToast('Pengaturan dokumen berhasil disimpan di browser.');
         };
 
-        // =====================================================
         // MODAL PROFIL & LOGOUT
-        // =====================================================
         const savedUsername = localStorage.getItem('bmn_username') || 'Admin BMN';
         currentUsername.value = savedUsername;
 
@@ -1475,7 +1400,6 @@ createApp({
         }
 
         try {
-
             const result = await apiRequest('update_admin.php', {
                 method: 'POST',
                 body: JSON.stringify({
@@ -1487,19 +1411,15 @@ createApp({
 
             if (result.success) {
 
-                // Update username yang sedang digunakan
                 currentUsername.value = usernameBaru;
 
-                // Simpan username untuk tampilan setelah reload
                 localStorage.setItem(
                     'bmn_username',
                     usernameBaru
                 );
 
-                // Tutup modal
                 modalProfil.value.show = false;
 
-                // Bersihkan form
                 formProfil.value = {
                     username: usernameBaru,
                     oldPass: '',
@@ -1564,9 +1484,7 @@ createApp({
             showToast('Logout berhasil.');
         };
 
-        // =====================================================
         // MODAL RESET (KOSONGKAN DATA)
-        // =====================================================
         const modalReset = ref({ show: false, konfirmasi: '' });
         
         const openResetModal = () => {
@@ -1593,9 +1511,7 @@ createApp({
             }
         };
 
-        // =====================================================
         // EXPORT EXCEL
-        // =====================================================
         const assetsForExport = computed(() => {
             return activeAssets.value.filter(asset => {
                 if (filterKeterangan.value !== 'all') {
@@ -1603,7 +1519,6 @@ createApp({
                     const pilihan = filterKeterangan.value.toLowerCase();
                     if (!ket.startsWith(pilihan)) return false;
                 }
-                // (Sengaja TIDAK ada blok "sembunyiin transfer keluar" di sini)
 
                 if (filterStatus.value === 'assigned' && asset.pemegangId === null) return false;
                 if (filterStatus.value === 'gudang' && asset.pemegangId !== null) return false;
@@ -1627,8 +1542,6 @@ createApp({
         });
 
         const exportExcel = () => {
-            // 1. Ambil semua data (Copy array) lalu URUTKAN PAKSA dari Terbaru (ID Terbesar) ke Terlama
-            // Karena ini jadi patokan, SEMUA sheet di bawahnya otomatis bakal ikut urutan ini.
             const allAssets = [...activeAssets.value].sort((a, b) => Number(b.id) - Number(a.id));
 
             if (!allAssets.length) {
@@ -1636,11 +1549,9 @@ createApp({
                 return;
             }
 
-            // 2. PISAHKAN ASET MATI SURI (TKTM) DENGAN ASET AKTIF
             const dataTransferKeluar = allAssets.filter(a => (a.keterangan || '').toLowerCase().startsWith('transfer keluar'));
             const activeOnly = allAssets.filter(a => !(a.keterangan || '').toLowerCase().startsWith('transfer keluar'));
 
-            // 3. Kelompokkan Data Aktif Berdasarkan Status
             const dataGudang = activeOnly.filter(a => a.pemegangId === null);
             const dataDipakai = activeOnly.filter(a => a.pemegangId !== null);
             const dataTransferMasuk = activeOnly.filter(a => (a.keterangan || '').toLowerCase().startsWith('transfer masuk'));
@@ -1658,15 +1569,13 @@ createApp({
             const wb = XLSX.utils.book_new();
             const judulKategori = categoryLabel.value.toUpperCase();
 
-            // 5. Helper Function untuk Mengisi & Memoles Setiap Sheet
             const createStyledSheet = (sheetTitle, assetList) => {
                 const headerRow = [
                     'NO', 'USER', 'KODE BARANG', 'NUP BARU', 'MERK & TIPE', 'TAHUN', 'TANGGAL BAST', 'KONDISI', 'KETERANGAN'
                 ];
 
                 const dataRows = assetList.map((asset, index) => {
-                    // LOGIKA PENCARI NAMA USER (PEGAWAI ASLI)
-                    let namaUser = 'Gudang BMN TekMira'; // Default kalau di gudang
+                    let namaUser = 'Gudang BMN TekMira'; 
                     
                     if (asset.pemegangId) {
                         namaUser = getPegawaiName(asset.pemegangId);
@@ -1812,9 +1721,7 @@ createApp({
             showToast('Export Excel multi-tab berhasil!');
         };
 
-        // =====================================================
         // MODAL KONFIRMASI HAPUS (POP UP MODERN)
-        // =====================================================
         const modalHapus = ref({
             show: false,
             id: null,
@@ -1828,7 +1735,7 @@ createApp({
 
         const prosesHapusData = async () => {
             const { jenis, id } = modalHapus.value;
-            modalHapus.value.show = false; // Tutup modal langsung pas di-klik "Ya"
+            modalHapus.value.show = false; 
 
             try {
                 if (jenis === 'pegawai') {
@@ -1836,14 +1743,11 @@ createApp({
                     await refreshPegawai();
                     showToast('Data pegawai berhasil dihapus.');
                 } 
-                // =========================================================
-                // LOGIKA BARU: HAPUS PEGAWAI + KEMBALIKAN ASET KE GUDANG
-                // =========================================================
+
+                // LOGIKA HAPUS PEGAWAI + KEMBALIKAN ASET KE GUDANG
                 else if (jenis === 'pegawai_dengan_aset') {
-                    // 1. Tarik semua aset yang dipegang pegawai ini
                     const held = getPegawaiAllAssets(id);
                     
-                    // 2. Loop dan update semua aset jadi milik Gudang (pemegang_id = null)
                     for (const asset of held) {
                         const payload = {
                             id: asset.id,
@@ -1856,23 +1760,19 @@ createApp({
                             tahun: asset.tahun,
                             kondisi: asset.kondisi,
                             keterangan: asset.keterangan,
-                            pemegang_id: null // <-- Kunci utamanya di sini: Balik ke gudang
+                            pemegang_id: null // 
                         };
                         await apiRequest('aset.php', { method: 'PUT', body: JSON.stringify(payload) });
                     }
                     
-                    // 3. Setelah aset aman di gudang, baru hapus pegawainya
                     await apiRequest('pegawai.php', { method: 'DELETE', body: JSON.stringify({ id }) });
                     
-                    // 4. Refresh tampilan tabel
                     await refreshAssets();
                     await refreshPegawai();
                     showToast(`Pegawai dihapus & ${held.length} aset berhasil dikembalikan ke gudang.`); 
                 } else if (jenis === 'banyak_pegawai') {
-                    // Loop setiap pegawai yang dicentang
                     for (const pegId of selectedPegawai.value) {
                         
-                        // 1. Tarik & kembalikan asetnya ke gudang dulu (kalau ada)
                         const held = getPegawaiAllAssets(pegId);
                         for (const asset of held) {
                             const payload = {
@@ -1886,17 +1786,16 @@ createApp({
                                 tahun: asset.tahun,
                                 kondisi: asset.kondisi,
                                 keterangan: asset.keterangan,
-                                pemegang_id: null // <-- Balikin ke gudang
+                                pemegang_id: null 
                             };
                             await apiRequest('aset.php', { method: 'PUT', body: JSON.stringify(payload) });
                         }
                         
-                        // 2. Setelah aset aman, baru hapus pegawainya
                         await apiRequest('pegawai.php', { method: 'DELETE', body: JSON.stringify({ id: pegId }) });
                     }
                     
                     selectedPegawai.value = [];
-                    await refreshAssets(); // Refresh karena asetnya pada balik ke gudang
+                    await refreshAssets(); 
                     await refreshPegawai();
                     showToast('Pegawai terpilih berhasil dihapus & aset diamankan ke gudang.');
                 } else if (jenis === 'aset') {
@@ -1931,11 +1830,9 @@ createApp({
         const deletePegawai = (id) => {
             const held = getPegawaiAllAssets(id);
             if (held.length > 0) {
-                // Kalau ada aset, panggil modal dengan mode khusus
                 openModalHapus('pegawai_dengan_aset', id, `Pegawai ini masih memegang ${held.length} aset. Yakin ingin menghapus pegawai dan mengembalikan asetnya ke gudang BMN?`);
                 return;
             }
-            // Kalau kosong, hapus biasa
             openModalHapus('pegawai', id, 'Yakin ingin menghapus data pegawai ini?');
         };
 
@@ -1965,24 +1862,18 @@ createApp({
             openModalHapus('banyak_history', null, `Yakin ingin menghapus ${selectedHistory.value.length} riwayat surat terpilih?`);
         };
 
-        // =====================================================
         // LIFECYCLE
-        // =====================================================
         onMounted(async () => {
             checkLogin();
 
-            // Hanya load dashboard kalau sudah login
             if (isLoggedIn.value) {
                 await loadDataFromBackend();
             }
         });
 
-        // =====================================================
-        // EKSPOR SEMUA VARIABEL & FUNGSI KE HTML
-        // =====================================================
         return {
             isLoggedIn, loginUsername, loginPassword, loginError, currentUsername, handleLogin,
-            modalForgotPassword, forgotUsername, forgotNewPassword, forgotConfirmPassword, openForgotPassword, resetPassword,
+            modalForgotPassword, forgotUsername, forgotNewPassword, forgotConfirmPassword, openForgotPassword, resetPassword, forgotError, closeForgotPassword,
             
             currentCategory, currentTab, changeTab, showDropdown, searchQuery, filterStatus, filterKondisi, toast,
             categoryLabel, categoryIcon, db, activeAssets, visibleAssets, allAssets, pegawaiList, historyList, assignedCount, availableCount, damagedCount,
@@ -2000,7 +1891,7 @@ createApp({
             printData, formatTanggalIndo, formatTanggalTerbilang, formatTanggalAngka, cetakUlangBast, tutupPrint, jalankanPrint,
             
             modalPengaturan, formPengaturan, openPengaturanModal, savePengaturan,
-            modalProfil, formProfil, openProfilModal, saveProfil,
+            modalProfil, formProfil, openProfilModal, saveProfil, 
             modalLogout, openLogoutModal, confirmLogout, itemsPerPage, 
             modalReset, openResetModal, prosesResetData,
             exportExcel, getLastMutationDate, asetDipegang, sortAssetOrder, toggleAssetSort,

@@ -35,7 +35,7 @@ try {
         exit;
     }
 
-    if ($passwordInput !== $admin["password"]) {
+    if (!password_verify($passwordInput, $admin["password"])) {
         echo json_encode([
             "success" => false,
             "message" => "Username atau password salah!"
@@ -53,7 +53,6 @@ try {
     ]);
 
 } catch (PDOException $e) {
-
     http_response_code(500);
     echo json_encode([
         "success" => false,
@@ -61,3 +60,4 @@ try {
         "error" => $e->getMessage()
     ]);
 }
+?>
