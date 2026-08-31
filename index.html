@@ -165,43 +165,54 @@
 
                 <!-- Stats Bar (Grid 6 Kolom) -->
                 <div class="grid grid-cols-1 lg:grid-cols-6 gap-3 w-full mb-4">
-                    
-                    <!-- 1. Total Aset & Rincian (Makan 3 Porsi Lebar - 50% Layar) -->
-                    <div class="lg:col-span-3 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center p-3">
-                        <!-- Bagian Kiri: Angka Total (Jarak ke garis dipersempit) -->
-                        <div class="flex items-center space-x-2.5 pr-2">
-                            <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-lg shrink-0"><i class="fa-solid fa-boxes-stacked"></i></div>
+
+                    <!-- 1. Total Aset & Rincian (Makan 3 Porsi Lebar - lg:col-span-3) -->
+                    <div class="lg:col-span-3 bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center p-3">
+                        
+                        <!-- Kiri: Total Aset (Bisa diklik buat reset jadi 'Semua Jenis') -->
+                        <div @click="filterJenisAset = 'all'" class="flex items-center space-x-3 pr-4 sm:border-r border-slate-200 cursor-pointer hover:opacity-75 transition-opacity w-full sm:w-auto mb-3 sm:mb-0">
+                            <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-lg shrink-0">
+                                <i class="fa-solid fa-boxes-stacked"></i>
+                            </div>
                             <div>
-                                <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Total Aset</p>
+                                <p class="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Total Aset</p>
                                 <p class="text-xl font-bold text-slate-800 leading-tight">{{ visibleAssets.length }} <span class="text-xs font-normal text-slate-500">unit</span></p>
                             </div>
                         </div>
-                        
-                        <!-- Garis Pembatas Vertikal -->
-                        <div class="h-10 border-l border-slate-200 mx-1"></div>
-                        
-                        <!-- Bagian Kanan: Deretan Badge Rincian (Diperbesar & Diberi flex-1 agar mengisi ruang) -->
-                        <div class="flex flex-1 flex-wrap items-center gap-3 pl-3">
-                            <span class="flex items-center space-x-1.5 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 text-xs font-bold text-slate-600">
+
+                        <!-- Kanan: Deretan Badge Rincian (Rapat dan Fleksibel) -->
+                        <div class="flex flex-wrap items-center gap-2 pl-0 sm:pl-4 w-full sm:w-auto">
+                            <!-- Tombol Lap & NB -->
+                            <span @click="filterJenisAset = 'Laptop'" class="flex items-center space-x-1.5 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 cursor-pointer hover:bg-slate-200 active:bg-slate-300 transition-colors">
                                 <i class="fa-solid fa-laptop text-blue-500"></i>
-                                <span>Lap & NB: {{ visibleAssets.filter(a => a.jenis === 'Laptop' || a.jenis === 'Notebook').length }}</span>
+                                <span>Lp: {{ visibleAssets.filter(a => a.jenis === 'Laptop' || a.jenis === 'Notebook').length }}</span>
                             </span>
-                            <span class="flex items-center space-x-1.5 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 text-xs font-bold text-slate-600">
+                            <span @click="filterJenisAset = 'Notebook'" class="flex items-center space-x-1.5 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 cursor-pointer hover:bg-slate-200 active:bg-slate-300 transition-colors">
+                                <i class="fa-solid fa-laptop text-blue-500"></i>
+                                <span>NB: {{ visibleAssets.filter(a => a.jenis === 'Notebook').length }}</span>
+                            </span>
+                            
+                            <!-- Tombol PC -->
+                            <span @click="filterJenisAset = 'PC Unit'" class="flex items-center space-x-1.5 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 cursor-pointer hover:bg-slate-200 active:bg-slate-300 transition-colors">
                                 <i class="fa-solid fa-desktop text-emerald-500"></i>
                                 <span>PC: {{ visibleAssets.filter(a => a.jenis === 'PC Unit').length }}</span>
                             </span>
-                            <span class="flex items-center space-x-1.5 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 text-xs font-bold text-slate-600">
+                            
+                            <!-- Tombol Tab -->
+                            <span @click="filterJenisAset = 'Tablet'" class="flex items-center space-x-1.5 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 cursor-pointer hover:bg-slate-200 active:bg-slate-300 transition-colors">
                                 <i class="fa-solid fa-tablet-screen-button text-amber-500"></i>
                                 <span>Tab: {{ visibleAssets.filter(a => a.jenis === 'Tablet').length }}</span>
                             </span>
-                            <span class="flex items-center space-x-1.5 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 text-xs font-bold text-slate-600">
+                            
+                            <!-- Tombol HP -->
+                            <span @click="filterJenisAset = 'Telephone Mobile'" class="flex items-center space-x-1.5 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 cursor-pointer hover:bg-slate-200 active:bg-slate-300 transition-colors">
                                 <i class="fa-solid fa-mobile-screen text-rose-500"></i>
                                 <span>HP: {{ visibleAssets.filter(a => a.jenis === 'Telephone Mobile').length }}</span>
                             </span>
                         </div>
                     </div>
 
-                    <!-- 2. Dipakai (1 Porsi) -->
+                    <!-- 2. Dipakai (Span 1) -->
                     <div class="bg-white rounded-xl border border-slate-200 shadow-sm flex items-center p-3">
                         <div class="flex items-center space-x-2.5">
                             <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-lg shrink-0"><i class="fa-solid fa-user-check"></i></div>
@@ -212,7 +223,7 @@
                         </div>
                     </div>
 
-                    <!-- 3. Di Gudang (1 Porsi) -->
+                    <!-- 3. Di Gudang (Span 1) -->
                     <div class="bg-white rounded-xl border border-slate-200 shadow-sm flex items-center p-3">
                         <div class="flex items-center space-x-2.5">
                             <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-lg shrink-0"><i class="fa-solid fa-warehouse"></i></div>
@@ -223,7 +234,7 @@
                         </div>
                     </div>
 
-                    <!-- 4. Export Excel (1 Porsi) -->
+                    <!-- 4. Export (Span 1) -->
                     <button @click="exportExcel" class="bg-white rounded-xl border border-slate-200 shadow-sm flex items-center p-3 hover:bg-slate-50 transition w-full text-left group">
                         <div class="flex items-center space-x-2.5">
                             <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-lg shrink-0 group-hover:scale-110 transition-transform"><i class="fa-solid fa-file-excel"></i></div>
@@ -617,9 +628,13 @@
 
                         <div class="pt-2 border-t border-slate-100">
                             <label class="block text-[11px] font-semibold text-slate-700 mb-1">Kode Form SIP</label>
-                            <input type="text" v-model="formPengaturan.kodeSip" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500" placeholder="Contoh: F. DBR.U.1.02.02">
+                            <input type="text" v-model="formPengaturan.kodeSip" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
                         </div>
-
+                        <!-- TAMBAHAN KODE BAST -->
+                        <div class="pt-2 border-t border-slate-100">
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Kode Form BAST</label>
+                            <input v-model="formPengaturan.kodeBast" type="text" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
+                        </div>
                         <div class="pt-3 flex justify-end space-x-2">
                             <button type="button" @click="modalPengaturan.show = false" class="px-3.5 py-1.5 rounded-lg text-xs font-medium border border-slate-300 hover:bg-slate-50">Batal</button>
                             <button type="submit" class="px-4 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-yellow-600 text-white shadow-sm">Simpan</button>
@@ -1153,6 +1168,13 @@
                 <div class="px-[2.5cm]">
                     <!-- BAST -->
                     <template v-if="printData.printMode === 'BAST'">
+                        <!-- KODE FORM SIP-->
+                        <div v-if="formPengaturan.kodeBast" class="flex justify-end -mt-4 mb-4">
+                            <div class="border border-black px-2 py-1 text-[11px] font-bold bg-white">
+                                {{ formPengaturan.kodeBast }}
+                            </div>
+                        </div>
+                        </div>
                         <div class="text-center mb-6">
                             <h2 class="text-[15px] font-bold uppercase underline">Berita Acara Serah Terima Barang Milik Negara (BAST-BMN)</h2>
                             <p class="text-sm mt-1">Nomor : {{ printData.nomorBast || '-' }}</p>

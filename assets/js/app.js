@@ -1372,7 +1372,8 @@ createApp({
             namaKepala: savedPengaturan?.namaKepala || 'Nur Syarief Boni Mulyanto',
             nipKepala: savedPengaturan?.nipKepala || '',
             jabatanKepala: savedPengaturan?.jabatanKepala || 'Kepala Subbagian Perlengkapan,\nRumah Tangga dan Pengadaan',
-            kodeSip: savedPengaturan?.kodeSip || 'F. DBR.U.1.02.02'
+            kodeSip: savedPengaturan?.kodeSip || 'F. DBR.U.1.02.02',
+            kodeBast: savedPengaturan?.kodeBast || 'F. DBR.U.1.02.01'
         });
 
         const openPengaturanModal = () => { modalPengaturan.value.show = true; };
