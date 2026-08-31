@@ -875,6 +875,24 @@ createApp({
             event.target.value = '';
         };
 
+        const removeFotoTktm = (type, index) => {
+            if (type === 'barang') {
+                if (modalTKTM.value.fotoBarangUrls) {
+                    modalTKTM.value.fotoBarangUrls.splice(index, 1);
+                }
+                if (modalTKTM.value.fotoBarangFiles) {
+                    modalTKTM.value.fotoBarangFiles.splice(index, 1);
+                }
+            } else if (type === 'label') {
+                if (modalTKTM.value.fotoLabelUrls) {
+                    modalTKTM.value.fotoLabelUrls.splice(index, 1);
+                }
+                if (modalTKTM.value.fotoLabelFiles) {
+                    modalTKTM.value.fotoLabelFiles.splice(index, 1);
+                }
+            }
+        };
+
         const submitTKTM = async () => {
             const m = modalTKTM.value;
             const asset = m.asetList.find(a => Number(a.id) === Number(m.selectedAsetId));
@@ -1895,7 +1913,7 @@ createApp({
             modalLogout, openLogoutModal, confirmLogout, itemsPerPage, 
             modalReset, openResetModal, prosesResetData,
             exportExcel, getLastMutationDate, asetDipegang, sortAssetOrder, toggleAssetSort,
-            modalTKTM, openModalTKTM, submitTKTM, handleFotoTktm, filterJenisTransaksi,
+            modalTKTM, openModalTKTM, submitTKTM, handleFotoTktm, filterJenisTransaksi,removeFotoTktm,
 
             filterSurat, filterKondisiRiwayat, filteredHistory, fileInputBukti, filterJenisAset, filterStatusPegawai, triggerUpload, 
             handleFileUpload, openPdf, hasBukti, selectedHistory, selectAllHistory, hapusBanyakHistory, prosesTransferKeluar
