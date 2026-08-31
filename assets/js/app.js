@@ -2231,13 +2231,10 @@ createApp({
             modalProfil, formProfil, openProfilModal, saveProfil, 
             modalLogout, openLogoutModal, confirmLogout, itemsPerPage, 
             modalReset, openResetModal, prosesResetData,
-<<<<<<< HEAD
-            exportExcel, getLastMutationDate, asetDipegang, sortAssetOrder, toggleAssetSort,
-            modalTKTM, openModalTKTM, submitTKTM, handleFotoTktm, filterJenisTransaksi,removeFotoTktm,
-=======
+
             exportExcel, exportPegawaiExcel, getLastMutationDate, asetDipegang, sortAssetOrder, toggleAssetSort,
-            modalTKTM, openModalTKTM, submitTKTM, handleFotoTktm, filterJenisTransaksi,
->>>>>>> ca0f3d2 (Excel pegawai)
+            modalTKTM, openModalTKTM, submitTKTM, handleFotoTktm, filterJenisTransaksi,removeFotoTktm,
+            
 
             filterSurat, filterKondisiRiwayat, filteredHistory, fileInputBukti, filterJenisAset, filterStatusPegawai, triggerUpload, 
             handleFileUpload, openPdf, hasBukti, selectedHistory, selectAllHistory, hapusBanyakHistory, prosesTransferKeluar
