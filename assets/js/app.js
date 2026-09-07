@@ -1412,7 +1412,7 @@ createApp({
         const savedPengaturan = JSON.parse(localStorage.getItem('bmn_pengaturan_dokumen') || 'null');
         
         const formPengaturan = ref({
-            namaKepala: savedPengaturan?.namaKepala || 'Nur Syarief Boni Mulyanto',
+            namaKepala: savedPengaturan?.namaKepala || 'Nur Syarief Boni Mulyanto, S.T',
             nipKepala: savedPengaturan?.nipKepala || '',
             jabatanKepala: savedPengaturan?.jabatanKepala || 'Kepala Subbagian Perlengkapan,\nRumah Tangga dan Pengadaan',
             kodeSip: savedPengaturan?.kodeSip || 'F. DBR.U.1.02.02',
