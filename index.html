@@ -161,13 +161,10 @@
                     <button @click="toast.show = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
                 </div>
 
-                <!-- Stats Bar (Flex Layout) -->
+                <!-- Stats Bar -->
                 <div class="flex flex-col lg:flex-row gap-3 w-full mb-4">
-
-                    <!-- 1. Total Aset & Rincian (Diberi flex-1 agar memakan sisa ruang dinamis) -->
-                    <div class="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center p-3 shrink min-w-0 max-w-full overflow-hidden">
-
-                        <!-- Kiri: Total Aset -->
+                    <!-- 1. Total Aset & Rincian (Dihapus flex-1 agar ukurannya pas sebatas konten saja) -->
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center p-3 shrink min-w-0 max-w-full overflow-hidden">
                         <div @click="filterJenisAset = 'all'" class="flex items-center space-x-3 pr-4 sm:border-r border-slate-200 cursor-pointer hover:opacity-75 transition-opacity shrink-0 mb-3 sm:mb-0 w-full sm:w-auto">
                             <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-lg shrink-0">
                                 <i class="fa-solid fa-boxes-stacked"></i>
@@ -178,9 +175,7 @@
                             </div>
                         </div>
 
-                        <!-- Kanan: Deretan Badge Rincian -->
-                        <div class="flex flex-nowrap items-center gap-2 pl-0 sm:pl-4 overflow-x-auto flex-1 min-w-0 pb-1 sm:pb-0 hide-scrollbar">
-                            <!-- Tombol Lap & NB -->
+                        <div class="flex flex-nowrap items-center gap-2 pl-0 sm:pl-4 overflow-x-auto min-w-0 pb-1 sm:pb-0 hide-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                             <span @click="filterJenisAset = 'Laptop'" class="shrink-0 flex items-center space-x-1.5 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 cursor-pointer hover:bg-slate-200 active:bg-slate-300 transition-colors">
                                 <i class="fa-solid fa-laptop text-blue-500"></i>
                                 <span>Lp: {{ visibleAssets.filter(a => a.jenis === 'Laptop' || a.jenis === 'Notebook').length }}</span>
@@ -189,37 +184,23 @@
                                 <i class="fa-solid fa-laptop text-red-500"></i>
                                 <span>NB: {{ visibleAssets.filter(a => a.jenis === 'Notebook').length }}</span>
                             </span>
-
-                            <!-- Tombol PC -->
                             <span @click="filterJenisAset = 'PC Unit'" class="shrink-0 flex items-center space-x-1.5 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 cursor-pointer hover:bg-slate-200 active:bg-slate-300 transition-colors">
                                 <i class="fa-solid fa-desktop text-emerald-500"></i>
                                 <span>PC: {{ visibleAssets.filter(a => a.jenis === 'PC Unit').length }}</span>
                             </span>
-
-                            <!-- Tombol Tab -->
                             <span @click="filterJenisAset = 'Tablet'" class="shrink-0 flex items-center space-x-1.5 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 cursor-pointer hover:bg-slate-200 active:bg-slate-300 transition-colors">
                                 <i class="fa-solid fa-tablet-screen-button text-amber-500"></i>
                                 <span>Tab: {{ visibleAssets.filter(a => a.jenis === 'Tablet').length }}</span>
                             </span>
-
-                            <!-- Tombol HP -->
                             <span @click="filterJenisAset = 'Telephone Mobile'" class="shrink-0 flex items-center space-x-1.5 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 cursor-pointer hover:bg-slate-200 active:bg-slate-300 transition-colors">
                                 <i class="fa-solid fa-mobile-screen text-rose-500"></i>
                                 <span>HP: {{ visibleAssets.filter(a => a.jenis === 'Telephone Mobile').length }}</span>
                             </span>
-                            <span @click="filterJenisAset = 'Camera'" class="shrink-0 flex items-center space-x-1.5 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 cursor-pointer hover:bg-slate-200 active:bg-slate-300 transition-colors">
-                                <i class="fa-solid fa-camera text-blue-500"></i>
-                                <span>Cam: {{ visibleAssets.filter(a => a.jenis === 'Camera').length }}</span>
-                            </span>
-                            <span @click="filterJenisAset = 'Drone'" class="shrink-0 flex items-center space-x-1.5 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 cursor-pointer hover:bg-slate-200 active:bg-slate-300 transition-colors">
-                                <i class="fa-solid fa-helicopter text-purple-500"></i>
-                                <span>Drone: {{ visibleAssets.filter(a => a.jenis === 'Drone').length }}</span>
-                            </span>
                         </div>
                     </div>
 
-                    <!-- 2. Dipakai (Ukurannya dibatasi di layar lebar agar tidak menekan box pertama) -->
-                    <div class="flex-1 lg:flex-none lg:w-40 xl:w-48 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center p-3 shrink-0">
+                    <!-- 2. Dipakai (Diberi flex-1 agar melebar mengisi sisa ruang layar secara otomatis) -->
+                    <div class="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center p-3 min-w-[140px]">
                         <div class="flex items-center space-x-2.5">
                             <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-lg shrink-0"><i class="fa-solid fa-user-check"></i></div>
                             <div>
@@ -229,8 +210,8 @@
                         </div>
                     </div>
 
-                    <!-- 3. Di Gudang -->
-                    <div class="flex-1 lg:flex-none lg:w-40 xl:w-48 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center p-3 shrink-0">
+                    <!-- 3. Di Gudang (Diberi flex-1 agar melebar mengisi sisa ruang layar secara otomatis) -->
+                    <div class="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center p-3 min-w-[140px]">
                         <div class="flex items-center space-x-2.5">
                             <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-lg shrink-0"><i class="fa-solid fa-warehouse"></i></div>
                             <div>
@@ -240,11 +221,8 @@
                         </div>
                     </div>
 
-                    <!-- 4. Export (Tetap kotak persegi kecil) -->
-                    <button type="button" 
-                            @click="exportExcel"
-                            class="w-16 h-16 bg-emerald-600 hover:bg-emerald-700 rounded-2xl border border-emerald-500/20 shadow-sm flex items-center justify-center transition group shrink-0 active:scale-95 cursor-pointer"
-                            title="Export Excel">
+                    <!-- 4. Export -->
+                    <button type="button" @click="exportExcel" class="w-16 h-16 bg-emerald-600 hover:bg-emerald-700 rounded-2xl border border-emerald-500/20 shadow-sm flex items-center justify-center transition group shrink-0 active:scale-95 cursor-pointer" title="Export Excel">
                         <i class="fa-solid fa-file-excel text-3xl text-white group-hover:scale-110 transition-transform"></i>
                     </button>
                 </div>
