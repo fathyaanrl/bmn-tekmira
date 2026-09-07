@@ -620,9 +620,16 @@ createApp({
         // Logika Upload PDF
         const triggerUpload = (id) => {
             currentUploadId.value = id;
-            if (fileInputBukti.value) fileInputBukti.value.click();
+            
+            // Trik langsung: Cari elemen input file secara langsung di HTML
+            const inputElement = document.querySelector('input[type="file"]');
+            
+            if (inputElement) {
+                inputElement.click(); // Paksa buka jendela file
+            } else {
+                alert("Tag input file belum ada di index.html!");
+            }
         };
-
         const handleFileUpload = async (event) => {
             const file = event.target.files[0];
             if (!file) return;
@@ -2218,6 +2225,7 @@ createApp({
             modalAset, formAset, openAsetModal, saveAset, deleteAsset, ubahKodeOtomatis,
             modalPegawai, formPegawai, openPegawaiModal, savePegawai, deletePegawai,
             modalHapus, openModalHapus, prosesHapusData, sortHistoryOrder, toggleHistorySort,
+            fileInputBukti, handleFileUpload,
             
             modalSerahTerima, formMutasi, openSerahTerimaModal, availablePegawaiForTransfer, stafGudangList, submitSerahTerima,
             printData, formatTanggalIndo, formatTanggalTerbilang, formatTanggalAngka, cetakUlangBast, tutupPrint, jalankanPrint,
