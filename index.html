@@ -565,22 +565,31 @@
                                     </td>
                                     <td class="py-3 px-4 font-mono text-[11px] text-slate-500">{{ h.nomorBast || '-' }}</td>
 
-                                    <!-- AKSI DOKUMEN -->
+                                     <!-- AKSI DOKUMEN -->
                                     <td class="py-3 px-4 text-center">
                                         <div class="flex items-center justify-center space-x-1.5">
+                                            <!-- Tombol Cetak -->
                                             <button type="button" @click="cetakUlangBast(h)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-[10px] px-2.5 h-[29px] rounded-md transition font-semibold flex items-center justify-center space-x-1 cursor-pointer shrink-0" title="Cetak Ulang Surat">
                                                 <i class="fa-solid fa-print pointer-events-none"></i><span>Cetak</span>
                                             </button>
                                             
-                                            <button type="button" @click="openPdf(h.id)" :disabled="!hasBukti(h.id)" :class="hasBukti(h.id) ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 cursor-pointer' : 'bg-slate-50 text-slate-300 border-slate-200 cursor-not-allowed'" class="border text-[10px] px-2.5 h-[29px] rounded-md transition font-semibold flex items-center justify-center space-x-1 shrink-0" title="Lihat Bukti TTD">
+                                            <!-- Tombol LIHAT (Langsung aktif kalau data file ada) -->
+                                            <button type="button" 
+                                                    @click="openPdf(h)" 
+                                                    :disabled="!hasBukti(h)" 
+                                                    :class="hasBukti(h) ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700 cursor-pointer shadow-sm' : 'bg-slate-50 text-slate-300 border-slate-200 cursor-not-allowed'" 
+                                                    class="border text-[10px] px-2.5 h-[29px] rounded-md transition font-semibold flex items-center justify-center space-x-1 shrink-0" 
+                                                    title="Lihat Bukti TTD">
                                                 <i class="fa-solid fa-file-pdf pointer-events-none"></i><span>Lihat</span>
                                             </button>
                                             
-                                            <button type="button" @click.stop="triggerUpload(h.id)" class="bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 text-[10px] w-[29px] h-[29px] rounded-md transition flex items-center justify-center cursor-pointer shrink-0" :title="hasBukti(h.id) ? 'Upload Ulang PDF' : 'Upload Bukti TTD'">
+                                            <!-- Tombol Upload -->
+                                            <button type="button" @click.stop="triggerUpload(h.id || h.id_mutasi)" class="bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 text-[10px] w-[29px] h-[29px] rounded-md transition flex items-center justify-center cursor-pointer shrink-0" title="Upload Bukti TTD">
                                                 <i class="fa-solid fa-cloud-arrow-up pointer-events-none text-xs"></i>
                                             </button>
                                         </div>
                                     </td>
+
                                 </tr>
                                 <tr v-if="filteredHistory.length === 0">
                                     <td colspan="9" class="text-center py-10 text-slate-400">
@@ -1476,16 +1485,15 @@
                 </div>
             </div>
         </div>
-        <!-- Input buat upload PDF
-        <input type="file" ref="fileInputBukti" @change="handleFileUpload" accept=".pdf" class="hidden"> -->
-        <!-- Tag Input File PDF -->
-        <input 
+        <!-- Hidden Input khusus Upload Bukti PDF Surat -->
+        <input type="file" ref="fileInputBukti" class="hidden" accept="application/pdf" @change="handleFileUpload">
+        <!-- <input 
             type="file" 
             ref="fileInputBukti" 
             @change="handleFileUpload" 
             accept="application/pdf" 
-            style="display: none !important;">
-            </div>
+            style="display: none !important;"> -->
+     </div>
 
     <script src="assets/js/app.js"></script>
 </body>

@@ -1,53 +1,57 @@
 <?php
 header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
 
-if (!isset($_POST['id']) || !isset($_FILES['file_pdf'])) {
-    echo json_encode(['status' => 'error', 'message' => 'Data tidak lengkap (id / file kosong).']);
-    exit;
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
 }
 
-$id = preg_replace('/[^0-9]/', '', $_POST['id']);
-if ($id === '') {
-    echo json_encode(['status' => 'error', 'message' => 'ID tidak valid.']);
-    exit;
-}
+// Tambahkan koneksi database Anda di sini (sesuaikan dengan nama file koneksi Anda)
+// require_once 'koneksi.php';
 
-$file = $_FILES['file_pdf'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $id = $_POST['id'] ?? null;
 
-// Cek apakah file tidak korup saat proses transfer
-if ($file['error'] !== UPLOAD_ERR_OK) {
-    echo json_encode(['status' => 'error', 'message' => 'File rusak atau gagal diunggah.']);
-    exit;
-}
+    if (!$id) {
+        echo json_encode(['status' => 'error', 'message' => 'ID Transaksi tidak ditemukan.']);
+        exit;
+    }
 
-// maksimal 10MB
-$maxSize = 10 * 1024 * 1024;
-if ($file['size'] > $maxSize) {
-    echo json_encode(['status' => 'error', 'message' => 'Ukuran file maksimal 10MB.']);
-    exit;
-}
+    if (!isset($_FILES['file_pdf']) || $_FILES['file_pdf']['error'] !== UPLOAD_ERR_OK) {
+        $errorCode = $_FILES['file_pdf']['error'] ?? 'No file';
+        echo json_encode(['status' => 'error', 'message' => 'Gagal mengunggah berkas. Kode Error PHP: ' . $errorCode]);
+        exit;
+    }
 
-$finfo = finfo_open(FILEINFO_MIME_TYPE);
-$mimeType = finfo_file($finfo, $file['tmp_name']);
-finfo_close($finfo);
+    $targetDir = "uploads/surat/";
+    if (!is_dir($targetDir)) {
+        mkdir($targetDir, 0777, true);
+    }
 
-if ($mimeType !== 'application/pdf') {
-    echo json_encode(['status' => 'error', 'message' => 'Sistem menolak! File harus berformat PDF asli.']);
-    exit;
-}
+    $fileName = "bukti_" . preg_replace('/[^a-zA-Z0-9_-]/', '', $id) . "_" . time() . ".pdf";
+    $targetFile = $targetDir . $fileName;
 
-// Folder tujuan 
-$targetDir = __DIR__ . '/../uploads/surat/';
-if (!is_dir($targetDir)) {
-    mkdir($targetDir, 0755, true);
-}
+    if (move_uploaded_file($_FILES['file_pdf']['tmp_name'], $targetFile)) {
+        
+        /* 
+         * JANGAN LUPA: Update kolom file bukti di database Anda!
+         * Contoh query:
+         * $stmt = $pdo->prepare("UPDATE mutasi SET file_bukti = ? WHERE id = ?");
+         * $stmt->execute([$targetFile, $id]);
+         */
 
-// Nama file bukti_<id>.pdf
-$targetFile = $targetDir . 'bukti_' . $id . '.pdf';
-
-if (move_uploaded_file($file['tmp_name'], $targetFile)) {
-    echo json_encode(['status' => 'success', 'message' => 'File berhasil diupload dengan aman.']);
+        echo json_encode([
+            'status' => 'success',
+            'message' => 'Berkas berhasil diunggah.',
+            'filePath' => $targetFile
+        ]);
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'Gagal menyimpan berkas ke folder server.']);
+    }
 } else {
-    echo json_encode(['status' => 'error', 'message' => 'Gagal menyimpan file ke server.']);
+    echo json_encode(['status' => 'error', 'message' => 'Metode request tidak diizinkan.']);
 }
 ?>

@@ -1,25 +1,24 @@
 <?php
-session_start();
-// Barikade Keamanan Endpoint
-if (!isset($_SESSION["admin_username"])) {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'message' => 'Akses ditolak! Sesi login tidak valid.']);
-    exit; // Hentikan eksekusi script di bawahnya
-}
-
 header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
 
-// Folder tempat file bukti disimpan
-$targetDir = __DIR__ . '/../uploads/surat/';
+$targetDir = "uploads/surat/";
 $ids = [];
 
 if (is_dir($targetDir)) {
     $files = scandir($targetDir);
     foreach ($files as $file) {
-        if (preg_match('/^bukti_(\d+)\.pdf$/', $file, $match)) {
-            $ids[] = (int) $match[1];
+        if ($file === '.' || $file === '..') continue;
+        
+        // Mengambil ID dari nama file (misal: bukti_123.pdf atau bukti_123_160000.pdf)
+        if (preg_match('/bukti_([a-zA-Z0-9-]+)/', $file, $matches)) {
+            $ids[] = (string)$matches[1];
         }
     }
 }
 
-echo json_encode(['status' => 'success', 'ids' => $ids]);
+echo json_encode([
+    'status' => 'success',
+    'ids' => array_values(array_unique($ids))
+]);
+?>

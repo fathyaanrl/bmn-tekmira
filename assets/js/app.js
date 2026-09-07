@@ -166,21 +166,11 @@ createApp({
             }
         };
 
-        onMounted(async () => {
-
-            checkLogin();
-
-            if (isLoggedIn.value) {
-                await loadDataFromBackend();
-            }
-
-        });
-
         // STATE UTAMA
         const currentCategory = ref('laptops');
         const currentTab = ref('assets');
 
-        const changeTab = (tabName) => {
+        const changeTab = async (tabName) => {
             currentTab.value = tabName;
             printData.value = { show: false }; 
             
@@ -198,6 +188,12 @@ createApp({
             selectedAssets.value = [];
             selectedPegawai.value = [];
             selectedHistory.value = [];
+
+            // Jika pindah ke tab riwayat/mutasi, refresh datanya
+            if (tabName === 'mutasi' || tabName === 'riwayat') {
+                await refreshHistory();
+                await refreshBuktiList();
+            }
         };
 
         const showDropdown = ref(false); 
@@ -351,8 +347,8 @@ createApp({
                 nomorBast: row.nomor_bast || '',
                 jenisTransaksi: row.jenis_transaksi || '',
                 keterangan: row.keterangan || '',
-                nilai_perolehan: row.nilai_perolehan || '',  // <--- TAMBAHAN
-                lampiran_foto: row.lampiran_foto || null,    // <--- TAMBAHAN
+                nilai_perolehan: row.nilai_perolehan || '',
+                lampiran_foto: row.lampiran_foto || null,
                 file_bukti: row.file_bukti || null
             };
         };
@@ -402,21 +398,38 @@ createApp({
         // BUKTI SURAT (file PDF hasil upload dari FOLDER)
         const buktiIds = ref([]); 
 
+
         const refreshBuktiList = async () => {
             try {
                 const res = await fetch(`${API_BASE}/list_bukti.php`);
                 const result = await res.json();
-                buktiIds.value = (result.ids || []).map(Number);
+                if (result.status === 'success' || Array.isArray(result.ids)) {
+                    buktiIds.value = (result.ids || []).map(Number);
+                }
             } catch (error) {
                 console.error('Gagal ambil daftar bukti surat:', error);
             }
         };
-
-        const hasBukti = (id) => buktiIds.value.includes(Number(id));
+        
+        // FUNGSI HASBUKTI AMAN (Ganti bagian ini)
+        const hasBukti = (item) => {
+            if (!item) return false;
+            
+            // 1. Cek dari properti database jika ada
+            if (item.file_bukti || item.file_pdf || item.bukti_pdf) return true;
+            
+            // 2. Cek dari daftar buktiIds
+            const id = item.id || item.id_mutasi;
+            if (typeof buktiIds !== 'undefined' && buktiIds.value) {
+                return buktiIds.value.some(bId => String(bId) === String(id));
+            }
+            
+            return false;
+        };
 
         // CATEGORY & STATISTICS        
         const activeAssets = computed(() => allAssets.value);
-
+        
         const allAssets = computed(() => [
             ...db.value.laptops,
             ...db.value.pcs,
@@ -486,7 +499,6 @@ createApp({
             }
             
             if (asset.created_at && asset.created_at !== '0000-00-00 00:00:00') {
-                // Biasanya formatnya "2026-08-14 10:30:00", kita potong ambil tanggalnya aja
                 const tglInput = asset.created_at.split(' ')[0];
                 return formatTanggalIndo(tglInput);
             }
@@ -510,16 +522,13 @@ createApp({
         // FILTERS
         const filteredAssets = computed(() => {
             return activeAssets.value.filter(asset => {
-               // Filter Keterangan Perolehan (Pembelian, Sewa, TKTM, Lainnya)
                 if (filterKeterangan.value === 'Lainnya') {
                     const ket = (asset.keterangan || '').toLowerCase();
-                    // Jika termasuk kategori standar, lewati (karena ini filter untuk 'Lainnya')
                     const isStandar = ket.startsWith('pembelian') || ket.startsWith('sewa') || ket.startsWith('transfer masuk') || ket.startsWith('transfer keluar');
                     if (isStandar) return false;
                 } else if (filterKeterangan.value !== 'all') {
                     if (!(asset.keterangan || '').toLowerCase().startsWith(filterKeterangan.value.toLowerCase())) return false;
                 } else {
-                    // Sembunyikan 'transfer keluar' secara default di tab 'Semua'
                     if (asset.keterangan && String(asset.keterangan).toLowerCase().includes('transfer keluar')) return false;
                 }
                 if (filterJenisAset.value !== 'all' && asset.jenis !== filterJenisAset.value) return false;
@@ -528,7 +537,6 @@ createApp({
                 if (filterStatus.value === 'gudang' && asset.pemegangId !== null) return false;
                 if (filterKondisi.value !== 'all' && asset.kondisi !== filterKondisi.value) return false;
 
-                // Pencarian
                 const query = searchQuery.value.toLowerCase().trim();
                 if (!query) return true;
                 const holder = asset.pemegangId ? getPegawaiName(asset.pemegangId).toLowerCase() : 'gudang bmn';
@@ -538,11 +546,10 @@ createApp({
                     String(asset.tahun).toLowerCase().includes(query) || String(asset.keterangan).toLowerCase().includes(query) || holder.includes(query)
                 );
             }).sort((a, b) => {
-                // LOGIKA SORTING ASET BARU
                 if (sortAssetOrder.value === 'desc') {
-                    return Number(b.id) - Number(a.id); // Terbaru ke Terlama
+                    return Number(b.id) - Number(a.id);
                 } else {
-                    return Number(a.id) - Number(b.id); // Terlama ke Terbaru
+                    return Number(a.id) - Number(b.id);
                 }
             });
         });
@@ -551,11 +558,9 @@ createApp({
             const pegawaiAktifSaja = pegawaiList.value.filter(pegawai => !pegawaiSudahKeluar(pegawai.id));
             
             const hasilFilter = pegawaiAktifSaja.filter(pegawai => {
-                // Logika Filter Dropdown
                 if (filterStatusPegawai.value === 'ada' && getPegawaiAllAssets(pegawai.id).length === 0) return false;
                 if (filterStatusPegawai.value === 'kosong' && getPegawaiAllAssets(pegawai.id).length > 0) return false;
 
-                // Logika Pencarian Teks
                 const query = searchQuery.value.toLowerCase().trim();
                 if (!query) return true;
                 
@@ -575,7 +580,6 @@ createApp({
         const filteredHistory = computed(() => {
             let result = [...historyList.value];
 
-            // Filter Jenis Surat 
             if (filterSurat.value === 'SIP') {
                 result = result.filter(h => h.nomorBast && String(h.nomorBast).includes('/GDG/'));
             } else if (filterSurat.value === 'BAST') {
@@ -586,17 +590,14 @@ createApp({
                 result = result.filter(h => h.keterangan && String(h.keterangan).includes('Penelitian Fisik'));
             }
 
-            // Filter Jenis Transaksi
             if (filterJenisTransaksi.value !== 'all') {
                 result = result.filter(h => h.jenisTransaksi === filterJenisTransaksi.value);
             }
 
-            // Filter Kondisi
             if (filterKondisiRiwayat.value !== 'all') {
                 result = result.filter(h => h.kondisi === filterKondisiRiwayat.value);
             }
 
-            // Pencarian Kata Kunci
             const query = searchQuery.value.toLowerCase().trim();
             if (query) {
                 result = result.filter(h => 
@@ -607,12 +608,11 @@ createApp({
                 );
             }
 
-            // LOGIKA SORTING RIWAYAT BARU
             return result.sort((a, b) => {
                 if (sortHistoryOrder.value === 'desc') {
-                    return Number(b.id) - Number(a.id); // Terbaru ke Terlama
+                    return Number(b.id) - Number(a.id);
                 } else {
-                    return Number(a.id) - Number(b.id); // Terlama ke Terbaru
+                    return Number(a.id) - Number(b.id);
                 }
             });
         });
@@ -621,57 +621,65 @@ createApp({
         const triggerUpload = (id) => {
             currentUploadId.value = id;
             
-            // Trik langsung: Cari elemen input file secara langsung di HTML
-            const inputElement = document.querySelector('input[type="file"]');
+            const inputEl = fileInputBukti.value || document.querySelector('input[type="file"]');
             
-            if (inputElement) {
-                inputElement.click(); // Paksa buka jendela file
+            if (inputEl) {
+                inputEl.click();
             } else {
-                alert("Tag input file belum ada di index.html!");
+                alert('Input file tidak ditemukan!');
             }
         };
+
+
         const handleFileUpload = async (event) => {
             const file = event.target.files[0];
             if (!file) return;
-            
+
             if (file.type !== 'application/pdf') {
-                showToast('Gagal: File harus format PDF!', true);
-                event.target.value = '';
+                alert('File harus berupa PDF!');
                 return;
             }
 
             const formData = new FormData();
-            formData.append('id', currentUploadId.value);
+            formData.append('id', selectedTxId.value);
             formData.append('file_pdf', file);
 
             try {
-                const response = await fetch(`${API_BASE}/upload_bukti.php`, { method: 'POST', body: formData });
-                
-                const textResult = await response.text(); 
-                
-                if (!textResult || textResult.trim() === '') {
-                    showToast('Server PHP nge-blank! Coba upload file PDF yang lebih kecil.', true);
-                    return;
-                }
+                const res = await fetch(`${API_BASE}/upload_bukti.php`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await res.json();
 
-                const result = JSON.parse(textResult);
-                
                 if (result.status === 'success') {
-                    showToast('Yey! Bukti TTD berhasil diupload.');
-                    await refreshBuktiList(); 
+                    alert('Upload Berhasil!');
+                    // Update daftar ID bukti secara instan
+                    if (typeof buktiIds !== 'undefined' && buktiIds.value) {
+                        if (!buktiIds.value.includes(selectedTxId.value)) {
+                            buktiIds.value.push(selectedTxId.value);
+                        }
+                    }
+                    if (typeof refreshBuktiList === 'function') {
+                        await refreshBuktiList();
+                    }
                 } else {
-                    showToast(result.message, true); 
+                    alert('Gagal: ' + result.message);
                 }
-            } catch (error) {
-                showToast(`Gagal! Cek tulisan merah di atas atau klik F12.`, true);
-                console.error("Error dari server:", error);
+            } catch (err) {
+                console.error(err);
+                alert('Terjadi kesalahan saat upload.');
             } finally {
-                event.target.value = ''; 
+                event.target.value = '';
             }
         };
 
-        const openPdf = (id) => {
-            if (id) window.open(`uploads/surat/bukti_${id}.pdf`, '_blank');
+        const openPdf = (item) => {
+            const id = typeof item === 'object' ? (item.id || item.id_mutasi) : item;
+            const fileUrl = (typeof item === 'object' && item.file_bukti) 
+                ? item.file_bukti 
+                : `${API_BASE}/uploads/surat/bukti_${id}.pdf`;
+                
+            window.open(fileUrl, '_blank');
         };
 
         // FITUR PILIH & HAPUS BANYAK
@@ -700,8 +708,6 @@ createApp({
 
         // MODAL ASET
         const modalAset = ref({ show: false, isEdit: false, editId: null });
-        // const formAset = ref({ jenis: '', kodeBarang: '', nup: '', merek: '', tipe: '', tahun: '', keterangan: '', kondisi: 'Baik', 
-        //     kategoriKeterangan: 'Pembelian', detailKeterangan: ''});
         const formAset = ref({ jenis: '', kodeBarang: '', nup: '', merek: '', tipe: '', tahun: '', keterangan: '', kondisi: 'Baik', 
         kategoriKeterangan: 'Pembelian', detailKeterangan: ''});
 
@@ -727,7 +733,6 @@ createApp({
                 let parsedKategori = 'Lainnya';
                 let parsedDetail = item.keterangan || '';
                 
-                // Daftar kategori standar
                 const categories = ['Transfer masuk', 'Transfer keluar', 'Sewa', 'Pembelian'];
                 for (const cat of categories) {
                     if (item.keterangan && item.keterangan.startsWith(cat)) {
@@ -750,7 +755,6 @@ createApp({
             
             modalAset.value = { show: true, isEdit: false, editId: null };
             
-            // DEFAULT UNTUK TAMBAH BARU (TIDAK KOSONG lagi)
             formAset.value = { 
                 jenis, 
                 kodeBarang: '', 
@@ -759,7 +763,7 @@ createApp({
                 tipe: '', 
                 tahun: new Date().getFullYear(), 
                 kondisi: 'Baik', 
-                kategoriKeterangan: 'Pembelian', // <-- DEFAULT LANGSUNG PEMBELIAN
+                kategoriKeterangan: 'Pembelian',
                 detailKeterangan: '',
                 asalPerolehanCustom: ''
             };
@@ -767,14 +771,12 @@ createApp({
             ubahKodeOtomatis();
         };
 
-       const saveAset = async () => {
+        const saveAset = async () => {
             try {
-                // Tentukan asal perolehan dasar
                 let asalPerolehan = formAset.value.kategoriKeterangan === 'Lainnya' 
                     ? (formAset.value.asalPerolehanCustom?.trim() || 'Lainnya') 
                     : formAset.value.kategoriKeterangan;
 
-                // Gabungkan dengan Detail Tambahan jika ada
                 let combinedKeterangan = asalPerolehan;
                 if (formAset.value.detailKeterangan && formAset.value.detailKeterangan.trim() !== '') {
                     combinedKeterangan += ` - ${formAset.value.detailKeterangan.trim()}`;
@@ -856,7 +858,7 @@ createApp({
             pemeriksaTekmira1: '', pemeriksaTekmira2: '', pemeriksaTujuan1: '', pemeriksaTujuan2: '',
             petinggiTujuan: '', petinggiTekmira: 'Daman',
             fotoBarangUrls: [], fotoLabelUrls: [],
-            fotoBarangFiles: [], fotoLabelFiles: [] // <-- TAMBAHAN BUAT NYIMPEN FILE ASLI
+            fotoBarangFiles: [], fotoLabelFiles: []
         });
 
         const openModalTKTM = (pegawai) => {
@@ -879,7 +881,7 @@ createApp({
                 pemeriksaTekmira1: '', pemeriksaTekmira2: '', pemeriksaTujuan1: '', pemeriksaTujuan2: '',
                 petinggiTujuan: '', petinggiTekmira: 'Daman',
                 fotoBarangUrls: [], fotoLabelUrls: [],
-                fotoBarangFiles: [], fotoLabelFiles: [] // <-- RESET FILE ASLI
+                fotoBarangFiles: [], fotoLabelFiles: []
             };
         };
 
@@ -899,11 +901,11 @@ createApp({
 
             if (jenis === 'barang') {
                 modalTKTM.value.fotoBarangUrls = [...modalTKTM.value.fotoBarangUrls, ...newUrls];
-                modalTKTM.value.fotoBarangFiles = [...modalTKTM.value.fotoBarangFiles, ...files]; // <-- Simpan ke memori
+                modalTKTM.value.fotoBarangFiles = [...modalTKTM.value.fotoBarangFiles, ...files];
             }
             if (jenis === 'label') {
                 modalTKTM.value.fotoLabelUrls = [...modalTKTM.value.fotoLabelUrls, ...newUrls];
-                modalTKTM.value.fotoLabelFiles = [...modalTKTM.value.fotoLabelFiles, ...files]; // <-- Simpan ke memori
+                modalTKTM.value.fotoLabelFiles = [...modalTKTM.value.fotoLabelFiles, ...files];
             }
             
             event.target.value = '';
@@ -1043,12 +1045,10 @@ createApp({
                 Number(pegawai.id) !== Number(currentHolderId) &&
                 !pegawaiSudahKeluar(pegawai.id)
             );
-            // Urutin abjad A-Z berdasarkan nama
             return hasil.sort((a, b) => String(a.nama).localeCompare(String(b.nama), 'id', { sensitivity: 'base' }));
         });
 
         const stafGudangList = computed(() => {
-            // Urutin abjad A-Z berdasarkan nama
             return [...pegawaiList.value].sort((a, b) => String(a.nama).localeCompare(String(b.nama), 'id', { sensitivity: 'base' }));
         });
 
@@ -1067,7 +1067,6 @@ createApp({
             let maxNomorSIP = 15;  
             let maxNomorBAST = 8;  
 
-            // Cari nomor terakhir untuk SIP dan BAST di tahun yang sama
             historyList.value.forEach(h => {
                 if (!h.tanggal || !h.nomorBast) return;
                 const hTahun = new Date(h.tanggal).getFullYear();
@@ -1087,17 +1086,13 @@ createApp({
             const formatSIP = `${nextSIP}/${bulan}/GDG/${tahun}`;
             const formatBAST = `${nextBAST}-GDG/${bulan}/${tahun}`;
 
-            // Penentuan Surat
             if (oldHolder === null || oldHolder === '') {
-                // Dari Gudang ke Pegawai -> Hanya SIP
                 formMutasi.value.nomorSip = formatSIP;
                 formMutasi.value.nomorBast = '';
             } else if (newHolder === 'GUDANG' || newHolder === null) {
-                // Dari Pegawai ke Gudang -> Hanya BAST
                 formMutasi.value.nomorBast = formatBAST;
                 formMutasi.value.nomorSip = '';
             } else {
-                // Mutasi Pegawai ke Pegawai -> BUTUH KEDUANYA
                 formMutasi.value.nomorBast = formatBAST;
                 formMutasi.value.nomorSip = formatSIP;
             }
@@ -1128,7 +1123,6 @@ createApp({
             else if (oldPegawai && newPegawai) jenisTransaksi = 'MUTASI';
             else return;
 
-            // BUG FIX: Simpan data admin ke dalam JSON agar bisa dibaca saat cetak ulang
             const adminMeta = JSON.stringify({
                 adminNama: adminGudang.nama,
                 adminNip: adminGudang.nip,
@@ -1137,7 +1131,6 @@ createApp({
 
             try {
                 if (jenisTransaksi === 'MUTASI') {
-                    // BAST 
                     await apiRequest('mutasi.php', {
                         method: 'POST',
                         body: JSON.stringify({
@@ -1149,11 +1142,10 @@ createApp({
                             kondisi: formMutasi.value.kondisi,
                             nomor_bast: formMutasi.value.nomorBast,
                             keterangan: 'Otomatis: Pengembalian sebelum dimutasi',
-                            lampiran_foto: adminMeta // Titipkan data admin
+                            lampiran_foto: adminMeta
                         })
                     });
 
-                    // SIP 
                     await apiRequest('mutasi.php', {
                         method: 'POST',
                         body: JSON.stringify({
@@ -1165,11 +1157,10 @@ createApp({
                             kondisi: formMutasi.value.kondisi,
                             nomor_bast: formMutasi.value.nomorSip,
                             keterangan: 'Otomatis: Peminjaman hasil mutasi',
-                            lampiran_foto: adminMeta // Titipkan data admin
+                            lampiran_foto: adminMeta
                         })
                     });
                 } else {
-                    // Jika hanya meminjam / mengembalikan (Normal 1 Halaman)
                     await apiRequest('mutasi.php', {
                         method: 'POST',
                         body: JSON.stringify({
@@ -1181,7 +1172,7 @@ createApp({
                             kondisi: formMutasi.value.kondisi,
                             nomor_bast: jenisTransaksi === 'PENGEMBALIAN' ? formMutasi.value.nomorBast : formMutasi.value.nomorSip,
                             keterangan: '',
-                            lampiran_foto: adminMeta // Titipkan data admin
+                            lampiran_foto: adminMeta
                         })
                     });
                 }
@@ -1269,12 +1260,10 @@ createApp({
             const pegawaiLamaObj = cariPegawaiBerdasarkanNama(record.pemegangLama);
             const pegawaiBaruObj = cariPegawaiBerdasarkanNama(record.pemegangBaru);
 
-            // Default jika data JSON admin tidak ditemukan
             let namaAdminGudang = '[Ketik Nama Admin]';
             let nipAdminGudang = '-';
             let jabatanAdminGudang = 'Staf Pengelola BMN';
 
-            // 1. EKSTRAK FOTO & METADATA ADMIN DARI JSON TERLEBIH DAHULU
             let fotoBarang = [];
             let fotoLabel = [];
             let meta = {
@@ -1296,14 +1285,12 @@ createApp({
                     if (parsed.petinggiTujuan) meta.petinggiTujuan = parsed.petinggiTujuan;
                     if (parsed.petinggiTekmira) meta.petinggiTekmira = parsed.petinggiTekmira;
 
-                    // Tangkap Data Admin yang dititipkan saat proses Serah Terima
                     if (parsed.adminNama) namaAdminGudang = parsed.adminNama;
                     if (parsed.adminNip) nipAdminGudang = parsed.adminNip;
                     if (parsed.adminJabatan) jabatanAdminGudang = parsed.adminJabatan;
                 } catch (e) { console.error('Gagal parse foto/meta', e); }
             }
 
-            // 2. BARU SUSUN DATA PIHAK PERTAMA DAN KEDUA
             let namaPihakPertama = record.pemegangLama;
             let nipPihakPertama = pegawaiLamaObj?.nip || '-';
             let jabatanPihakPertama = pegawaiLamaObj?.jabatan || (record.pemegangLama.includes('Gudang') ? jabatanAdminGudang : '-');
@@ -1445,88 +1432,72 @@ createApp({
             confirmPass: ''
         });
 
-
         const saveProfil = async () => {
+            const usernameBaru = formProfil.value.username.trim();
+            const passwordBaru = formProfil.value.newPass;
+            const konfirmasi = formProfil.value.confirmPass;
 
-        const usernameBaru = formProfil.value.username.trim();
-        const passwordBaru = formProfil.value.newPass;
-        const konfirmasi = formProfil.value.confirmPass;
-
-        if (!usernameBaru) {
-            showToast('Username tidak boleh kosong!', true);
-            return;
-        }
-
-        // Kalau password diisi, harus sama
-        if (passwordBaru || konfirmasi) {
-
-            if (passwordBaru !== konfirmasi) {
-                showToast('Konfirmasi password tidak cocok!', true);
+            if (!usernameBaru) {
+                showToast('Username tidak boleh kosong!', true);
                 return;
             }
-        }
 
-        try {
-            const result = await apiRequest('update_admin.php', {
-                method: 'POST',
-                body: JSON.stringify({
-                    username_lama: currentUsername.value,
-                    username_baru: usernameBaru,
-                    password_baru: passwordBaru
-                })
-            });
+            if (passwordBaru || konfirmasi) {
+                if (passwordBaru !== konfirmasi) {
+                    showToast('Konfirmasi password tidak cocok!', true);
+                    return;
+                }
+            }
 
-            if (result.success) {
+            try {
+                const result = await apiRequest('update_admin.php', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        username_lama: currentUsername.value,
+                        username_baru: usernameBaru,
+                        password_baru: passwordBaru
+                    })
+                });
 
-                currentUsername.value = usernameBaru;
+                if (result.success) {
+                    currentUsername.value = usernameBaru;
+                    localStorage.setItem(
+                        'bmn_username',
+                        usernameBaru
+                    );
 
-                localStorage.setItem(
-                    'bmn_username',
-                    usernameBaru
-                );
+                    modalProfil.value.show = false;
 
-                modalProfil.value.show = false;
+                    formProfil.value = {
+                        username: usernameBaru,
+                        oldPass: '',
+                        newPass: '',
+                        confirmPass: ''
+                    };
 
-                formProfil.value = {
-                    username: usernameBaru,
-                    oldPass: '',
-                    newPass: '',
-                    confirmPass: ''
-                };
-
-                showToast('Profil berhasil diperbarui!');
-
-            } else {
-
+                    showToast('Profil berhasil diperbarui!');
+                } else {
+                    showToast(
+                        result.message || 'Gagal memperbarui profil!',
+                        true
+                    );
+                }
+            } catch (error) {
+                console.error('Update profil gagal:', error);
                 showToast(
-                    result.message || 'Gagal memperbarui profil!',
+                    error.message || 'Gagal menyimpan perubahan!',
                     true
                 );
             }
-
-        } catch (error) {
-
-            console.error('Update profil gagal:', error);
-
-            showToast(
-                error.message || 'Gagal menyimpan perubahan!',
-                true
-            );
-        }
-    };
+        };
 
         const openProfilModal = () => {
-
             formProfil.value = {
-
-                username:
-                    currentUsername.value,
-
+                username: currentUsername.value,
                 oldPass: '',
                 newPass: '',
                 confirmPass: ''
             };
-
             modalProfil.value.show = true;
         };
 
@@ -1534,15 +1505,12 @@ createApp({
         const openLogoutModal = () => {
             modalLogout.value.show = true;
         };
-        
-        const confirmLogout = () => {
 
+        const confirmLogout = () => {
             modalLogout.value.show = false;
             isLoggedIn.value = false;
 
-            sessionStorage.removeItem(
-                'bmn_logged_in'
-            );
+            sessionStorage.removeItem('bmn_logged_in');
 
             loginUsername.value = '';
             loginPassword.value = '';
@@ -1569,7 +1537,7 @@ createApp({
                 if (res.success) {
                     showToast('BOOM! Semua data berhasil dikosongkan.');
                     modalReset.value.show = false;
-                    await loadDataFromBackend(); // Refresh biar layarnya langsung bersih
+                    await loadDataFromBackend();
                 } else {
                     showToast(res.message || 'Gagal reset data!', true);
                 }
@@ -1578,306 +1546,130 @@ createApp({
             }
         };
 
-        // EXPORT EXCEL
-        const assetsForExport = computed(() => {
-            return activeAssets.value.filter(asset => {
-                if (filterKeterangan.value !== 'all') {
-                    const ket = (asset.keterangan || '').toLowerCase();
-                    const pilihan = filterKeterangan.value.toLowerCase();
-                    if (!ket.startsWith(pilihan)) return false;
-                }
-
-                if (filterStatus.value === 'assigned' && asset.pemegangId === null) return false;
-                if (filterStatus.value === 'gudang' && asset.pemegangId !== null) return false;
-                if (filterKondisi.value !== 'all' && asset.kondisi !== filterKondisi.value) return false;
-
-                const query = searchQuery.value.toLowerCase().trim();
-                if (!query) return true;
-
-                const holder = asset.pemegangId ? getPegawaiName(asset.pemegangId).toLowerCase() : 'gudang bmn';
-
-                return (
-                    String(asset.kodeBarang).toLowerCase().includes(query) ||
-                    String(asset.nup).toLowerCase().includes(query) ||
-                    String(asset.merek).toLowerCase().includes(query) ||
-                    String(asset.tipe).toLowerCase().includes(query) ||
-                    String(asset.tahun).toLowerCase().includes(query) ||
-                    String(asset.keterangan).toLowerCase().includes(query) ||
-                    holder.includes(query)
-                );
-            }).sort((a, b) => Number(b.id) - Number(a.id));
-        });
-
         // EXPORT EXCEL PEGAWAI
         const exportPegawaiExcel = (pegawai) => {
-    if (!pegawai) {
-        showToast('Data pegawai tidak ditemukan!', true);
-        return;
-    }
-
-    const asetPegawai = getPegawaiAllAssets(pegawai.id);
-
-    if (!asetPegawai || asetPegawai.length === 0) {
-        showToast(`${pegawai.nama} tidak memiliki aset untuk di-export!`, true);
-        return;
-    }
-
-    const wb = XLSX.utils.book_new();
-
-    // FORMAT SAMA DENGAN EXPORT LAMA
-    const headerRow = [
-        'NO',
-        'USER',
-        'KODE BARANG',
-        'NUP BARU',
-        'MERK & TIPE',
-        'TAHUN',
-        'TANGGAL BAST',
-        'KONDISI',
-        'KETERANGAN'
-    ];
-
-    const dataRows = asetPegawai.map((asset, index) => {
-        return [
-            index + 1,
-            pegawai.nama || '-',
-            asset.kodeBarang ? String(asset.kodeBarang) : '-',
-            asset.nup ? String(asset.nup) : '-',
-            `${asset.merek || ''} ${asset.tipe || ''}`.trim() || '-',
-            asset.tahun || '-',
-            getLastMutationDate(asset),
-            asset.kondisi || '-',
-            asset.keterangan || '-'
-        ];
-    });
-
-    const judulPegawai = `ASET PEGAWAI - ${pegawai.nama || ''}`.toUpperCase();
-
-    const aoa = [
-        [judulPegawai],
-        ['BALAI BESAR PENGUJIAN MINERAL DAN BATUBARA TEKMIRA'],
-        [],
-        headerRow,
-        ...dataRows
-    ];
-
-    const ws = XLSX.utils.aoa_to_sheet(aoa);
-
-    const colCount = headerRow.length;
-    const headerRowIndex = 3;
-    const lastDataRowIndex = headerRowIndex + dataRows.length;
-
-    // MERGE JUDUL
-    ws['!merges'] = [
-        {
-            s: { r: 0, c: 0 },
-            e: { r: 0, c: colCount - 1 }
-        },
-        {
-            s: { r: 1, c: 0 },
-            e: { r: 1, c: colCount - 1 }
-        }
-    ];
-
-    ws['!cols'] = [
-        { wch: 6 },   // NO
-        { wch: 26 },  // USER
-        { wch: 18 },  // KODE BARANG
-        { wch: 12 },  // NUP BARU
-        { wch: 30 },  // MERK & TIPE
-        { wch: 10 },  // TAHUN
-        { wch: 24 },  // TANGGAL BAST
-        { wch: 14 },  // KONDISI
-        { wch: 35 }   // KETERANGAN
-    ];
-
-    const rowHeights = [];
-
-    rowHeights[0] = { hpt: 24 };
-    rowHeights[1] = { hpt: 20 };
-    rowHeights[2] = { hpt: 10 };
-    rowHeights[headerRowIndex] = { hpt: 26 };
-
-    for (
-        let r = headerRowIndex + 1;
-        r <= lastDataRowIndex;
-        r++
-    ) {
-        rowHeights[r] = { hpt: 22 };
-    }
-
-    ws['!rows'] = rowHeights;
-
-    // BORDER
-    const borderSubtle = {
-        top: {
-            style: 'thin',
-            color: { rgb: 'CBD5E1' }
-        },
-        bottom: {
-            style: 'thin',
-            color: { rgb: 'CBD5E1' }
-        },
-        left: {
-            style: 'thin',
-            color: { rgb: 'CBD5E1' }
-        },
-        right: {
-            style: 'thin',
-            color: { rgb: 'CBD5E1' }
-        }
-    };
-
-    // HELPER STYLE
-    const setCellStyle = (r, c, style) => {
-        const addr = XLSX.utils.encode_cell({
-            r,
-            c
-        });
-
-        if (!ws[addr]) {
-            ws[addr] = {
-                t: 's',
-                v: ''
-            };
-        }
-
-        ws[addr].s = {
-            ...(ws[addr].s || {}),
-            ...style
-        };
-    };
-
-    // STYLE JUDUL
-    setCellStyle(0, 0, {
-        font: {
-            bold: true,
-            sz: 14,
-            color: { rgb: '1E293B' },
-            name: 'Calibri'
-        },
-        alignment: {
-            horizontal: 'center',
-            vertical: 'center'
-        }
-    });
-
-    // STYLE SUBJUDUL
-    setCellStyle(1, 0, {
-        font: {
-            bold: true,
-            sz: 11,
-            color: { rgb: '475569' },
-            name: 'Calibri'
-        },
-        alignment: {
-            horizontal: 'center',
-            vertical: 'center'
-        }
-    });
-
-    // STYLE HEADER
-    for (let c = 0; c < colCount; c++) {
-        setCellStyle(headerRowIndex, c, {
-            font: {
-                bold: true,
-                color: { rgb: 'FFFFFF' },
-                sz: 11,
-                name: 'Calibri'
-            },
-            alignment: {
-                horizontal: 'center',
-                vertical: 'center',
-                wrapText: true
-            },
-            fill: {
-                fgColor: { rgb: '1E293B' }
-            },
-            border: borderSubtle
-        });
-    }
-
-    // STYLE DATA
-    for (
-        let r = headerRowIndex + 1;
-        r <= lastDataRowIndex;
-        r++
-    ) {
-        const isEven =
-            (r - headerRowIndex) % 2 === 0;
-
-        const bgRowColor =
-            isEven ? 'F8FAFC' : 'FFFFFF';
-
-        for (let c = 0; c < colCount; c++) {
-
-            let alignHoriz = 'center';
-
-            // USER, MERK & TIPE, KETERANGAN
-            if (
-                c === 1 ||
-                c === 4 ||
-                c === 8
-            ) {
-                alignHoriz = 'left';
+            if (!pegawai) {
+                showToast('Data pegawai tidak ditemukan!', true);
+                return;
             }
 
-            setCellStyle(r, c, {
-                font: {
-                    sz: 10,
-                    name: 'Calibri',
-                    color: { rgb: '334155' }
-                },
-                alignment: {
-                    horizontal: alignHoriz,
-                    vertical: 'center',
-                    wrapText: true
-                },
-                fill: {
-                    fgColor: { rgb: bgRowColor }
-                },
-                border: borderSubtle
+            const asetPegawai = getPegawaiAllAssets(pegawai.id);
+
+            if (!asetPegawai || asetPegawai.length === 0) {
+                showToast(`${pegawai.nama} tidak memiliki aset untuk di-export!`, true);
+                return;
+            }
+
+            const wb = XLSX.utils.book_new();
+
+            const headerRow = [
+                'NO', 'USER', 'KODE BARANG', 'NUP BARU', 'MERK & TIPE', 'TAHUN', 'TANGGAL BAST', 'KONDISI', 'KETERANGAN'
+            ];
+
+            const dataRows = asetPegawai.map((asset, index) => {
+                return [
+                    index + 1,
+                    pegawai.nama || '-',
+                    asset.kodeBarang ? String(asset.kodeBarang) : '-',
+                    asset.nup ? String(asset.nup) : '-',
+                    `${asset.merek || ''} ${asset.tipe || ''}`.trim() || '-',
+                    asset.tahun || '-',
+                    getLastMutationDate(asset),
+                    asset.kondisi || '-',
+                    asset.keterangan || '-'
+                ];
             });
-        }
-    }
 
-    // AUTOFILTER
-    ws['!autofilter'] = {
-        ref: XLSX.utils.encode_range(
-            {
-                r: headerRowIndex,
-                c: 0
-            },
-            {
-                r: headerRowIndex,
-                c: colCount - 1
+            const judulPegawai = `ASET PEGAWAI - ${pegawai.nama || ''}`.toUpperCase();
+
+            const aoa = [
+                [judulPegawai],
+                ['BALAI BESAR PENGUJIAN MINERAL DAN BATUBARA TEKMIRA'],
+                [],
+                headerRow,
+                ...dataRows
+            ];
+
+            const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+            const colCount = headerRow.length;
+            const headerRowIndex = 3;
+            const lastDataRowIndex = headerRowIndex + dataRows.length;
+
+            ws['!merges'] = [
+                { s: { r: 0, c: 0 }, e: { r: 0, c: colCount - 1 } },
+                { s: { r: 1, c: 0 }, e: { r: 1, c: colCount - 1 } }
+            ];
+
+            ws['!cols'] = [
+                { wch: 6 }, { wch: 26 }, { wch: 18 }, { wch: 12 }, { wch: 30 }, { wch: 10 }, { wch: 24 }, { wch: 14 }, { wch: 35 }
+            ];
+
+            const rowHeights = [];
+            rowHeights[0] = { hpt: 24 };
+            rowHeights[1] = { hpt: 20 };
+            rowHeights[2] = { hpt: 10 };
+            rowHeights[headerRowIndex] = { hpt: 26 };
+
+            for (let r = headerRowIndex + 1; r <= lastDataRowIndex; r++) {
+                rowHeights[r] = { hpt: 22 };
             }
-        )
-    };
 
-    // NAMA SHEET
-    XLSX.utils.book_append_sheet(
-        wb,
-        ws,
-        'Aset Pegawai'
-    );
+            ws['!rows'] = rowHeights;
 
-    // ===============================
-    // NAMA FILE
-    // ===============================
+            const borderSubtle = {
+                top: { style: 'thin', color: { rgb: 'CBD5E1' } },
+                bottom: { style: 'thin', color: { rgb: 'CBD5E1' } },
+                left: { style: 'thin', color: { rgb: 'CBD5E1' } },
+                right: { style: 'thin', color: { rgb: 'CBD5E1' } }
+            };
 
-    const namaBersih = (pegawai.nama || 'Pegawai')
-        .replace(/[\\/:*?"<>|]/g, '')
-        .replace(/\s+/g, '_');
+            const setCellStyle = (r, c, style) => {
+                const addr = XLSX.utils.encode_cell({ r, c });
+                if (!ws[addr]) ws[addr] = { t: 's', v: '' };
+                ws[addr].s = { ...(ws[addr].s || {}), ...style };
+            };
 
-    const namaFile =
-        `Laporan_Aset_${namaBersih}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+            setCellStyle(0, 0, { font: { bold: true, sz: 14, color: { rgb: '1E293B' }, name: 'Calibri' }, alignment: { horizontal: 'center', vertical: 'center' } });
+            setCellStyle(1, 0, { font: { bold: true, sz: 11, color: { rgb: '475569' }, name: 'Calibri' }, alignment: { horizontal: 'center', vertical: 'center' } });
 
-    XLSX.writeFile(wb, namaFile);
+            for (let c = 0; c < colCount; c++) {
+                setCellStyle(headerRowIndex, c, {
+                    font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 11, name: 'Calibri' },
+                    alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+                    fill: { fgColor: { rgb: '1E293B' } },
+                    border: borderSubtle
+                });
+            }
 
-    showToast(
-        `Laporan aset ${pegawai.nama} berhasil di-export!`
-    );
+            for (let r = headerRowIndex + 1; r <= lastDataRowIndex; r++) {
+                const isEven = (r - headerRowIndex) % 2 === 0;
+                const bgRowColor = isEven ? 'F8FAFC' : 'FFFFFF';
+
+                for (let c = 0; c < colCount; c++) {
+                    let alignHoriz = 'center';
+                    if (c === 1 || c === 4 || c === 8) alignHoriz = 'left';
+
+                    setCellStyle(r, c, {
+                        font: { sz: 10, name: 'Calibri', color: { rgb: '334155' } },
+                        alignment: { horizontal: alignHoriz, vertical: 'center', wrapText: true },
+                        fill: { fgColor: { rgb: bgRowColor } },
+                        border: borderSubtle
+                    });
+                }
+            }
+
+            ws['!autofilter'] = {
+                ref: XLSX.utils.encode_range({ r: headerRowIndex, c: 0 }, { r: headerRowIndex, c: colCount - 1 })
+            };
+
+            XLSX.utils.book_append_sheet(wb, ws, 'Aset Pegawai');
+
+            const namaBersih = (pegawai.nama || 'Pegawai').replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_');
+            const namaFile = `Laporan_Aset_${namaBersih}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+
+            XLSX.writeFile(wb, namaFile);
+            showToast(`Laporan aset ${pegawai.nama} berhasil di-export!`);
         };
 
         const exportExcel = () => {
@@ -1954,26 +1746,15 @@ createApp({
                 const headerRowIndex = 3;
                 const lastDataRowIndex = headerRowIndex + dataRows.length;
 
-                // Merge Judul
                 ws['!merges'] = [
                     { s: { r: 0, c: 0 }, e: { r: 0, c: colCount - 1 } },
                     { s: { r: 1, c: 0 }, e: { r: 1, c: colCount - 1 } }
                 ];
 
-                // Lebar Kolom (Presisi)
                 ws['!cols'] = [
-                    { wch: 6 },  // NO
-                    { wch: 26 }, // USER
-                    { wch: 18 }, // KODE BARANG
-                    { wch: 12 }, // NUP BARU
-                    { wch: 30 }, // MERK & TIPE
-                    { wch: 10 }, // TAHUN
-                    { wch: 24 }, // TANGGAL BAST
-                    { wch: 14 }, // KONDISI
-                    { wch: 35 }  // KETERANGAN
+                    { wch: 6 }, { wch: 26 }, { wch: 18 }, { wch: 12 }, { wch: 30 }, { wch: 10 }, { wch: 24 }, { wch: 14 }, { wch: 35 }
                 ];
 
-                // Tinggi Baris
                 const rowHeights = [];
                 rowHeights[0] = { hpt: 24 };
                 rowHeights[1] = { hpt: 20 };
@@ -1998,19 +1779,9 @@ createApp({
                     ws[addr].s = { ...(ws[addr].s || {}), ...style };
                 };
 
-                // Style Judul Utama
-                setCellStyle(0, 0, {
-                    font: { bold: true, sz: 14, color: { rgb: '1E293B' }, name: 'Calibri' },
-                    alignment: { horizontal: 'center', vertical: 'center' }
-                });
+                setCellStyle(0, 0, { font: { bold: true, sz: 14, color: { rgb: '1E293B' }, name: 'Calibri' }, alignment: { horizontal: 'center', vertical: 'center' } });
+                setCellStyle(1, 0, { font: { bold: true, sz: 11, color: { rgb: '475569' }, name: 'Calibri' }, alignment: { horizontal: 'center', vertical: 'center' } });
 
-                // Style Subjudul
-                setCellStyle(1, 0, {
-                    font: { bold: true, sz: 11, color: { rgb: '475569' }, name: 'Calibri' },
-                    alignment: { horizontal: 'center', vertical: 'center' }
-                });
-
-                // Style Header Tabel (Dark Slate)
                 for (let c = 0; c < colCount; c++) {
                     setCellStyle(headerRowIndex, c, {
                         font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 11, name: 'Calibri' },
@@ -2026,9 +1797,7 @@ createApp({
 
                     for (let c = 0; c < colCount; c++) {
                         let alignHoriz = 'center';
-                        if (c === 1 || c === 4 || c === 8) {
-                            alignHoriz = 'left';
-                        }
+                        if (c === 1 || c === 4 || c === 8) alignHoriz = 'left';
 
                         setCellStyle(r, c, {
                             font: { sz: 10, name: 'Calibri', color: { rgb: '334155' } },
@@ -2040,10 +1809,7 @@ createApp({
                 }
 
                 ws['!autofilter'] = {
-                    ref: XLSX.utils.encode_range(
-                        { r: headerRowIndex, c: 0 },
-                        { r: headerRowIndex, c: colCount - 1 }
-                    )
+                    ref: XLSX.utils.encode_range({ r: headerRowIndex, c: 0 }, { r: headerRowIndex, c: colCount - 1 })
                 };
 
                 return ws;
@@ -2082,8 +1848,6 @@ createApp({
                     await refreshPegawai();
                     showToast('Data pegawai berhasil dihapus.');
                 } 
-
-                // LOGIKA HAPUS PEGAWAI + KEMBALIKAN ASET KE GUDANG
                 else if (jenis === 'pegawai_dengan_aset') {
                     const held = getPegawaiAllAssets(id);
                     
@@ -2099,7 +1863,7 @@ createApp({
                             tahun: asset.tahun,
                             kondisi: asset.kondisi,
                             keterangan: asset.keterangan,
-                            pemegang_id: null // 
+                            pemegang_id: null 
                         };
                         await apiRequest('aset.php', { method: 'PUT', body: JSON.stringify(payload) });
                     }
@@ -2111,7 +1875,6 @@ createApp({
                     showToast(`Pegawai dihapus & ${held.length} aset berhasil dikembalikan ke gudang.`); 
                 } else if (jenis === 'banyak_pegawai') {
                     for (const pegId of selectedPegawai.value) {
-                        
                         const held = getPegawaiAllAssets(pegId);
                         for (const asset of held) {
                             const payload = {
@@ -2183,7 +1946,6 @@ createApp({
         const hapusBanyakPegawai = () => {
             if (selectedPegawai.value.length === 0) return;
             
-            // Hitung total aset yang dipegang dari semua pegawai yang dicentang
             let totalAsetDipegang = 0;
             for (const pegId of selectedPegawai.value) {
                 totalAsetDipegang += getPegawaiAllAssets(pegId).length;
@@ -2203,6 +1965,7 @@ createApp({
 
         // LIFECYCLE
         onMounted(async () => {
+            await refreshBuktiList();
             checkLogin();
 
             if (isLoggedIn.value) {
@@ -2225,7 +1988,6 @@ createApp({
             modalAset, formAset, openAsetModal, saveAset, deleteAsset, ubahKodeOtomatis,
             modalPegawai, formPegawai, openPegawaiModal, savePegawai, deletePegawai,
             modalHapus, openModalHapus, prosesHapusData, sortHistoryOrder, toggleHistorySort,
-            fileInputBukti, handleFileUpload,
             
             modalSerahTerima, formMutasi, openSerahTerimaModal, availablePegawaiForTransfer, stafGudangList, submitSerahTerima,
             printData, formatTanggalIndo, formatTanggalTerbilang, formatTanggalAngka, cetakUlangBast, tutupPrint, jalankanPrint,
@@ -2236,7 +1998,7 @@ createApp({
             modalReset, openResetModal, prosesResetData,
 
             exportExcel, exportPegawaiExcel, getLastMutationDate, asetDipegang, sortAssetOrder, toggleAssetSort,
-            modalTKTM, openModalTKTM, submitTKTM, handleFotoTktm, filterJenisTransaksi,removeFotoTktm,
+            modalTKTM, openModalTKTM, submitTKTM, handleFotoTktm, filterJenisTransaksi, removeFotoTktm, refreshHistory, refreshBuktiList,
 
             filterSurat, filterKondisiRiwayat, filteredHistory, fileInputBukti, filterJenisAset, filterStatusPegawai, triggerUpload, 
             handleFileUpload, openPdf, hasBukti, selectedHistory, selectAllHistory, hapusBanyakHistory, prosesTransferKeluar
