@@ -510,9 +510,18 @@ createApp({
         // FILTERS
         const filteredAssets = computed(() => {
             return activeAssets.value.filter(asset => {
-                if (filterKeterangan.value !== 'all' && !(asset.keterangan || '').toLowerCase().startsWith(filterKeterangan.value.toLowerCase())) return false;
-                if (filterKeterangan.value === 'all' && asset.keterangan && String(asset.keterangan).toLowerCase().includes('transfer keluar')) return false;
-                
+               // Filter Keterangan Perolehan (Pembelian, Sewa, TKTM, Lainnya)
+                if (filterKeterangan.value === 'Lainnya') {
+                    const ket = (asset.keterangan || '').toLowerCase();
+                    // Jika termasuk kategori standar, lewati (karena ini filter untuk 'Lainnya')
+                    const isStandar = ket.startsWith('pembelian') || ket.startsWith('sewa') || ket.startsWith('transfer masuk') || ket.startsWith('transfer keluar');
+                    if (isStandar) return false;
+                } else if (filterKeterangan.value !== 'all') {
+                    if (!(asset.keterangan || '').toLowerCase().startsWith(filterKeterangan.value.toLowerCase())) return false;
+                } else {
+                    // Sembunyikan 'transfer keluar' secara default di tab 'Semua'
+                    if (asset.keterangan && String(asset.keterangan).toLowerCase().includes('transfer keluar')) return false;
+                }
                 if (filterJenisAset.value !== 'all' && asset.jenis !== filterJenisAset.value) return false;
 
                 if (filterStatus.value === 'assigned' && asset.pemegangId === null) return false;
@@ -744,7 +753,8 @@ createApp({
                 tahun: new Date().getFullYear(), 
                 kondisi: 'Baik', 
                 kategoriKeterangan: 'Pembelian', // <-- DEFAULT LANGSUNG PEMBELIAN
-                detailKeterangan: '' 
+                detailKeterangan: '',
+                asalPerolehanCustom: ''
             };
 
             ubahKodeOtomatis();
@@ -752,13 +762,15 @@ createApp({
 
        const saveAset = async () => {
             try {
-                // Logika penggabungan keterangan
-                let combinedKeterangan = formAset.value.kategoriKeterangan;
+                // Tentukan asal perolehan dasar
+                let asalPerolehan = formAset.value.kategoriKeterangan === 'Lainnya' 
+                    ? (formAset.value.asalPerolehanCustom?.trim() || 'Lainnya') 
+                    : formAset.value.kategoriKeterangan;
 
-                if (formAset.value.kategoriKeterangan === 'Lainnya') {
-                    combinedKeterangan = formAset.value.detailKeterangan || 'Lainnya';
-                } else if (formAset.value.detailKeterangan && formAset.value.detailKeterangan.trim() !== '') {
-                    combinedKeterangan += ` - ${formAset.value.detailKeterangan}`;
+                // Gabungkan dengan Detail Tambahan jika ada
+                let combinedKeterangan = asalPerolehan;
+                if (formAset.value.detailKeterangan && formAset.value.detailKeterangan.trim() !== '') {
+                    combinedKeterangan += ` - ${formAset.value.detailKeterangan.trim()}`;
                 }
 
                 const payload = {
