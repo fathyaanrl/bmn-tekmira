@@ -684,8 +684,10 @@ createApp({
 
         // MODAL ASET
         const modalAset = ref({ show: false, isEdit: false, editId: null });
+        // const formAset = ref({ jenis: '', kodeBarang: '', nup: '', merek: '', tipe: '', tahun: '', keterangan: '', kondisi: 'Baik', 
+        //     kategoriKeterangan: 'Pembelian', detailKeterangan: ''});
         const formAset = ref({ jenis: '', kodeBarang: '', nup: '', merek: '', tipe: '', tahun: '', keterangan: '', kondisi: 'Baik', 
-            kategoriKeterangan: 'Pembelian', detailKeterangan: ''});
+        kategoriKeterangan: 'Pembelian', detailKeterangan: ''});
 
         const ubahKodeOtomatis = () => {
             const jenis = formAset.value.jenis;
@@ -704,12 +706,12 @@ createApp({
             }
         };
 
-        // MODAL ASET
         const openAsetModal = (item = null) => {
             if (item) {
                 let parsedKategori = 'Lainnya';
                 let parsedDetail = item.keterangan || '';
                 
+                // Daftar kategori standar
                 const categories = ['Transfer masuk', 'Transfer keluar', 'Sewa', 'Pembelian'];
                 for (const cat of categories) {
                     if (item.keterangan && item.keterangan.startsWith(cat)) {
@@ -731,18 +733,31 @@ createApp({
             let jenis = currentCategory.value === 'pcs' ? 'PC Unit' : currentCategory.value === 'tablets' ? 'Tablet' : 'Laptop';
             
             modalAset.value = { show: true, isEdit: false, editId: null };
+            
+            // DEFAULT UNTUK TAMBAH BARU (TIDAK KOSONG lagi)
             formAset.value = { 
-                jenis, kodeBarang: '', nup: '', merek: '', tipe: '', tahun: '', kondisi: 'Baik', 
-                kategoriKeterangan: 'Pembelian', detailKeterangan: '' 
+                jenis, 
+                kodeBarang: '', 
+                nup: '', 
+                merek: '', 
+                tipe: '', 
+                tahun: new Date().getFullYear(), 
+                kondisi: 'Baik', 
+                kategoriKeterangan: 'Pembelian', // <-- DEFAULT LANGSUNG PEMBELIAN
+                detailKeterangan: '' 
             };
 
             ubahKodeOtomatis();
         };
 
-        const saveAset = async () => {
+       const saveAset = async () => {
             try {
+                // Logika penggabungan keterangan
                 let combinedKeterangan = formAset.value.kategoriKeterangan;
-                if (formAset.value.detailKeterangan && formAset.value.detailKeterangan.trim() !== '') {
+
+                if (formAset.value.kategoriKeterangan === 'Lainnya') {
+                    combinedKeterangan = formAset.value.detailKeterangan || 'Lainnya';
+                } else if (formAset.value.detailKeterangan && formAset.value.detailKeterangan.trim() !== '') {
                     combinedKeterangan += ` - ${formAset.value.detailKeterangan}`;
                 }
 
