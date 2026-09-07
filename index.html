@@ -210,14 +210,14 @@
                                 <i class="fa-solid fa-mobile-screen text-rose-500"></i>
                                 <span>HP: {{ visibleAssets.filter(a => a.jenis === 'Telephone Mobile').length }}</span>
                             </span>
-                            <span @click="filterJenisAset = 'Camera'" class="shrink-0 flex items-center space-x-1.5 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 cursor-pointer hover:bg-slate-200 active:bg-slate-300 transition-colors">
+                            <!-- <span @click="filterJenisAset = 'Camera'" class="shrink-0 flex items-center space-x-1.5 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 cursor-pointer hover:bg-slate-200 active:bg-slate-300 transition-colors">
                                 <i class="fa-solid fa-camera text-blue-500"></i>
                                 <span>Cam: {{ visibleAssets.filter(a => a.jenis === 'Camera').length }}</span>
                             </span>
                             <span @click="filterJenisAset = 'Drone'" class="shrink-0 flex items-center space-x-1.5 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 cursor-pointer hover:bg-slate-200 active:bg-slate-300 transition-colors">
                                 <i class="fa-solid fa-helicopter text-purple-500"></i>
                                 <span>Drone: {{ visibleAssets.filter(a => a.jenis === 'Drone').length }}</span>
-                            </span>
+                            </span> -->
                         </div>
                     </div>
 
@@ -540,7 +540,7 @@
                                     <th class="py-2.5 px-4">Nama Barang</th>
                                     <th class="py-2.5 px-4 w-48">User</th>
                                     <th class="py-2.5 px-4 w-56">Mutasi Ke</th>
-                                    <th class="py-3 px-2 text-center w-24">
+                                    <th class="py-3 px-2 text-center w-28">
                                         <div class="flex items-center justify-center space-x-1.5 relative group cursor-pointer" title="Filter Kondisi">
                                             <span>Kondisi</span>
                                             <i class="fa-solid fa-chevron-down text-[12px] font-black transition-colors" :class="filterKondisiRiwayat !== 'all' ? 'text-blue-400' : 'text-slate-300 group-hover:text-white'"></i>
@@ -583,7 +583,7 @@
                                         </template>
                                     </td>
                                     <td class="py-3 px-4 text-center">
-                                        <span class="px-2 py-0.5 rounded text-[10px] font-semibold" :class="getConditionBadgeClass(h.kondisi)">{{ h.kondisi }}</span>
+                                        <span class="px-2.5 py-1 rounded-md text-[10px] font-bold whitespace-nowrap inline-block shadow-sm border border-black/5" :class="getConditionBadgeClass(h.kondisi)">{{ h.kondisi }}</span>
                                     </td>
                                     <td class="py-3 px-4 font-mono text-[11px] text-slate-500">{{ h.nomorBast || '-' }}</td>
                                     <td class="py-3 px-4 text-center">
@@ -805,8 +805,8 @@
                                     <option value="Tablet">Tablet</option>
                                     <option value="Telephone Mobile">Telephone Mobile</option>
                                     <option value="PC Unit">PC Unit</option>
-                                    <option value="Camera">Camera</option>
-                                    <option value="Drone">Drone</option>
+                                    <!-- <option value="Camera">Camera</option>
+                                    <option value="Drone">Drone</option> -->
                                 </select>
                             </div>
                             <div>
@@ -1311,7 +1311,7 @@
                                 <p>Mengetahui :</p>
                                 <p class="mb-20 whitespace-pre-line">{{ formPengaturan.jabatanKepala }}</p>
                                 <p class="font-bold underline">{{ formPengaturan.namaKepala }}</p>
-                                <p v-if="formPengaturan.nipKepala" class="text-xs">NIP. {{ formPengaturan.nipKepala }}</p>
+                                <!-- <p v-if="formPengaturan.nipKepala" class="text-xs">NIP. {{ formPengaturan.nipKepala }}</p> -->
                             </div>
                         </div>
                     </template>

@@ -1103,7 +1103,7 @@ createApp({
             const oldPegawai = asset.pemegangId !== null ? getPegawaiInfo(asset.pemegangId) : null;
             let newHolderId = null;
             let newPegawai = null;
-            
+
             let adminGudang = formMutasi.value.adminGudangId ? getPegawaiInfo(formMutasi.value.adminGudangId) : null;
             if (!adminGudang) {
                 showToast('Staf Gudang wajib dipilih!', true);
@@ -1121,6 +1121,13 @@ createApp({
             else if (oldPegawai && newPegawai) jenisTransaksi = 'MUTASI';
             else return;
 
+            // BUG FIX: Simpan data admin ke dalam JSON agar bisa dibaca saat cetak ulang
+            const adminMeta = JSON.stringify({
+                adminNama: adminGudang.nama,
+                adminNip: adminGudang.nip,
+                adminJabatan: adminGudang.jabatan
+            });
+
             try {
                 if (jenisTransaksi === 'MUTASI') {
                     // BAST 
@@ -1134,7 +1141,8 @@ createApp({
                             jenis_transaksi: 'PENGEMBALIAN',
                             kondisi: formMutasi.value.kondisi,
                             nomor_bast: formMutasi.value.nomorBast,
-                            keterangan: 'Otomatis: Pengembalian sebelum dimutasi'
+                            keterangan: 'Otomatis: Pengembalian sebelum dimutasi',
+                            lampiran_foto: adminMeta // Titipkan data admin
                         })
                     });
 
@@ -1149,7 +1157,8 @@ createApp({
                             jenis_transaksi: 'PEMINJAMAN',
                             kondisi: formMutasi.value.kondisi,
                             nomor_bast: formMutasi.value.nomorSip,
-                            keterangan: 'Otomatis: Peminjaman hasil mutasi'
+                            keterangan: 'Otomatis: Peminjaman hasil mutasi',
+                            lampiran_foto: adminMeta // Titipkan data admin
                         })
                     });
                 } else {
@@ -1164,7 +1173,8 @@ createApp({
                             jenis_transaksi: jenisTransaksi,
                             kondisi: formMutasi.value.kondisi,
                             nomor_bast: jenisTransaksi === 'PENGEMBALIAN' ? formMutasi.value.nomorBast : formMutasi.value.nomorSip,
-                            keterangan: ''
+                            keterangan: '',
+                            lampiran_foto: adminMeta // Titipkan data admin
                         })
                     });
                 }
@@ -1251,19 +1261,49 @@ createApp({
 
             const pegawaiLamaObj = cariPegawaiBerdasarkanNama(record.pemegangLama);
             const pegawaiBaruObj = cariPegawaiBerdasarkanNama(record.pemegangBaru);
-            const defaultStafGudang = stafGudangList.value[0] || pegawaiList.value[0] || { nama: 'Admin Gudang', nip: '-', jabatan: 'Staf Perlengkapan' };
 
+            // Default jika data JSON admin tidak ditemukan
+            let namaAdminGudang = '[Ketik Nama Admin]';
+            let nipAdminGudang = '-';
+            let jabatanAdminGudang = 'Staf Pengelola BMN';
+
+            // 1. EKSTRAK FOTO & METADATA ADMIN DARI JSON TERLEBIH DAHULU
+            let fotoBarang = [];
+            let fotoLabel = [];
+            let meta = {
+                pemeriksaTekmira1: '....................', pemeriksaTekmira2: '....................', 
+                pemeriksaTujuan1: '....................', pemeriksaTujuan2: '....................',
+                petinggiTujuan: '....................', petinggiTekmira: '....................'
+            };
+
+            if (record.lampiran_foto) {
+                try {
+                    const parsed = JSON.parse(record.lampiran_foto);
+                    if (parsed.barang) fotoBarang = parsed.barang; 
+                    if (parsed.label) fotoLabel = parsed.label;
+
+                    if (parsed.pemeriksaTekmira1) meta.pemeriksaTekmira1 = parsed.pemeriksaTekmira1;
+                    if (parsed.pemeriksaTekmira2) meta.pemeriksaTekmira2 = parsed.pemeriksaTekmira2;
+                    if (parsed.pemeriksaTujuan1) meta.pemeriksaTujuan1 = parsed.pemeriksaTujuan1;
+                    if (parsed.pemeriksaTujuan2) meta.pemeriksaTujuan2 = parsed.pemeriksaTujuan2;
+                    if (parsed.petinggiTujuan) meta.petinggiTujuan = parsed.petinggiTujuan;
+                    if (parsed.petinggiTekmira) meta.petinggiTekmira = parsed.petinggiTekmira;
+
+                    // Tangkap Data Admin yang dititipkan saat proses Serah Terima
+                    if (parsed.adminNama) namaAdminGudang = parsed.adminNama;
+                    if (parsed.adminNip) nipAdminGudang = parsed.adminNip;
+                    if (parsed.adminJabatan) jabatanAdminGudang = parsed.adminJabatan;
+                } catch (e) { console.error('Gagal parse foto/meta', e); }
+            }
+
+            // 2. BARU SUSUN DATA PIHAK PERTAMA DAN KEDUA
             let namaPihakPertama = record.pemegangLama;
             let nipPihakPertama = pegawaiLamaObj?.nip || '-';
-            let jabatanPihakPertama = pegawaiLamaObj?.jabatan || (record.pemegangLama.includes('Gudang') ? defaultStafGudang.jabatan : '-');
+            let jabatanPihakPertama = pegawaiLamaObj?.jabatan || (record.pemegangLama.includes('Gudang') ? jabatanAdminGudang : '-');
 
             let namaPihakKedua = record.pemegangBaru;
             let nipPihakKedua = pegawaiBaruObj?.nip || '-';
-            let jabatanPihakKedua = pegawaiBaruObj?.jabatan || (record.pemegangBaru.includes('Gudang') ? defaultStafGudang.jabatan : '-');
-
-            let namaAdminGudang = defaultStafGudang.nama;
-            let nipAdminGudang = defaultStafGudang.nip;
-            let jabatanAdminGudang = defaultStafGudang.jabatan;
+            let jabatanPihakKedua = pegawaiBaruObj?.jabatan || (record.pemegangBaru.includes('Gudang') ? jabatanAdminGudang : '-');
 
             if (jenisTrans === 'LAINNYA') {
                 namaPihakKedua = tujuanTktm;
@@ -1283,30 +1323,6 @@ createApp({
                 jabatanPihakPertama = jabatanAdminGudang;
             }
 
-            // Ekstrak Foto & Metadata Nama dari JSON
-            let fotoBarang = [];
-            let fotoLabel = [];
-            let meta = {
-                pemeriksaTekmira1: '....................', pemeriksaTekmira2: '....................', 
-                pemeriksaTujuan1: '....................', pemeriksaTujuan2: '....................',
-                petinggiTujuan: '....................', petinggiTekmira: '....................'
-            };
-
-            if (record.lampiran_foto) {
-                try {
-                    const parsed = JSON.parse(record.lampiran_foto);
-                    if (parsed.barang) fotoBarang = parsed.barang; 
-                    if (parsed.label) fotoLabel = parsed.label;
-                    
-                    if (parsed.pemeriksaTekmira1) meta.pemeriksaTekmira1 = parsed.pemeriksaTekmira1;
-                    if (parsed.pemeriksaTekmira2) meta.pemeriksaTekmira2 = parsed.pemeriksaTekmira2;
-                    if (parsed.pemeriksaTujuan1) meta.pemeriksaTujuan1 = parsed.pemeriksaTujuan1;
-                    if (parsed.pemeriksaTujuan2) meta.pemeriksaTujuan2 = parsed.pemeriksaTujuan2;
-                    if (parsed.petinggiTujuan) meta.petinggiTujuan = parsed.petinggiTujuan;
-                    if (parsed.petinggiTekmira) meta.petinggiTekmira = parsed.petinggiTekmira;
-                } catch (e) { console.error('Gagal parse foto/meta', e); }
-            }
-
             printData.value = { 
                 show: true, 
                 ...record,
@@ -1316,17 +1332,17 @@ createApp({
                 nomorVerifikasi: nVerifikasi,
                 jenisTransaksi: jenisTrans,
                 printMode: targetPrintMode,
-                
+
                 nilaiPerolehan: record.nilai_perolehan || '-',
                 fotoBarangUrls: fotoBarang,
                 fotoLabelUrls: fotoLabel,
-                
+
                 ...meta,
-                
+
                 pemegangLamaNama: namaPihakPertama,
                 pemegangLamaNip: nipPihakPertama,
                 pemegangLamaJabatan: jabatanPihakPertama,
-                
+
                 pemegangBaruNama: namaPihakKedua,
                 pemegangBaruNip: nipPihakKedua,
                 pemegangBaruJabatan: jabatanPihakKedua,
@@ -1335,7 +1351,7 @@ createApp({
                 adminNip: nipAdminGudang,
                 adminJabatan: jabatanAdminGudang
             };
-            
+
             setTimeout(() => {
                 const printArea = document.getElementById('print-section');
                 if (printArea) printArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
