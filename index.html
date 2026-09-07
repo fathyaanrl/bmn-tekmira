@@ -243,10 +243,11 @@
                     </div>
 
                     <!-- 4. Export (Tetap kotak persegi kecil) -->
-                    <button @click="exportExcel"
-                        class="w-16 h-16 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center justify-center hover:bg-emerald-50 transition group shrink-0"
-                        title="Export Excel">
-                        <i class="fa-solid fa-file-excel text-3xl text-emerald-600 group-hover:scale-110 transition-transform"></i>
+                    <button type="button" 
+                            @click="exportExcel"
+                            class="w-16 h-16 bg-emerald-600 hover:bg-emerald-700 rounded-2xl border border-emerald-500/20 shadow-sm flex items-center justify-center transition group shrink-0 active:scale-95 cursor-pointer"
+                            title="Export Excel">
+                        <i class="fa-solid fa-file-excel text-3xl text-white group-hover:scale-110 transition-transform"></i>
                     </button>
                 </div>
 
