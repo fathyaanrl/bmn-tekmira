@@ -18,31 +18,63 @@ body {
 /* Gaya khusus untuk layar cetak (Print) - FORMAT A4 */
 @media print {
     @page {
-        size: A4;
-        margin: 0; /* Hapus margin default browser agar header URL tanggal hilang */
+        size: A4 portrait;
+        margin: 8mm; /* Pakai margin tipis biar pas di kertas */
     }
-    body, html {
-        background: white;
-        margin: 0;
-        padding: 0;
+
+    html, body {
+        background: white !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        height: auto !important;
+        min-height: 0 !important;
+        font-size: 10.5pt !important; /* Rapatkan sedikit ukuran teks */
     }
-    /* Sembunyikan elemen web (header, main, modal) */
-    header, main, .fixed.inset-0 { 
+
+    /* Sembunyikan semua elemen UI web */
+    header, main, footer, .fixed, .no-print, button, .btn { 
         display: none !important; 
     }
-    /* Kembalikan print-section ke normal flow tanpa absolute */
+
+    /* Paksa area cetak mengalir normal dari atas */
     #print-section { 
         display: block !important;
         position: static !important;
-        margin: 0 !important; 
-        padding: 1cm 0 2cm 0 !important; /* Ubah baris ini: Atas 1cm, Kiri-Kanan 0, Bawah 2cm */
-        width: 210mm !important;
-        height: 297mm !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
         border: none !important;
         box-shadow: none !important;
-        page-break-inside: avoid;
     }
-    .no-print { display: none !important; }
+
+    /* Rapatkan spasi/margin semua paragraf dan div di dalam surat */
+    #print-section p, 
+    #print-section div, 
+    #print-section table, 
+    #print-section tr, 
+    #print-section td {
+        margin-top: 2px !important;
+        margin-bottom: 2px !important;
+        padding-top: 2px !important;
+        padding-bottom: 2px !important;
+    }
+
+    /* Kunci area tanda tangan agar TIDAK PERNAH terpisah ke halaman lain */
+    #print-section .signature,
+    #print-section table,
+    #print-section [class*="flex"],
+    #print-section [class*="grid"] {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    /* KUNCI SPASI TANDA TANGAN (Tambahkan baris ini) */
+    #print-section .ttd-space {
+        height: 60px !important; /* Ubah ke 70px/80px kalau mau lebih tinggi */
+    }
+
     * {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
