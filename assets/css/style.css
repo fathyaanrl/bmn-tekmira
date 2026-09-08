@@ -51,7 +51,7 @@ body {
 
     /* Rapatkan spasi/margin semua paragraf dan div di dalam surat */
     #print-section p, 
-    #print-section div, 
+    /* #print-section div,  */
     #print-section table, 
     #print-section tr, 
     #print-section td {
