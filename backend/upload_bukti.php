@@ -1,57 +1,61 @@
 <?php
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
-
-// Tambahkan koneksi database Anda di sini (sesuaikan dengan nama file koneksi Anda)
-// require_once 'koneksi.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id = $_POST['id'] ?? null;
-
+    
     if (!$id) {
-        echo json_encode(['status' => 'error', 'message' => 'ID Transaksi tidak ditemukan.']);
+        echo json_encode(['status' => 'error', 'message' => 'ID Riwayat/Mutasi tidak terkirim!']);
         exit;
     }
 
-    if (!isset($_FILES['file_pdf']) || $_FILES['file_pdf']['error'] !== UPLOAD_ERR_OK) {
-        $errorCode = $_FILES['file_pdf']['error'] ?? 'No file';
-        echo json_encode(['status' => 'error', 'message' => 'Gagal mengunggah berkas. Kode Error PHP: ' . $errorCode]);
+    if (!isset($_FILES['file_pdf'])) {
+        echo json_encode(['status' => 'error', 'message' => 'File PDF tidak terdeteksi oleh server']);
         exit;
     }
 
-    $targetDir = "uploads/surat/";
-    if (!is_dir($targetDir)) {
-        mkdir($targetDir, 0777, true);
+    // Cek jika ada error dari sistem upload PHP
+    if ($_FILES['file_pdf']['error'] !== UPLOAD_ERR_OK) {
+        $errorCode = $_FILES['file_pdf']['error'];
+        $errorMessages = [
+            1 => 'Ukuran file melebihi upload_max_filesize di php.ini (maksimal 2MB)',
+            2 => 'Ukuran file terlalu besar',
+            3 => 'File hanya ter-upload sebagian',
+            4 => 'Tidak ada file yang di-upload',
+            6 => 'Folder temporary server tidak ditemukan',
+            7 => 'Gagal menulis file ke disk server (Izin folder/Permissions)',
+            8 => 'Ekstensi PHP menghentikan proses upload'
+        ];
+        $msg = $errorMessages[$errorCode] ?? 'Error code: ' . $errorCode;
+        echo json_encode(['status' => 'error', 'message' => $msg]);
+        exit;
     }
 
-    $fileName = "bukti_" . preg_replace('/[^a-zA-Z0-9_-]/', '', $id) . "_" . time() . ".pdf";
-    $targetFile = $targetDir . $fileName;
+    // Lokasi penyimpanan: backend/uploads/surat/
+    $targetDir = __DIR__ . '/../uploads/surat/';
 
-    if (move_uploaded_file($_FILES['file_pdf']['tmp_name'], $targetFile)) {
-        
-        /* 
-         * JANGAN LUPA: Update kolom file bukti di database Anda!
-         * Contoh query:
-         * $stmt = $pdo->prepare("UPDATE mutasi SET file_bukti = ? WHERE id = ?");
-         * $stmt->execute([$targetFile, $id]);
-         */
+    // Buat folder otomatis jika belum ada
+    if (!file_exists($targetDir)) {
+        if (!mkdir($targetDir, 0777, true)) {
+            echo json_encode(['status' => 'error', 'message' => 'Gagal membuat folder backend/uploads/surat/']);
+            exit;
+        }
+    }
 
+    $fileName = 'bukti_' . $id . '.pdf';
+    $targetFilePath = $targetDir . $fileName;
+
+    // Pindahkan file dari temporary ke folder uploads/surat/
+    if (move_uploaded_file($_FILES['file_pdf']['tmp_name'], $targetFilePath)) {
         echo json_encode([
-            'status' => 'success',
-            'message' => 'Berkas berhasil diunggah.',
-            'filePath' => $targetFile
+            'status' => 'success', 
+            'message' => 'File berhasil disimpan!', 
+            'file' => $fileName
         ]);
     } else {
-        echo json_encode(['status' => 'error', 'message' => 'Gagal menyimpan berkas ke folder server.']);
+        echo json_encode(['status' => 'error', 'message' => 'Gagal memindahkan file. Periksa izin akses (permission) folder uploads']);
     }
 } else {
-    echo json_encode(['status' => 'error', 'message' => 'Metode request tidak diizinkan.']);
+    echo json_encode(['status' => 'error', 'message' => 'Method tidak diizinkan']);
 }
 ?>

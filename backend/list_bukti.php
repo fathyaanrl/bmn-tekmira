@@ -1,24 +1,17 @@
 <?php
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
 
-$targetDir = "uploads/surat/";
+$targetDir = __DIR__ . '/../uploads/surat/';
 $ids = [];
 
-if (is_dir($targetDir)) {
+if (file_exists($targetDir)) {
     $files = scandir($targetDir);
     foreach ($files as $file) {
-        if ($file === '.' || $file === '..') continue;
-        
-        // Mengambil ID dari nama file (misal: bukti_123.pdf atau bukti_123_160000.pdf)
-        if (preg_match('/bukti_([a-zA-Z0-9-]+)/', $file, $matches)) {
-            $ids[] = (string)$matches[1];
+        if (preg_match('/^bukti_(\d+)\.pdf$/i', $file, $matches)) {
+            $ids[] = (int)$matches[1];
         }
     }
 }
 
-echo json_encode([
-    'status' => 'success',
-    'ids' => array_values(array_unique($ids))
-]);
+echo json_encode(['status' => 'success', 'ids' => $ids]);
 ?>

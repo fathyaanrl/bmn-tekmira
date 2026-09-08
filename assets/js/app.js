@@ -619,19 +619,68 @@ createApp({
 
         // Logika Upload PDF
         const triggerUpload = (id) => {
+            console.log("1. Tombol Upload diklik untuk ID:", id);
             currentUploadId.value = id;
             
-            const inputEl = fileInputBukti.value || document.querySelector('input[type="file"]');
-            
+            // Ambil elemen berdasarkan ID khusus agar tidak tertukar dengan input foto
+            const inputEl = document.getElementById('fileInputBuktiPDF');
             if (inputEl) {
+                inputEl.value = ''; // Reset file agar bisa pilih file yang sama
                 inputEl.click();
             } else {
-                alert('Input file tidak ditemukan!');
+                alert('Error: Elemen #fileInputBuktiPDF tidak ditemukan di HTML!');
             }
         };
 
 
         const handleFileUpload = async (event) => {
+            console.log("2. File berhasil dipilih oleh user");
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.type !== 'application/pdf') {
+                alert('File harus berupa format PDF!');
+                return;
+            }
+
+            const uploadId = currentUploadId.value;
+            alert(`Mengirim file '${file.name}' untuk ID Riwayat: ${uploadId}`);
+
+            const formData = new FormData();
+            formData.append('id', uploadId);
+            formData.append('file_pdf', file);
+
+            try {
+                const res = await fetch(`${API_BASE}/upload_bukti.php`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await res.json();
+                console.log("3. Respon dari server:", result);
+
+                if (result.status === 'success') {
+                    alert('Upload Berhasil! Tombol Lihat sekarang aktif.');
+                    
+                    // Tambahkan ID ke daftar bukti agar tombol "Lihat" langsung berubah hijau
+                    if (typeof buktiIds !== 'undefined' && buktiIds.value) {
+                        if (!buktiIds.value.includes(Number(uploadId))) {
+                            buktiIds.value.push(Number(uploadId));
+                        }
+                    }
+                    if (typeof refreshBuktiList === 'function') {
+                        await refreshBuktiList();
+                    }
+                } else {
+                    alert('Gagal dari Backend: ' + result.message);
+                }
+            } catch (err) {
+                console.error("Error Upload:", err);
+                alert('Terjadi kesalahan koneksi atau server PHP error.');
+            }
+        };
+
+
+        const uploadPdfLangsung = async (event, idMutasi) => {
             const file = event.target.files[0];
             if (!file) return;
 
@@ -641,7 +690,7 @@ createApp({
             }
 
             const formData = new FormData();
-            formData.append('id', selectedTxId.value);
+            formData.append('id', idMutasi);
             formData.append('file_pdf', file);
 
             try {
@@ -653,34 +702,35 @@ createApp({
 
                 if (result.status === 'success') {
                     alert('Upload Berhasil!');
-                    // Update daftar ID bukti secara instan
-                    if (typeof buktiIds !== 'undefined' && buktiIds.value) {
-                        if (!buktiIds.value.includes(selectedTxId.value)) {
-                            buktiIds.value.push(selectedTxId.value);
-                        }
+
+                    // Masukkan ID ke daftar bukti agar tombol "Lihat" seketika berubah hijau
+                    const numId = Number(idMutasi);
+                    if (!buktiIds.value.includes(numId)) {
+                        buktiIds.value.push(numId);
                     }
+
                     if (typeof refreshBuktiList === 'function') {
                         await refreshBuktiList();
                     }
                 } else {
-                    alert('Gagal: ' + result.message);
+                    alert('Gagal dari Server: ' + result.message);
                 }
             } catch (err) {
-                console.error(err);
-                alert('Terjadi kesalahan saat upload.');
+                console.error("Error Upload PDF:", err);
+                alert('Terjadi kesalahan koneksi saat mengunggah file.');
             } finally {
-                event.target.value = '';
+                event.target.value = ''; // Reset input
             }
         };
 
-        const openPdf = (item) => {
-            const id = typeof item === 'object' ? (item.id || item.id_mutasi) : item;
-            const fileUrl = (typeof item === 'object' && item.file_bukti) 
-                ? item.file_bukti 
-                : `${API_BASE}/uploads/surat/bukti_${id}.pdf`;
-                
-            window.open(fileUrl, '_blank');
-        };
+            const openPdf = (item) => {
+                const id = typeof item === 'object' ? (item.id || item.id_mutasi) : item;
+                const fileUrl = (typeof item === 'object' && item.file_bukti) 
+                    ? item.file_bukti 
+                    : `uploads/surat/bukti_${id}.pdf`; // Tanpa 'backend/' di depannya
+                    
+                window.open(fileUrl, '_blank');
+            };
 
         // FITUR PILIH & HAPUS BANYAK
         const toggleSelectMode = () => {
@@ -2001,7 +2051,7 @@ createApp({
             modalTKTM, openModalTKTM, submitTKTM, handleFotoTktm, filterJenisTransaksi, removeFotoTktm, refreshHistory, refreshBuktiList,
 
             filterSurat, filterKondisiRiwayat, filteredHistory, fileInputBukti, filterJenisAset, filterStatusPegawai, triggerUpload, 
-            handleFileUpload, openPdf, hasBukti, selectedHistory, selectAllHistory, hapusBanyakHistory, prosesTransferKeluar
+            handleFileUpload, openPdf, hasBukti, selectedHistory, selectAllHistory, hapusBanyakHistory, prosesTransferKeluar,uploadPdfLangsung
         };
     }
 }).mount('#app');
