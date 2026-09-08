@@ -1240,17 +1240,21 @@
                             <p>Demikian Berita Acara Serah Terima Barang Milik Negara ini dibuat untuk dapat diproses lebih lanjut.</p>
                             
                             <!-- TANDA TANGAN BAST -->
-                            <div class="mt-8 w-full break-inside-avoid">
+                            <div class="mt-8 w-full break-inside-avoid signature">
                                 <div class="flex justify-between w-full text-center">
+                                    <!-- PIHAK KIRI -->
                                     <div class="w-1/2 flex flex-col items-center">
+                                        <!-- Teks transparan penyeimbang baris tanggal -->
+                                        <p class="invisible" style="margin: 0 !important;">Tanggal</p>
                                         <p style="margin: 0 !important;">Yang Menerima,<br><strong>PIHAK KEDUA</strong></p>
-                                        <div style="height: 70px !important;"></div>
+                                        <div style="height: 70px !important;"></div> <!-- Tinggi disamakan -->
                                         <p class="font-bold underline" style="margin: 0 !important;">{{ printData.adminNama }}</p>
                                     </div>
+                                    <!-- PIHAK KANAN -->
                                     <div class="w-1/2 flex flex-col items-center">
                                         <p style="margin: 0 !important;">Bandung, {{ formatTanggalIndo(printData.tanggal) }}</p>
                                         <p style="margin: 0 !important;">Yang Menyerahkan,<br><strong>PIHAK PERTAMA</strong></p>
-                                        <div style="height: 55px !important;"></div>
+                                        <div style="height: 70px !important;"></div> <!-- Tinggi disamakan -->
                                         <p class="font-bold underline" style="margin: 0 !important;">{{ printData.pemegangLamaNama }}</p>
                                     </div>
                                 </div>
@@ -1284,20 +1288,25 @@
                             <p class="mt-5">Selanjutnya barang inventaris tersebut agar dapat dipergunakan untuk keperluan dinas pada Kantor Balai Besar Pengujian Mineral dan Batubara tekMIRA pemakai/pengguna barang wajib memelihara dengan sebaik-baiknya dan bertanggung jawab penuh atas hilang/musnahnya barang inventaris tersebut.</p>
                             
                             <!-- TANDA TANGAN SIP -->
-                            <div class="mt-8 w-full break-inside-avoid">
+                            <div class="mt-8 w-full break-inside-avoid signature">
                                 <div class="flex justify-between w-full text-center">
+                                    <!-- PIHAK KIRI -->
                                     <div class="w-1/2 flex flex-col items-center">
+                                        <!-- Teks transparan penyeimbang baris tanggal -->
+                                        <p class="invisible" style="margin: 0 !important;">Tanggal</p>
                                         <p style="margin: 0 !important;">Yang menyerahkan</p>
-                                        <div style="height: 70px !important;"></div>
+                                        <div style="height: 70px !important;"></div> <!-- Tinggi disamakan -->
                                         <p class="font-bold underline" style="margin: 0 !important;">{{ printData.adminNama }}</p>
                                     </div>
+                                    <!-- PIHAK KANAN -->
                                     <div class="w-1/2 flex flex-col items-center">
                                         <p style="margin: 0 !important;">Bandung, {{ formatTanggalIndo(printData.tanggal) }}</p>
                                         <p style="margin: 0 !important;">Yang menerima/memakai</p>
-                                        <div style="height: 55px !important;"></div>
+                                        <div style="height: 70px !important;"></div> <!-- Tinggi disamakan -->
                                         <p class="font-bold underline" style="margin: 0 !important;">{{ printData.pemegangBaruNama }}</p>
                                     </div>
-                                </div>    
+                                </div>
+                                
                                 <div style="height: 20px !important;"></div>
                                 <div class="text-center w-full">
                                     <p style="margin: 0 !important;">Mengetahui :</p>
@@ -1443,12 +1452,12 @@
                             <div class="flex justify-between w-full mt-8 break-inside-avoid">
                                 <div class="w-1/2 text-center flex flex-col items-center">
                                     <p style="margin: 0 !important;">Kepala Bagian Umum<br><span contenteditable="true" class="outline-none hover:bg-slate-100 cursor-text">{{ printData.pemegangBaruNama }}</span></p>
-                                    <div style="height: 70px !important;"></div>
+                                    <div class="ttd-space"></div>
                                     <p class="font-bold" style="margin: 0 !important;" contenteditable="true" class="outline-none hover:bg-slate-100 cursor-text">{{ printData.petinggiTujuan || '[Nama Pejabat Tujuan]' }}</p>
                                 </div>
                                 <div class="w-1/2 text-center flex flex-col items-center">
                                     <p style="margin: 0 !important;">Kepala Bagian Umum<br>Balai Besar Pengujian Mineral dan<br>Batubara <i>tek</i>MIRA</p>
-                                    <div style="height: 55px !important;"></div>
+                                    <div class="ttd-space"></div>
                                     <p class="font-bold" style="margin: 0 !important;" contenteditable="true" class="outline-none hover:bg-slate-100 cursor-text">{{ printData.petinggiTekmira || 'Daman' }}</p>
                                 </div>
                             </div>
