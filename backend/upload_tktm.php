@@ -1,6 +1,10 @@
 <?php
 session_start();
 
+// Matikan pesan error HTML agar response selalu berbentuk JSON murni
+error_reporting(0);
+ini_set('display_errors', 0);
+
 header('Content-Type: application/json; charset=UTF-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
@@ -35,14 +39,13 @@ $id = (int) $id;
 
 /*
 |--------------------------------------------------------------------------
-| Folder upload
+| Folder upload (Keluar 1 tingkat ke root bmn-tekmira/uploads/tktm/)
 |--------------------------------------------------------------------------
 */
-
-$targetDir = __DIR__ . "/uploads/tktm/";
+$targetDir = dirname(__DIR__) . "/uploads/tktm/";
 
 if (!is_dir($targetDir)) {
-    mkdir($targetDir, 0777, true);
+    @mkdir($targetDir, 0777, true);
 }
 
 $uploadedBarang = [];
@@ -53,7 +56,6 @@ $uploadedLabel = [];
 | FOTO BARANG
 |--------------------------------------------------------------------------
 */
-
 if (
     isset($_FILES['foto_barang']) &&
     is_array($_FILES['foto_barang']['tmp_name'])
@@ -87,15 +89,9 @@ if (
 
         $destination = $targetDir . $newName;
 
-        if (move_uploaded_file($tmpName, $destination)) {
-
-            /*
-             * Path yang disimpan ke database.
-             * Harus diawali backend/ karena file berada
-             * di backend/uploads/tktm/
-             */
-            $uploadedBarang[] =
-                "backend/uploads/tktm/" . $newName;
+        if (@move_uploaded_file($tmpName, $destination)) {
+            // Path relatif yang disimpan ke DB
+            $uploadedBarang[] = "uploads/tktm/" . $newName;
         }
     }
 }
@@ -105,7 +101,6 @@ if (
 | FOTO LABEL
 |--------------------------------------------------------------------------
 */
-
 if (
     isset($_FILES['foto_label']) &&
     is_array($_FILES['foto_label']['tmp_name'])
@@ -139,22 +134,19 @@ if (
 
         $destination = $targetDir . $newName;
 
-        if (move_uploaded_file($tmpName, $destination)) {
-
-            $uploadedLabel[] =
-                "backend/uploads/tktm/" . $newName;
+        if (@move_uploaded_file($tmpName, $destination)) {
+            // Path relatif yang disimpan ke DB
+            $uploadedLabel[] = "uploads/tktm/" . $newName;
         }
     }
 }
 
 /*
 |--------------------------------------------------------------------------
-| Ambil lampiran_foto lama
+| Ambil & Update lampiran_foto di Database
 |--------------------------------------------------------------------------
 */
-
 try {
-
     $stmt = $pdo->prepare("
         SELECT lampiran_foto
         FROM mutasi
@@ -176,13 +168,9 @@ try {
         exit;
     }
 
-    /*
-     * Ambil metadata yang sudah ada.
-     */
     $metadata = [];
 
     if (!empty($row['lampiran_foto'])) {
-
         $decoded = json_decode(
             $row['lampiran_foto'],
             true
@@ -193,9 +181,6 @@ try {
         }
     }
 
-    /*
-     * Pastikan array foto tersedia.
-     */
     if (
         !isset($metadata['barang']) ||
         !is_array($metadata['barang'])
@@ -210,9 +195,7 @@ try {
         $metadata['label'] = [];
     }
 
-    /*
-     * Tambahkan foto yang baru di-upload.
-     */
+    // Gabungkan foto baru
     $metadata['barang'] = array_merge(
         $metadata['barang'],
         $uploadedBarang
@@ -223,9 +206,6 @@ try {
         $uploadedLabel
     );
 
-    /*
-     * Simpan kembali ke database.
-     */
     $lampiranFoto = json_encode(
         $metadata,
         JSON_UNESCAPED_SLASHES |
@@ -251,7 +231,6 @@ try {
     ]);
 
 } catch (PDOException $e) {
-
     http_response_code(500);
 
     echo json_encode([
