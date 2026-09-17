@@ -911,6 +911,46 @@ createApp({
             fotoBarangFiles: [], fotoLabelFiles: []
         });
 
+        const generateNomorTKTM = () => {
+            const tahun = new Date().getFullYear();
+
+            let maxPenelitian = 0;
+            let maxVerifikasi = 0;
+
+            historyList.value.forEach(h => {
+                const nomor = String(h.nomorBast || '').trim();
+
+                if (!nomor) return;
+
+                const match = nomor.match(/^(\d+)\.BA\/BN\.10\/DBR\/(\d{4})$/);
+
+                if (!match) return;
+
+                const angka = parseInt(match[1], 10);
+                const tahunNomor = match[2];
+
+                if (tahunNomor !== String(tahun)) return;
+
+                if (angka === 77) {
+                    maxPenelitian = Math.max(maxPenelitian, angka);
+                }
+
+                if (angka === 78) {
+                    maxVerifikasi = Math.max(maxVerifikasi, angka);
+                }
+            });
+
+            return {
+                penelitian: maxPenelitian
+                    ? `${maxPenelitian}.BA/BN.10/DBR/${tahun}`
+                    : `77.BA/BN.10/DBR/${tahun}`,
+
+                verifikasi: maxVerifikasi
+                    ? `${maxVerifikasi}.BA/BN.10/DBR/${tahun}`
+                    : `78.BA/BN.10/DBR/${tahun}`
+            };
+        };
+
         const openModalTKTM = (pegawai) => {
             const empId = pegawai.id;
             let list = [];
@@ -1012,12 +1052,42 @@ createApp({
                 const resMutasi2 = await apiRequest('mutasi.php', { method: 'POST', body: JSON.stringify({ aset_id: asset.id, tanggal: tgl, pemegang_lama_id: m.pegawaiId, pemegang_baru_id: null, jenis_transaksi: 'LAINNYA', kondisi: asset.kondisi, nomor_bast: m.nomorVerifikasi, keterangan: 'BA Verifikasi Aset - ' + m.tujuan.trim(), nilai_perolehan: m.nilaiPerolehan, lampiran_foto: metadataNames }) });
                 
                 const uploadPhotos = async (mutasiId) => {
-                    if (m.fotoBarangFiles.length === 0 && m.fotoLabelFiles.length === 0) return;
+                    if (
+                        m.fotoBarangFiles.length === 0 &&
+                        m.fotoLabelFiles.length === 0
+                    ) {
+                        return;
+                    }
+
                     const formData = new FormData();
+
                     formData.append('id', mutasiId);
-                    m.fotoBarangFiles.forEach(file => formData.append('foto_barang[]', file));
-                    m.fotoLabelFiles.forEach(file => formData.append('foto_label[]', file));
-                    await fetch(`${API_BASE}/upload_tktm.php`, { method: 'POST', body: formData });
+
+                    m.fotoBarangFiles.forEach(file => {
+                        formData.append('foto_barang[]', file);
+                    });
+
+                    m.fotoLabelFiles.forEach(file => {
+                        formData.append('foto_label[]', file);
+                    });
+
+                    const response = await fetch(
+                        `${API_BASE}/upload_tktm.php`,
+                        {
+                            method: 'POST',
+                            body: formData
+                        }
+                    );
+
+                    const result = await response.json();
+
+                    if (!response.ok || result.status !== 'success') {
+                        throw new Error(
+                            result.message || 'Gagal mengunggah foto TKTM.'
+                        );
+                    }
+
+                    return result;
                 };
 
                 if (resMutasi1.success && resMutasi1.data?.mutasi_id) await uploadPhotos(resMutasi1.data.mutasi_id);
@@ -1273,6 +1343,7 @@ createApp({
             }
         };
 
+
         const cetakUlangBast = (record) => {
             let nBast = '';
             let nSip = '';
@@ -1282,14 +1353,35 @@ createApp({
             let jenisTrans = record.jenisTransaksi || '';
             let tujuanTktm = '-';
 
-            if (record.keterangan && record.keterangan.includes('Penelitian Fisik')) {
+            
+
+            if (record.keterangan && record.keterangan.toLowerCase().includes('penelitian fisik')) {
                 jenisTrans = 'LAINNYA';
-                nPenelitian = record.nomorBast;
+
+                // Nomor surat Penelitian
+                nPenelitian = String(record.nomorBast || '').trim();
+
+                // Jika nomor belum tersimpan pada riwayat lama,
+                // gunakan nomor Penelitian sesuai tahun transaksi.
+                if (!nPenelitian) {
+                    const tahunSurat = record.tanggal
+                        ? new Date(record.tanggal).getFullYear()
+                        : new Date().getFullYear();
+
+                    nPenelitian = `77.BA/BN.10/DBR/${tahunSurat}`;
+                }
+
                 targetPrintMode = 'PENELITIAN';
                 tujuanTktm = record.keterangan.split(' - ')[1] || '-';
             } else if (record.keterangan && record.keterangan.includes('Verifikasi Aset')) {
                 jenisTrans = 'LAINNYA';
-                nVerifikasi = record.nomorBast;
+
+                // Ambil nomor dari database.
+                // Jika data lama belum punya nomor, gunakan nomor default verifikasi.
+                nVerifikasi = record.nomorBast && String(record.nomorBast).trim() !== ''
+                    ? record.nomorBast
+                    : `78.BA/BN.10/DBR/${new Date(record.tanggal).getFullYear()}`;
+
                 targetPrintMode = 'VERIFIKASI';
                 tujuanTktm = record.keterangan.split(' - ')[1] || '-';
             } else if (jenisTrans === 'PEMINJAMAN' || (record.nomorBast && String(record.nomorBast).includes('/GDG/'))) {

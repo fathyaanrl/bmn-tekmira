@@ -1323,8 +1323,11 @@
                     <template v-if="printData.printMode === 'PENELITIAN'">
                         <div class="text-center mb-8 leading-tight">
                             <h2 class="text-lg font-bold">BERITA ACARA<br>PENELITIAN FISIK TRANSFER BARANG MILIK NEGARA</h2>
-                            <p class="text-base mt-1">Nomor <span class="underline outline-none hover:bg-slate-100 cursor-text font-bold" contenteditable="true">{{ printData.nomorPenelitian || printData.nomorBast || '[Ketik Nomor Surat]' }}</span></p>
-                        </div>
+                            <p class="text-base mt-1">Nomor 
+                            <span 
+                                class="underline outline-none hover:bg-slate-100 cursor-text font-bold" 
+                                contenteditable="true"
+                            >{{ printData.nomorPenelitian || printData.nomorBast || '77.BA/BN.10/DBR/2026' }}</span></p>
                         <div class="text-[14px] space-y-5 text-justify leading-relaxed">
                             <p class="indent-10">Pada hari ini, {{ formatTanggalTerbilang(printData.tanggal) }} <strong>({{ formatTanggalAngka(printData.tanggal) }})</strong>, kami yang bertanda tangan di bawah ini, telah melaksanakan penelitian fisik Barang Milik Negara yang diusulkan transfer berupa:</p>
                             <table class="w-full text-center border-collapse border border-black mt-4 mb-4 text-[12px]">
