@@ -2094,6 +2094,28 @@ createApp({
             openModalHapus('banyak_history', null, `Yakin ingin menghapus ${selectedHistory.value.length} riwayat surat terpilih?`);
         };
 
+        // MODAL DETAIL PEGAWAI
+        const modalDetailPegawai = ref({ 
+            show: false, 
+            data: {} 
+        });
+
+        const openDetailPegawai = (pegawai) => {
+            modalDetailPegawai.value.data = pegawai;
+            modalDetailPegawai.value.show = true;
+        };
+
+        // MODAL DETAIL ASET
+        const modalDetailAset = ref({ 
+            show: false, 
+            data: {} 
+        });
+
+        const openDetailAset = (asset) => {
+            modalDetailAset.value.data = asset;
+            modalDetailAset.value.show = true;
+        };
+
         // LIFECYCLE
         onMounted(async () => {
             await refreshBuktiList();
@@ -2132,7 +2154,8 @@ createApp({
             modalTKTM, openModalTKTM, handleSelectAsetTKTM, submitTKTM, handleFotoTktm, filterJenisTransaksi, removeFotoTktm, refreshHistory, refreshBuktiList,
 
             filterSurat, filterKondisiRiwayat, filteredHistory, fileInputBukti, filterJenisAset, filterStatusPegawai, triggerUpload, 
-            handleFileUpload, openPdf, hasBukti, selectedHistory, selectAllHistory, hapusBanyakHistory, prosesTransferKeluar, uploadPdfLangsung
+            handleFileUpload, openPdf, hasBukti, selectedHistory, selectAllHistory, hapusBanyakHistory, prosesTransferKeluar, uploadPdfLangsung,
+            modalDetailPegawai, openDetailPegawai, modalDetailAset, openDetailAset
         };
     }
 }).mount('#app');

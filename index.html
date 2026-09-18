@@ -363,11 +363,15 @@
                             </thead>
                             <tbody class="divide-y divide-slate-100">
                                 <tr v-for="(asset, index) in filteredAssets.slice(0, itemsPerPage)" :key="asset.id" 
-                                    :class="asset.keterangan && asset.keterangan.toLowerCase().includes('transfer keluar') ? 'bg-slate-100 opacity-60 grayscale hover:bg-slate-200' : 'hover:bg-slate-50'">
+                                    class="cursor-pointer transition-colors"
+                                    :class="asset.keterangan && asset.keterangan.toLowerCase().includes('transfer keluar') ? 'bg-slate-100 opacity-60 grayscale hover:bg-slate-200' : 'hover:bg-slate-50'"
+                                    @click="openDetailAset(asset)">
                                     
-                                    <td v-if="isSelectMode" class="py-3 px-3 text-center">
+                                    <!-- Tambah @click.stop di Checkbox -->
+                                    <td v-if="isSelectMode" class="py-3 px-3 text-center" @click.stop>
                                         <input type="checkbox" :value="asset.id" v-model="selectedAssets" class="cursor-pointer" :disabled="asset.keterangan && asset.keterangan.toLowerCase().includes('transfer keluar')">
                                     </td>
+                                    
                                     <td class="py-3 px-2 text-center text-[11px] font-bold text-slate-400">{{ index + 1 }}</td>
                                     <td class="py-3 px-3 text-left whitespace-nowrap">
                                         <div class="font-mono text-slate-800 font-bold">{{ asset.kodeBarang }}</div>
@@ -383,7 +387,7 @@
                                     </td>
                                     
                                     <td class="py-3 px-3 text-center font-semibold text-slate-700 whitespace-nowrap">
-                                        {{ getNilaiPerolehan(asset) }}
+                                        {{ asset.nilaiPerolehan || asset.nilai_perolehan || '-' }}
                                     </td>
 
                                     <td class="py-3 px-3 text-left whitespace-nowrap text-[11px] text-slate-600 font-medium">
@@ -393,7 +397,6 @@
                                         {{ asset.keterangan || '-' }}
                                     </td>
                                     
-                                    <!-- KONDISI -->
                                     <td class="py-3 px-3 text-center whitespace-nowrap">
                                         <span class="px-2.5 py-1 rounded-full font-semibold text-[10px] inline-flex items-center space-x-1 whitespace-nowrap" :class="getConditionBadgeClass(asset.kondisi)">
                                             <i class="fa-solid text-[9px]" :class="getConditionIconClass(asset.kondisi)"></i>
@@ -401,7 +404,6 @@
                                         </span>
                                     </td>
                                     
-                                    <!-- POSISI ASET -->
                                     <td class="py-3 px-3 text-center whitespace-nowrap">
                                         <template v-if="asset.keterangan && asset.keterangan.toLowerCase().includes('transfer keluar')">
                                             <span class="text-[11px] font-bold text-rose-700 bg-rose-100 px-2.5 py-1 rounded border border-rose-200 inline-flex items-center justify-center space-x-1 shadow-sm whitespace-nowrap">
@@ -428,8 +430,8 @@
                                         </template>
                                     </td>                                         
                                     
-                                    <!-- AKSI (DENGAN PADDING PR-5 DIBERIKAN UNTUK MEMASTIKAN ICON TRASH UTUH) -->
-                                    <td class="py-3 pl-3 pr-5 text-center whitespace-nowrap">
+                                    <!-- Tambah @click.stop di Aksi Tombol -->
+                                    <td class="py-3 pl-3 pr-5 text-center whitespace-nowrap" @click.stop>
                                         <div v-if="asset.keterangan && asset.keterangan.toLowerCase().includes('transfer keluar')" class="text-[10px] text-slate-500 font-semibold italic border border-slate-300 bg-slate-200 px-2 py-1.5 rounded-md inline-flex items-center justify-center whitespace-nowrap">
                                             <i class="fa-solid fa-lock mr-1.5"></i> Tanpa Aksi
                                         </div>
@@ -470,8 +472,15 @@
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100">
-                                <tr v-for="(p, index) in filteredPegawai.slice(0, itemsPerPage)" :key="p.id" class="hover:bg-slate-50">
-                                    <td v-if="isSelectMode" class="py-3 px-3 text-center"><input type="checkbox" :value="p.id" v-model="selectedPegawai" class="cursor-pointer"></td>
+                                <tr v-for="(p, index) in filteredPegawai.slice(0, itemsPerPage)" :key="p.id" 
+                                    class="hover:bg-slate-100 cursor-pointer transition-colors" 
+                                    @click="openDetailPegawai(p)">
+                                    
+                                    <!-- Tambahkan @click.stop di td checkbox agar saat dicentang tidak buka pop-up -->
+                                    <td v-if="isSelectMode" class="py-3 px-3 text-center" @click.stop>
+                                        <input type="checkbox" :value="p.id" v-model="selectedPegawai" class="cursor-pointer">
+                                    </td>
+                                    
                                     <td class="py-3 px-2 text-center text-[11px] font-bold text-slate-400">{{ index + 1 }}</td>
                                     <td class="py-3 px-4 font-semibold text-slate-800">{{ p.nama }}</td>
                                     <td class="py-3 px-4 font-mono text-slate-600 text-[11px]">{{ p.nip }}</td>
@@ -487,21 +496,17 @@
                                             <span v-if="Object.keys(getPegawaiAllAssets(p.id)).length === 0" class="text-slate-400 italic text-[11px]">Tidak memegang aset apapun</span>
                                         </div>
                                     </td>
-                                    <td class="py-3 px-4 text-center">
+                                    
+                                    <!-- Tambahkan @click.stop di td aksi agar tombol edit/hapus/transfer tidak bentrok -->
+                                    <td class="py-3 px-4 text-center" @click.stop>
                                         <div class="flex items-center justify-center space-x-1">
                                             <button @click="openModalTKTM(p)" class="p-1.5 text-orange-500 hover:text-orange-700 hover:bg-orange-50 rounded-md transition" title="Transfer Keluar Aset (TKTM)">
                                                 <i class="fa-solid fa-truck-arrow-right"></i>
                                             </button>
                                             <button @click="openPegawaiModal(p)" class="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-md" title="Edit Pegawai"><i class="fa-solid fa-pen-to-square"></i></button>
                                             <button @click="deletePegawai(p.id)" class="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-slate-100 rounded-md" title="Hapus Pegawai"><i class="fa-solid fa-trash-can"></i></button>
-                                            
-                                             <!-- EXPORT EXCEL PEGAWAI -->
-                                            <button 
-                                                    @click="exportPegawaiExcel(p)"
-                                                    class="p-1.5 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-md transition"
-                                                    title="Export Excel Pegawai"
-                                            >
-                                                    <i class="fa-solid fa-file-excel"></i>
+                                            <button @click="exportPegawaiExcel(p)" class="p-1.5 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-md transition" title="Export Excel Pegawai">
+                                                <i class="fa-solid fa-file-excel"></i>
                                             </button>
                                         </div>
                                     </td>
@@ -865,6 +870,97 @@
                 </div>
             </div>
 
+            <!-- Modal Detail Aset -->
+            <div v-if="modalDetailAset.show" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[1000] flex items-center justify-center p-4 no-print transition-all">
+                <div class="bg-white rounded-[24px] max-w-[420px] w-full p-6 shadow-xl border border-slate-200 flex flex-col">
+                    
+                    <!-- Header Modal -->
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="flex items-center space-x-4 pr-4">
+                            <!-- Icon Dinamis -->
+                            <div class="w-14 h-14 rounded-full bg-indigo-50 text-indigo-600 font-bold text-2xl flex items-center justify-center border border-indigo-100 shrink-0">
+                                <i class="fa-solid" :class="modalDetailAset.data.jenis === 'Laptop' || modalDetailAset.data.jenis === 'Notebook' ? 'fa-laptop' : modalDetailAset.data.jenis === 'PC Unit' ? 'fa-desktop' : modalDetailAset.data.jenis === 'Tablet' ? 'fa-tablet-screen-button' : 'fa-mobile-screen'"></i>
+                            </div>
+                            <!-- Merek & Jenis -->
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-xl leading-snug">{{ modalDetailAset.data.merek }} {{ modalDetailAset.data.tipe }}</h3>
+                                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1.5">{{ modalDetailAset.data.jenis }}</p>
+                            </div>
+                        </div>
+                        <button @click="modalDetailAset.show = false" class="text-slate-400 hover:text-slate-600 transition bg-slate-50 hover:bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-xmark text-sm"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Isi Modal -->
+                    <div class="space-y-6">
+                        
+                        <!-- ROW 1: Asal Aset & Kondisi -->
+                        <div class="flex items-center justify-between bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                            <div class="flex-1 pr-4">
+                                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Asal Aset / Keterangan</p>
+                                <p class="text-[13px] font-medium text-slate-800 leading-snug">{{ modalDetailAset.data.keterangan || '-' }}</p>
+                            </div>
+                            <div class="flex flex-col items-end shrink-0 pl-4 border-l border-slate-200">
+                                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Kondisi</p>
+                                <span class="text-[11px] px-3 py-1.5 rounded-lg font-bold text-center shadow-sm w-max" :class="getConditionBadgeClass(modalDetailAset.data.kondisi)">{{ modalDetailAset.data.kondisi }}</span>
+                            </div>
+                        </div>
+
+                        <!-- ROW 2: Kode, NUP, Tahun, Nilai -->
+                        <div class="grid grid-cols-2 gap-x-4 gap-y-5 px-1">
+                            <div>
+                                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Kode Barang</p>
+                                <p class="text-[13px] font-bold font-mono text-slate-800">{{ modalDetailAset.data.kodeBarang || '-' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">NUP</p>
+                                <p class="text-[13px] font-bold font-mono text-slate-800">{{ modalDetailAset.data.nup || '-' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Tahun Perolehan</p>
+                                <p class="text-[13px] font-medium text-slate-800">{{ modalDetailAset.data.tahun || '-' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Nilai Perolehan</p>
+                                <p class="text-[13px] font-medium text-slate-800">{{ modalDetailAset.data.nilaiPerolehan || modalDetailAset.data.nilai_perolehan || '-' }}</p>
+                            </div>
+                        </div>
+
+                        <!-- ROW 3: Pemegang (Muncul Khusus Jika Dipakai) -->
+                        <div v-if="modalDetailAset.data.pemegangId" class="flex items-center space-x-3 pt-4 border-t border-slate-100">
+                            <div class="w-11 h-11 rounded-full bg-orange-100 text-orange-700 font-bold text-sm flex items-center justify-center shrink-0 border border-orange-200">
+                                {{ getPegawaiInitials(modalDetailAset.data.pemegangId) }}
+                            </div>
+                            <div>
+                                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Dipegang Oleh</p>
+                                <p class="text-[14px] font-bold text-slate-800">{{ getPegawaiName(modalDetailAset.data.pemegangId) }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Footer Bawah -->
+                    <div class="mt-8 flex items-center justify-between">
+                        <!-- Ujung Kiri Bawah (Status) -->
+                        <div>
+                            <span v-if="modalDetailAset.data.keterangan && modalDetailAset.data.keterangan.toLowerCase().includes('transfer keluar')" class="inline-flex items-center text-[11px] font-bold px-3 py-1.5 rounded-lg bg-rose-50 text-rose-600 border border-rose-200 shadow-sm">
+                                <i class="fa-solid fa-plane-departure mr-1.5"></i> Telah Ditransfer
+                            </span>
+                            <span v-else-if="modalDetailAset.data.pemegangId" class="inline-flex items-center text-[11px] font-bold px-3 py-1.5 rounded-lg bg-orange-50 text-orange-600 border border-orange-200 shadow-sm">
+                                <i class="fa-solid fa-user-check mr-1.5"></i> Sedang Dipakai
+                            </span>
+                            <span v-else class="inline-flex items-center text-[11px] font-bold px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-200 shadow-sm">
+                                <i class="fa-solid fa-warehouse mr-1.5"></i> Di Gudang
+                            </span>
+                        </div>
+                        
+                        <!-- Ujung Kanan Bawah (Tombol Tutup) -->
+                        <button @click="modalDetailAset.show = false" class="px-6 py-2.5 rounded-xl text-sm font-semibold bg-slate-50 hover:bg-slate-100 text-slate-700 transition">Tutup</button>
+                    </div>
+                    
+                </div>
+            </div>
+
             <!-- Modal Pegawai -->
             <div v-if="modalPegawai.show" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 no-print">
                 <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-xl border border-slate-200">
@@ -910,6 +1006,77 @@
                             <button type="submit" class="px-4 py-1.5 rounded-lg text-xs font-semibold bg-yellow-600 hover:bg-yellow-700 text-white shadow-sm">Simpan Pegawai</button>
                         </div>
                     </form>
+                </div>
+            </div>
+
+            <!-- Modal Detail Pegawai -->
+            <div v-if="modalDetailPegawai.show" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[1000] flex items-center justify-center p-4 no-print transition-all">
+                <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200">
+                    
+                    <!-- Header Modal -->
+                    <div class="flex justify-between items-start pb-5 border-b border-slate-100">
+                        <div class="flex items-center space-x-4">
+                            <!-- Avatar Inisial -->
+                            <div class="w-14 h-14 rounded-full bg-blue-100 text-blue-700 font-bold text-xl flex items-center justify-center border border-blue-200 shrink-0">
+                                {{ getPegawaiInitials(modalDetailPegawai.data.id) }}
+                            </div>
+                            <!-- Nama & NIP -->
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-lg leading-tight">{{ modalDetailPegawai.data.nama }}</h3>
+                                <p class="text-[11px] text-slate-500 font-mono mt-1 uppercase tracking-wide">NIP: {{ modalDetailPegawai.data.nip || '-' }}</p>
+                            </div>
+                        </div>
+                        <!-- Tombol Close -->
+                        <button @click="modalDetailPegawai.show = false" class="text-slate-400 hover:text-slate-600 transition bg-slate-50 hover:bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-xmark text-sm"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Isi Modal -->
+                    <div class="mt-5 space-y-5">
+                        <!-- Info Jabatan -->
+                        <div>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Jabatan</p>
+                            <p class="text-[15px] font-semibold text-slate-700">{{ modalDetailPegawai.data.jabatan || '-' }}</p>
+                        </div>
+                        
+                        <!-- List Aset (Lebih Ramping/Compact) -->
+                        <div>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Aset yang Dipegang ({{ getPegawaiAllAssets(modalDetailPegawai.data.id).length }})</p>
+                            
+                            <!-- Jika Tidak Punya Aset -->
+                            <div v-if="getPegawaiAllAssets(modalDetailPegawai.data.id).length === 0" class="text-xs text-slate-500 italic bg-slate-50 p-4 rounded-xl border border-slate-200 text-center">
+                                Tidak memegang aset apapun.
+                            </div>
+                            
+                            <!-- Jika Punya Aset -->
+                            <div v-else class="space-y-2.5 max-h-56 overflow-y-auto custom-scrollbar pr-1">
+                                <div v-for="(ast, key) in getPegawaiAllAssets(modalDetailPegawai.data.id)" :key="key" class="flex items-center justify-between bg-orange-50/30 p-3 rounded-lg border border-orange-200 hover:bg-orange-50 transition-colors">
+                                    
+                                    <!-- Kiri: Detail Aset -->
+                                    <div class="text-xs text-slate-700">
+                                        <div class="mb-0.5">
+                                            <span class="font-bold text-slate-800">{{ ast.jenis }}:</span> {{ ast.merek }} {{ ast.tipe }}
+                                        </div>
+                                        <div class="text-[10px] font-mono text-slate-500">
+                                            NUP: {{ ast.nup }} <span v-if="ast.tahun" class="ml-1.5 pl-1.5 border-l border-slate-300">Thn: {{ ast.tahun }}</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Kanan: Status Kondisi (Pengganti Posisi Tombol Transfer) -->
+                                    <div class="shrink-0 ml-3">
+                                        <span class="text-[10px] px-2.5 py-1 rounded-md font-bold shadow-sm" :class="getConditionBadgeClass(ast.kondisi)">{{ ast.kondisi }}</span>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Footer -->
+                    <div class="mt-6 pt-4 flex justify-end">
+                        <button @click="modalDetailPegawai.show = false" class="px-5 py-2.5 rounded-xl text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition">Tutup</button>
+                    </div>
                 </div>
             </div>
 
