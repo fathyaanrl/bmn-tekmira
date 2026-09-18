@@ -192,6 +192,7 @@ createApp({
         };
 
         const showDropdown = ref(false); 
+        const showRedaksiDropdown = ref(false);
         const itemsPerPage = ref(25);
 
         const searchQuery = ref('');
@@ -2130,7 +2131,7 @@ createApp({
             isLoggedIn, loginUsername, loginPassword, loginError, currentUsername, handleLogin,
             modalForgotPassword, forgotUsername, forgotNewPassword, forgotConfirmPassword, forgotPin, openForgotPassword, resetPassword, forgotError, closeForgotPassword,
             
-            currentCategory, currentTab, changeTab, showDropdown, searchQuery, filterStatus, filterKondisi, toast,
+            currentCategory, currentTab, changeTab, showDropdown, showRedaksiDropdown, searchQuery, filterStatus, filterKondisi, toast,
             categoryLabel, categoryIcon, db, activeAssets, visibleAssets, allAssets, pegawaiList, historyList, assignedCount, availableCount, damagedCount,
             getPegawaiName, getPegawaiNip, getPegawaiInitials, getPegawaiAllAssets, getConditionBadgeClass, getConditionIconClass,
             filteredAssets, filteredPegawai, filterKeterangan,
