@@ -755,6 +755,67 @@
                 </div>
             </div>
 
+            <!-- MODAL EDIT REDAKSI SURAT -->
+            <div v-if="modalRedaksi.show" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
+                <div class="bg-white rounded-2xl shadow-xl border border-slate-100 w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                    <!-- Header Modal -->
+                    <div class="bg-slate-800 px-6 py-4 flex items-center justify-between text-white">
+                        <div class="flex items-center space-x-2.5">
+                            <i class="fa-solid fa-file-pen text-amber-400 text-lg"></i>
+                            <h3 class="font-bold text-sm tracking-wide">{{ modalRedaksi.judul }}</h3>
+                        </div>
+                        <button @click="modalRedaksi.show = false" class="text-slate-400 hover:text-white transition">
+                            <i class="fa-solid fa-xmark text-lg"></i>
+                        </button>
+                    </div>
+
+                    <!-- Form Edit Redaksi -->
+                    <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto custom-scrollbar">
+                        <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 flex items-start space-x-2">
+                            <i class="fa-solid fa-circle-info mt-0.5 text-amber-600"></i>
+                            <span>Perubahan redaksi di bawah ini akan **otomatis tersimpan** dan langsung diterapkan ke semua dokumen cetak jenis <strong>{{ modalRedaksi.jenis }}</strong>.</span>
+                        </div>
+
+                        <!-- Paragraf Pembuka -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">
+                                Paragraf Pembuka / Isi Atas *
+                            </label>
+                            <textarea v-model="formRedaksi.pembuka" rows="4" 
+                                class="w-full text-xs p-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 custom-scrollbar font-sans leading-relaxed" 
+                                placeholder="Ketikkan kalimat pembuka surat..."></textarea>
+                        </div>
+
+                        <!-- Paragraf Penutup -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">
+                                Paragraf Penutup / Catatan Bawah *
+                            </label>
+                            <textarea v-model="formRedaksi.penutup" rows="4" 
+                                class="w-full text-xs p-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 custom-scrollbar font-sans leading-relaxed" 
+                                placeholder="Ketikkan kalimat penutup surat..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Footer Modal -->
+                    <div class="bg-slate-50 px-6 py-3.5 border-t border-slate-100 flex items-center justify-between">
+                        <button @click="resetRedaksiDefault" type="button" class="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition flex items-center space-x-1.5">
+                            <i class="fa-solid fa-rotate-left"></i>
+                            <span>Kembalikan Default</span>
+                        </button>
+                        <div class="flex items-center space-x-2">
+                            <button @click="modalRedaksi.show = false" type="button" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-lg transition">
+                                Batal
+                            </button>
+                            <button @click="saveRedaksi" type="button" class="px-4 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-orange-600 rounded-lg shadow-sm transition flex items-center space-x-1.5">
+                                <i class="fa-solid fa-floppy-disk"></i>
+                                <span>Simpan Redaksi</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Modal Kosongkan Data -->
             <div v-if="modalReset.show" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 no-print">
                 <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-200 text-center">
@@ -1458,7 +1519,7 @@
                     </div>
                 </div>
 
-                <!-- BAGIAN 1: KOP SURAT (Normal) -->
+                <!-- BAGIAN 1: KOP SURAT -->
                 <div class="px-[1cm]">
                     <div class="flex flex-row items-center justify-between border-b-[2px] border-black pb-2 mb-8">
                         <div class="w-[180px] flex-shrink-0 pr-2 -mt-9">
@@ -1483,14 +1544,15 @@
                 <div class="px-[2.5cm]">
                     <!-- BAST -->
                     <template v-if="printData.printMode === 'BAST'">
-                        <!-- KODE FORM BAST -->
                         <div v-if="formPengaturan.kodeBast" class="flex justify-end -mt-4 mb-4">
                             <div class="border border-black px-2 py-1 text-[11px] font-bold bg-white">
                                 {{ formPengaturan.kodeBast }}
                             </div>
                         </div>
                         <div class="text-center mb-6">
-                            <h2 class="text-[15px] font-bold uppercase underline">Berita Acara Serah Terima Barang Milik Negara (BAST-BMN)</h2>
+                            <h2 class="text-[15px] font-bold uppercase underline">
+                                {{ savedRedaksi['BAST']?.judulDokumen || 'Berita Acara Serah Terima Barang Milik Negara (BAST-BMN)' }}
+                            </h2>
                             <p class="text-sm mt-1">Nomor : {{ printData.nomorBast || '-' }}</p>
                         </div>
                         <div class="text-[13px] space-y-4 text-justify leading-relaxed">
@@ -1505,7 +1567,10 @@
                                 <tr><td class="w-32 pb-4 align-top">Jabatan</td><td class="w-4 pb-4 align-top">:</td><td class="pb-4">{{ printData.adminJabatan }}</td></tr>
                                 <tr><td colspan="3" class="pb-4">Selanjutnya di sebut <strong>PIHAK KEDUA</strong></td></tr>
                             </table>
-                            <p>Dengan ini menyatakan bahwa PIHAK PERTAMA telah menyerahkan/Mengembalikan kepada PIHAK KEDUA berupa :</p>
+                            
+                            <!-- REDAKSI PEMBUKA BAST -->
+                            <p>{{ savedRedaksi['BAST']?.pembuka || 'Dengan ini menyatakan bahwa PIHAK PERTAMA telah menyerahkan/Mengembalikan kepada PIHAK KEDUA berupa :' }}</p>
+                            
                             <table class="w-full border-collapse border border-black text-[13px] my-5 text-center break-inside-avoid">
                                 <thead>
                                     <tr class="bg-gray-100">
@@ -1529,24 +1594,23 @@
                                     </tr>
                                 </tbody>
                             </table>
-                            <p>Demikian Berita Acara Serah Terima Barang Milik Negara ini dibuat untuk dapat diproses lebih lanjut.</p>
+                            
+                            <!-- REDAKSI PENETUP BAST -->
+                            <p>{{ savedRedaksi['BAST']?.penutup || 'Demikian Berita Acara Serah Terima Barang Milik Negara ini dibuat untuk dapat diproses lebih lanjut.' }}</p>
                             
                             <!-- TANDA TANGAN BAST -->
                             <div class="mt-8 w-full break-inside-avoid signature">
                                 <div class="flex justify-between w-full text-center">
-                                    <!-- PIHAK KIRI -->
                                     <div class="w-1/2 flex flex-col items-center">
-                                        <!-- Teks transparan penyeimbang baris tanggal -->
                                         <p class="invisible" style="margin: 0 !important;">Tanggal</p>
                                         <p style="margin: 0 !important;">Yang Menerima,<br><strong>PIHAK KEDUA</strong></p>
-                                        <div style="height: 70px !important;"></div> <!-- Tinggi disamakan -->
+                                        <div style="height: 70px !important;"></div>
                                         <p class="font-bold underline" style="margin: 0 !important;">{{ printData.adminNama }}</p>
                                     </div>
-                                    <!-- PIHAK KANAN -->
                                     <div class="w-1/2 flex flex-col items-center">
                                         <p style="margin: 0 !important;">Bandung, {{ formatTanggalIndo(printData.tanggal) }}</p>
                                         <p style="margin: 0 !important;">Yang Menyerahkan,<br><strong>PIHAK PERTAMA</strong></p>
-                                        <div style="height: 70px !important;"></div> <!-- Tinggi disamakan -->
+                                        <div style="height: 70px !important;"></div>
                                         <p class="font-bold underline" style="margin: 0 !important;">{{ printData.pemegangLamaNama }}</p>
                                     </div>
                                 </div>
@@ -1556,18 +1620,21 @@
 
                     <!-- SIP -->
                     <template v-if="printData.printMode === 'SIP'">
-                        <!-- KODE FORM SIP-->
                         <div v-if="formPengaturan.kodeSip" class="flex justify-end -mt-4 mb-4">
                             <div class="border border-black px-2 py-1 text-[11px] font-bold bg-white">
                                 {{ formPengaturan.kodeSip }}
                             </div>
                         </div>
                         <div class="text-center mb-6">
-                            <h2 class="text-[15px] font-bold uppercase underline">Surat Izin Pemakaian Barang Milik Negara</h2>
+                            <h2 class="text-[15px] font-bold uppercase underline">
+                                {{ savedRedaksi['SIP']?.judulDokumen || 'Surat Izin Pemakaian Barang Milik Negara' }}
+                            </h2>
                             <p class="text-sm mt-1">Nomor : {{ printData.nomorSip || '-' }}</p>
                         </div>
                         <div class="text-[13px] space-y-4 text-justify leading-relaxed">
-                            <p>Izin pemakaian barang inventaris kantor Balai Besar Pengujian Mineral dan Batubara tekMIRA berupa :</p>
+                            <!-- REDAKSI PEMBUKA SIP -->
+                            <p>{{ savedRedaksi['SIP']?.pembuka || 'Izin pemakaian barang inventaris kantor Balai Besar Pengujian Mineral dan Batubara tekMIRA berupa :' }}</p>
+                            
                             <table class="w-full ml-10">
                                 <tr><td class="w-44 pb-1">1. Nama Barang</td><td class="w-4 pb-1">:</td><td class="pb-1">{{ printData.kategoriLabel }}</td></tr>
                                 <tr><td class="w-44 pb-1">2. Merk/Type</td><td class="w-4 pb-1">:</td><td class="pb-1">{{ printData.merekTipe }}</td></tr>
@@ -1577,24 +1644,25 @@
                                 <tr><td class="w-44 pb-1">6. Pemakai</td><td class="w-4 pb-1">:</td><td class="pb-1">{{ printData.pemegangBaruNama }}</td></tr>
                                 <tr><td class="w-44 pb-1">7. Bidang/Bagian</td><td class="w-4 pb-1">:</td><td class="pb-1">{{ printData.pemegangBaruJabatan || '-' }}</td></tr>
                             </table>
-                            <p class="mt-5">Selanjutnya barang inventaris tersebut agar dapat dipergunakan untuk keperluan dinas pada Kantor Balai Besar Pengujian Mineral dan Batubara tekMIRA pemakai/pengguna barang wajib memelihara dengan sebaik-baiknya dan bertanggung jawab penuh atas hilang/musnahnya barang inventaris tersebut.</p>
+
+                            <!-- REDAKSI KETENTUAN / PENUTUP SIP -->
+                            <p class="mt-5 whitespace-pre-line">
+                                {{ savedRedaksi['SIP']?.ketentuan || savedRedaksi['SIP']?.penutup || 'Selanjutnya barang inventaris tersebut agar dapat dipergunakan untuk keperluan dinas pada Kantor Balai Besar Pengujian Mineral dan Batubara tekMIRA pemakai/pengguna barang wajib memelihara dengan sebaik-baiknya dan bertanggung jawab penuh atas hilang/musnahnya barang inventaris tersebut.' }}
+                            </p>
                             
                             <!-- TANDA TANGAN SIP -->
                             <div class="mt-8 w-full break-inside-avoid signature">
                                 <div class="flex justify-between w-full text-center">
-                                    <!-- PIHAK KIRI -->
                                     <div class="w-1/2 flex flex-col items-center">
-                                        <!-- Teks transparan penyeimbang baris tanggal -->
                                         <p class="invisible" style="margin: 0 !important;">Tanggal</p>
                                         <p style="margin: 0 !important;">Yang menyerahkan</p>
-                                        <div style="height: 70px !important;"></div> <!-- Tinggi disamakan -->
+                                        <div style="height: 70px !important;"></div>
                                         <p class="font-bold underline" style="margin: 0 !important;">{{ printData.adminNama }}</p>
                                     </div>
-                                    <!-- PIHAK KANAN -->
                                     <div class="w-1/2 flex flex-col items-center">
                                         <p style="margin: 0 !important;">Bandung, {{ formatTanggalIndo(printData.tanggal) }}</p>
                                         <p style="margin: 0 !important;">Yang menerima/memakai</p>
-                                        <div style="height: 70px !important;"></div> <!-- Tinggi disamakan -->
+                                        <div style="height: 70px !important;"></div>
                                         <p class="font-bold underline" style="margin: 0 !important;">{{ printData.pemegangBaruNama }}</p>
                                     </div>
                                 </div>
@@ -1613,14 +1681,21 @@
                     <!-- PENELITIAN -->
                     <template v-if="printData.printMode === 'PENELITIAN'">
                         <div class="text-center mb-8 leading-tight">
-                            <h2 class="text-lg font-bold">BERITA ACARA<br>PENELITIAN FISIK TRANSFER BARANG MILIK NEGARA</h2>
+                            <h2 class="text-lg font-bold uppercase whitespace-pre-line">
+                                {{ savedRedaksi['PENELITIAN']?.judulDokumen || 'BERITA ACARA\nPENELITIAN FISIK TRANSFER BARANG MILIK NEGARA' }}
+                            </h2>
                             <p class="text-base mt-1">Nomor 
                             <span 
                                 class="underline outline-none hover:bg-slate-100 cursor-text font-bold" 
                                 contenteditable="true"
                             >{{ printData.nomorPenelitian || printData.nomorBast || '77.BA/BN.10/DBR/2026' }}</span></p>
+                        </div>
                         <div class="text-[14px] space-y-5 text-justify leading-relaxed">
-                            <p class="indent-10">Pada hari ini, {{ formatTanggalTerbilang(printData.tanggal) }} <strong>({{ formatTanggalAngka(printData.tanggal) }})</strong>, kami yang bertanda tangan di bawah ini, telah melaksanakan penelitian fisik Barang Milik Negara yang diusulkan transfer berupa:</p>
+                            <!-- REDAKSI PEMBUKA PENELITIAN -->
+                            <p class="indent-10">
+                                {{ savedRedaksi['PENELITIAN']?.pembuka || `Pada hari ini, ${formatTanggalTerbilang(printData.tanggal)} (${formatTanggalAngka(printData.tanggal)}), kami yang bertanda tangan di bawah ini, telah melaksanakan penelitian fisik Barang Milik Negara yang diusulkan transfer berupa:` }}
+                            </p>
+
                             <table class="w-full text-center border-collapse border border-black mt-4 mb-4 text-[12px]">
                                 <thead>
                                     <tr class="font-bold bg-gray-100">
@@ -1645,8 +1720,19 @@
                                     </tr>
                                 </tbody>
                             </table>
-                            <p class="indent-10">Barang Milik Negara dimaksud merupakan BMN pada Satker Balai Besar Pengujian Mineral dan Batubara <i>tek</i>MIRA yang akan dilakukan transfer aset kepada Satker <span>{{ printData.pemegangBaruNama }}</span>.</p>
-                            <p class="indent-10">Demikian Berita Acara ini dibuat sesuai dengan keadaaan saat dilakukan penelitian fisik untuk dapat dipergunakan sebagaimana mestinya.</p>
+
+                            <!-- REDAKSI HASIL & PENUTUP PENELITIAN -->
+                            <p class="indent-10" v-if="savedRedaksi['PENELITIAN']?.hasilPenelitian">
+                                {{ savedRedaksi['PENELITIAN']?.hasilPenelitian }}
+                            </p>
+                            <p class="indent-10" v-else>
+                                Barang Milik Negara dimaksud merupakan BMN pada Satker Balai Besar Pengujian Mineral dan Batubara <i>tek</i>MIRA yang akan dilakukan transfer aset kepada Satker <span>{{ printData.pemegangBaruNama }}</span>.
+                            </p>
+
+                            <p class="indent-10">
+                                {{ savedRedaksi['PENELITIAN']?.penutup || 'Demikian Berita Acara ini dibuat sesuai dengan keadaaan saat dilakukan penelitian fisik untuk dapat dipergunakan sebagaimana mestinya.' }}
+                            </p>
+
                             <p class="mt-6 mb-2">Yang melakukan pemeriksaan fisik:</p>
                             
                             <!-- TANDA TANGAN PENELITIAN -->
@@ -1712,11 +1798,17 @@
                     <!-- VERIFIKASI -->
                     <template v-if="printData.printMode === 'VERIFIKASI'">
                         <div class="text-center mb-8 leading-tight">
-                            <h2 class="text-lg font-bold">BERITA ACARA VERIFIKASI ASET</h2>
+                            <h2 class="text-lg font-bold uppercase">
+                                {{ savedRedaksi['VERIFIKASI']?.judulDokumen || 'BERITA ACARA VERIFIKASI ASET' }}
+                            </h2>
                             <p class="text-base mt-1">Nomor <span class="underline outline-none hover:bg-slate-100 cursor-text font-bold" contenteditable="true">{{ printData.nomorVerifikasi || printData.nomorBast || '[Ketik Nomor Surat]' }}</span></p> 
                         </div>
                         <div class="text-[14px] space-y-5 text-justify leading-relaxed">
-                            <p class="indent-10">Pada hari ini, {{ formatTanggalTerbilang(printData.tanggal) }} <strong>({{ formatTanggalAngka(printData.tanggal) }})</strong>, telah melakukan verifikasi Barang Milik Negara pada <span contenteditable="true" class="outline-none hover:bg-slate-100 cursor-text">{{ printData.pemegangBaruNama }}</span>, Kementerian Energi dan Sumber Daya Mineral dengan rincian sebagai berikut:</p>
+                            <!-- REDAKSI PEMBUKA VERIFIKASI -->
+                            <p class="indent-10">
+                                {{ savedRedaksi['VERIFIKASI']?.pembuka || `Pada hari ini, ${formatTanggalTerbilang(printData.tanggal)} (${formatTanggalAngka(printData.tanggal)}), telah melakukan verifikasi Barang Milik Negara pada ${printData.pemegangBaruNama}, Kementerian Energi dan Sumber Daya Mineral dengan rincian sebagai berikut:` }}
+                            </p>
+
                             <table class="w-full text-center border-collapse border border-black mt-4 mb-4 text-[12px]">
                                 <thead>
                                     <tr class="font-bold bg-gray-100">
@@ -1741,7 +1833,15 @@
                                     </tr>
                                 </tbody>
                             </table>
-                            <p class="indent-10">Demikian Berita Acara ini dibuat untuk dapat di pergunakan sebagaimana mestinya dan apabila ditemukan kesalahan di kemudian hari, akan diperbaiki sebagaimana mestinya.</p>
+
+                            <!-- REDAKSI CATATAN & PENUTUP VERIFIKASI -->
+                            <p class="indent-10" v-if="savedRedaksi['VERIFIKASI']?.catatanVerifikasi">
+                                {{ savedRedaksi['VERIFIKASI']?.catatanVerifikasi }}
+                            </p>
+
+                            <p class="indent-10">
+                                {{ savedRedaksi['VERIFIKASI']?.penutup || 'Demikian Berita Acara ini dibuat untuk dapat di pergunakan sebagaimana mestinya dan apabila ditemukan kesalahan di kemudian hari, akan diperbaiki sebagaimana mestinya.' }}
+                            </p>
                             
                             <!-- TANDA TANGAN VERIFIKASI -->
                             <div class="flex justify-between w-full mt-8 break-inside-avoid">

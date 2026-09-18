@@ -1632,6 +1632,93 @@ createApp({
             modalProfil.value.show = true;
         };
 
+        // STATE REDAKSI SURAT
+        //const showRedaksiDropdown = ref(false);
+
+        // Template Redaksi Bawaan (Default)
+        const defaultRedaksi = {
+            SIP: {
+                judul: 'Ubah Redaksi Surat Izin Pemakaian (SIP)',
+                pembuka: 'Yang bertanda tangan di bawah ini, menerangkan bahwa barang milik negara (BMN) berupa aset di bawah ini diserahkan hak pemakaian sementara kepada pihak kedua dengan ketentuan menjaga dan merawat aset dengan baik.',
+                penutup: 'Demikian Surat Izin Pemakaian ini dibuat untuk dipergunakan sebagaimana mestinya.'
+            },
+            BAST: {
+                judul: 'Ubah Redaksi Berita Acara Serah Terima (BAST)',
+                pembuka: 'Pada hari ini, kami yang bertanda tangan di bawah ini telah melaksanakan serah terima Barang Milik Negara (BMN) berupa aset fisik dalam kondisi baik dan lengkap.',
+                penutup: 'Demikian Berita Acara Serah Terima ini dibuat dengan sebenarnya dalam rangkap secukupnya untuk dipergunakan sebagaimana mestinya.'
+            },
+            VERIFIKASI: {
+                judul: 'Ubah Redaksi BA Verifikasi Aset',
+                pembuka: 'Telah dilakukan verifikasi teknis dan pemeriksaan kelayakan fisik BMN dalam rangka proses administrasi Transfer Keluar aset ke instansi tujuan.',
+                penutup: 'Hasil verifikasi ini menyatakan aset telah memenuhi syarat administrasi dan teknis untuk ditransfer.'
+            },
+            PENELITIAN: {
+                judul: 'Ubah Redaksi BA Penelitian Fisik',
+                pembuka: 'Telah dilakukan penelitian fisik dan pencocokan nomor identitas/NUP Barang Milik Negara (BMN) sebelum dilaksanakan transfer keluar.',
+                penutup: 'Demikian Berita Acara Penelitian Fisik ini dibuat sebagai bukti sah kondisi aset saat dilakukan transfer.'
+            }
+        };
+
+        // Ambil data tersimpan dari LocalStorage atau pakai Default jika belum pernah diubah
+        const savedRedaksi = ref(
+            JSON.parse(localStorage.getItem('bmn_redaksi_surat')) || JSON.parse(JSON.stringify(defaultRedaksi))
+        );
+
+        const modalRedaksi = ref({
+            show: false,
+            jenis: '',
+            judul: ''
+        });
+
+        const formRedaksi = ref({
+            pembuka: '',
+            penutup: ''
+        });
+
+        // FUNGSI MEMBUKA MODAL REDAKSI
+        const openRedaksiModal = (jenis) => {
+            const currentData = savedRedaksi.value[jenis] || defaultRedaksi[jenis];
+            modalRedaksi.value = {
+                show: true,
+                jenis: jenis,
+                judul: defaultRedaksi[jenis]?.judul || `Ubah Redaksi ${jenis}`
+            };
+            formRedaksi.value = {
+                pembuka: currentData.pembuka || '',
+                penutup: currentData.penutup || ''
+            };
+        };
+
+        // Handler untuk tombol di dropdown
+        const openRedaksiSIP = () => openRedaksiModal('SIP');
+        const openRedaksiBAST = () => openRedaksiModal('BAST');
+        const openRedaksiVERIFIKASI = () => openRedaksiModal('VERIFIKASI');
+        const openRedaksiPENELITIAN = () => openRedaksiModal('PENELITIAN');
+
+        // SIMPAN REDAKSI KE LOCALSTORAGE
+        const saveRedaksi = () => {
+            const jenis = modalRedaksi.value.jenis;
+            savedRedaksi.value[jenis] = {
+                ...savedRedaksi.value[jenis],
+                pembuka: formRedaksi.value.pembuka,
+                penutup: formRedaksi.value.penutup
+            };
+
+            localStorage.setItem('bmn_redaksi_surat', JSON.stringify(savedRedaksi.value));
+            modalRedaksi.value.show = false;
+            showToast(`Redaksi surat ${jenis} berhasil disimpan!`);
+        };
+
+        // RESET KE REDAKSI DEFAULT
+        const resetRedaksiDefault = () => {
+            const jenis = modalRedaksi.value.jenis;
+            if (defaultRedaksi[jenis]) {
+                formRedaksi.value.pembuka = defaultRedaksi[jenis].pembuka;
+                formRedaksi.value.penutup = defaultRedaksi[jenis].penutup;
+                showToast(`Form direset ke teks default ${jenis}`);
+            }
+        };
+
         const modalLogout = ref({ show: false });
         const openLogoutModal = () => {
             modalLogout.value.show = true;
@@ -2147,8 +2234,9 @@ createApp({
             printData, formatTanggalIndo, formatTanggalTerbilang, formatTanggalAngka, cetakUlangBast, tutupPrint, jalankanPrint,
             
             modalPengaturan, formPengaturan, openPengaturanModal, savePengaturan,
-            modalProfil, formProfil, openProfilModal, saveProfil, 
-            modalLogout, openLogoutModal, confirmLogout, itemsPerPage, 
+            modalProfil, formProfil, openProfilModal, saveProfil, showRedaksiDropdown,
+            savedRedaksi, modalRedaksi,formRedaksi, openRedaksiSIP,openRedaksiBAST,openRedaksiVERIFIKASI,
+            openRedaksiPENELITIAN, saveRedaksi,resetRedaksiDefault, modalLogout, openLogoutModal, confirmLogout, itemsPerPage, 
             modalReset, openResetModal, prosesResetData,getNilaiPerolehan,
 
             exportExcel, exportPegawaiExcel, getLastMutationDate, asetDipegang, sortAssetOrder, toggleAssetSort,
