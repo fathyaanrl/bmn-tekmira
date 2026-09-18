@@ -333,6 +333,10 @@
                                     <th class="py-3 px-2 w-8 text-center">No</th>
                                     <th class="py-3 px-4">Kode & NUP</th>
                                     <th class="py-3 px-4 w-50 text-center">Jenis, Merek & Tahun</th>
+                                    
+                                    <!-- TAMBAHAN KOLOM HEADER NILAI PEROLEHAN -->
+                                    <th class="py-3 px-4 text-center">Nilai Perolehan</th>
+                                    
                                     <th class="px-4 py-3 text-left font-semibold w-40 cursor-pointer hover:bg-slate-800 transition select-none" @click="toggleAssetSort" title="Klik untuk mengurutkan Terbaru/Terlama">
                                         <div class="flex items-center space-x-2">
                                             <span>HARI / TANGGAL</span>
@@ -375,10 +379,16 @@
                                         </div>
                                         <div class="text-[11px] text-slate-500">{{ asset.tipe }}</div>
                                         <div class="text-[10px] text-slate-400 font-mono mt-0.5">Tahun: {{ asset.tahun || '-' }}</div>
-                                    </td>                                    
+                                    </td>
+                                    
+                                    <!-- TAMBAHAN DATA NILAI PEROLEHAN -->
+                                    <td class="py-3 px-4 text-center font-semibold text-slate-700 whitespace-nowrap">
+                                        {{ asset.nilaiPerolehan || asset.nilai_perolehan || '-' }}
+                                    </td>
+
                                     <td class="px-4 py-3 whitespace-nowrap text-[11px] text-slate-600 font-medium">
                                         {{ getLastMutationDate(asset) }}
-                                    </td>                                    
+                                    </td>                                           
                                     <td class="px-4 py-3 text-[11px] text-slate-500 text-center max-w-[120px] truncate" :title="asset.keterangan">
                                         {{ asset.keterangan || '-' }}
                                     </td>
@@ -413,7 +423,7 @@
                                                 <span>Di Gudang BMN</span>
                                             </span>
                                         </template>
-                                    </td>                                    
+                                    </td>                                           
                                     <td class="py-3 px-4 text-center">
                                         <div v-if="asset.keterangan && asset.keterangan.toLowerCase().includes('transfer keluar')" class="text-[10px] text-slate-500 font-semibold italic border border-slate-300 bg-slate-200 px-2 py-1.5 rounded-md flex items-center justify-center">
                                             <i class="fa-solid fa-lock mr-1.5"></i> Tanpa Aksi
@@ -429,7 +439,8 @@
                                     </td>
                                 </tr>
                                 <tr v-if="filteredAssets.length === 0">
-                                    <td colspan="9" class="text-center py-10 text-slate-400">
+                                    <!-- COLSPAN DIUBAH MENJADI 10 -->
+                                    <td colspan="10" class="text-center py-10 text-slate-400">
                                         <i class="fa-solid fa-box-open text-3xl mb-2 block text-slate-300"></i>
                                         <br>Tidak ada data aset yang sesuai pencarian dan filter Anda.
                                     </td>
@@ -835,6 +846,13 @@
                                 <option value="Rusak Berat">Rusak Berat</option>
                             </select>
                         </div>
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-600 mb-1">Nilai Perolehan (Rp)</label>
+                            <input type="text" 
+                                v-model="formAset.nilaiPerolehan" 
+                                placeholder="Cth: 20.454.303,-" 
+                                class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none">
+                        </div>
                         <div class="pt-4 flex justify-end space-x-2">
                             <button type="button" @click="modalAset.show = false" class="px-3.5 py-1.5 rounded-lg text-xs font-medium border border-slate-300 hover:bg-slate-50">Batal</button>
                             <button type="submit" class="px-4 py-1.5 rounded-lg text-xs font-semibold bg-yellow-600 hover:bg-yellow-700 text-white shadow-sm">Simpan Data</button>
@@ -988,6 +1006,15 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-3 rounded-xl border border-slate-100">
                                 <div class="md:col-span-2">
                                     <label class="block text-[11px] font-semibold text-slate-700 mb-1">Aset yang Ditransfer *</label>
+                                    <select v-model="modalTKTM.selectedAsetId" 
+                                            @change="handleSelectAsetTKTM" 
+                                            required 
+                                            class="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500">
+                                        <option value="" disabled>-- Pilih Aset --</option>
+                                        <option v-for="aset in modalTKTM.asetList" :key="aset.id" :value="aset.id">
+                                            {{ aset.jenis }}: {{ aset.merek }} {{ aset.tipe }} (NUP: {{ aset.nup }})
+                                        </option>
+                                    </select>
                                     <select v-model="modalTKTM.selectedAsetId" required class="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500">
                                         <option value="" disabled>-- Pilih Aset --</option>
                                         <option v-for="aset in modalTKTM.asetList" :key="aset.id" :value="aset.id">{{ aset.jenis }}: {{ aset.merek }} {{ aset.tipe }} (NUP: {{ aset.nup }})</option>

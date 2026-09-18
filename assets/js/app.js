@@ -2,7 +2,7 @@ const { createApp, ref, computed, onMounted } = Vue;
 
 createApp({
     setup() {
-        //login
+        // LOGIN & USER STATE
         const isLoggedIn = ref(
             sessionStorage.getItem('bmn_logged_in') === 'true'
         );
@@ -104,7 +104,6 @@ createApp({
 
         // FUNCTION LOGIN
         const handleLogin = async () => {
-
             const usernameInput = loginUsername.value.trim();
             const passwordInput = loginPassword.value;
 
@@ -116,7 +115,6 @@ createApp({
             }
 
             try {
-
                 const result = await apiRequest('login.php', {
                     method: 'POST',
                     body: JSON.stringify({
@@ -126,7 +124,6 @@ createApp({
                 });
 
                 if (result.success) {
-
                     isLoggedIn.value = true;
                     loginError.value = '';
 
@@ -155,9 +152,7 @@ createApp({
 
         // CEK LOGIN SAAT RELOAD
         const checkLogin = () => {
-
-            const loggedIn =
-                sessionStorage.getItem('bmn_logged_in');
+            const loggedIn = sessionStorage.getItem('bmn_logged_in');
 
             if (loggedIn === 'true') {
                 isLoggedIn.value = true;
@@ -310,6 +305,7 @@ createApp({
                 pemegangNip: row.pemegang_nip || null,
                 pemegangJabatan: row.pemegang_jabatan || null,
                 pemegangUnitKerja: row.pemegang_unit_kerja || null,
+                nilaiPerolehan: row.nilai_perolehan || row.nilaiPerolehan || '',
                 _category: category,
                 created_at: row.created_at,
             };
@@ -395,9 +391,8 @@ createApp({
             historyList.value = (response.data || []).map(normalizeHistory);
         };
 
-        // BUKTI SURAT (file PDF hasil upload dari FOLDER)
+        // BUKTI SURAT
         const buktiIds = ref([]); 
-
 
         const refreshBuktiList = async () => {
             try {
@@ -411,14 +406,11 @@ createApp({
             }
         };
         
-        // FUNGSI HASBUKTI AMAN (Ganti bagian ini)
         const hasBukti = (item) => {
             if (!item) return false;
             
-            // 1. Cek dari properti database jika ada
             if (item.file_bukti || item.file_pdf || item.bukti_pdf) return true;
             
-            // 2. Cek dari daftar buktiIds
             const id = item.id || item.id_mutasi;
             if (typeof buktiIds !== 'undefined' && buktiIds.value) {
                 return buktiIds.value.some(bId => String(bId) === String(id));
@@ -622,16 +614,14 @@ createApp({
             console.log("1. Tombol Upload diklik untuk ID:", id);
             currentUploadId.value = id;
             
-            // Ambil elemen berdasarkan ID khusus agar tidak tertukar dengan input foto
             const inputEl = document.getElementById('fileInputBuktiPDF');
             if (inputEl) {
-                inputEl.value = ''; // Reset file agar bisa pilih file yang sama
+                inputEl.value = '';
                 inputEl.click();
             } else {
                 alert('Error: Elemen #fileInputBuktiPDF tidak ditemukan di HTML!');
             }
         };
-
 
         const handleFileUpload = async (event) => {
             console.log("2. File berhasil dipilih oleh user");
@@ -661,7 +651,6 @@ createApp({
                 if (result.status === 'success') {
                     alert('Upload Berhasil! Tombol Lihat sekarang aktif.');
                     
-                    // Tambahkan ID ke daftar bukti agar tombol "Lihat" langsung berubah hijau
                     if (typeof buktiIds !== 'undefined' && buktiIds.value) {
                         if (!buktiIds.value.includes(Number(uploadId))) {
                             buktiIds.value.push(Number(uploadId));
@@ -678,7 +667,6 @@ createApp({
                 alert('Terjadi kesalahan koneksi atau server PHP error.');
             }
         };
-
 
         const uploadPdfLangsung = async (event, idMutasi) => {
             const file = event.target.files[0];
@@ -703,7 +691,6 @@ createApp({
                 if (result.status === 'success') {
                     alert('Upload Berhasil!');
 
-                    // Masukkan ID ke daftar bukti agar tombol "Lihat" seketika berubah hijau
                     const numId = Number(idMutasi);
                     if (!buktiIds.value.includes(numId)) {
                         buktiIds.value.push(numId);
@@ -719,18 +706,18 @@ createApp({
                 console.error("Error Upload PDF:", err);
                 alert('Terjadi kesalahan koneksi saat mengunggah file.');
             } finally {
-                event.target.value = ''; // Reset input
+                event.target.value = '';
             }
         };
 
-            const openPdf = (item) => {
-                const id = typeof item === 'object' ? (item.id || item.id_mutasi) : item;
-                const fileUrl = (typeof item === 'object' && item.file_bukti) 
-                    ? item.file_bukti 
-                    : `uploads/surat/bukti_${id}.pdf`; // Tanpa 'backend/' di depannya
-                    
-                window.open(fileUrl, '_blank');
-            };
+        const openPdf = (item) => {
+            const id = typeof item === 'object' ? (item.id || item.id_mutasi) : item;
+            const fileUrl = (typeof item === 'object' && item.file_bukti) 
+                ? item.file_bukti 
+                : `uploads/surat/bukti_${id}.pdf`;
+                
+            window.open(fileUrl, '_blank');
+        };
 
         // FITUR PILIH & HAPUS BANYAK
         const toggleSelectMode = () => {
@@ -758,8 +745,10 @@ createApp({
 
         // MODAL ASET
         const modalAset = ref({ show: false, isEdit: false, editId: null });
-        const formAset = ref({ jenis: '', kodeBarang: '', nup: '', merek: '', tipe: '', tahun: '', keterangan: '', kondisi: 'Baik', 
-        kategoriKeterangan: 'Pembelian', detailKeterangan: ''});
+        const formAset = ref({ 
+            jenis: '', kodeBarang: '', nup: '', merek: '', tipe: '', tahun: '', keterangan: '', kondisi: 'Baik', 
+            kategoriKeterangan: 'Pembelian', detailKeterangan: '', nilaiPerolehan: ''
+        });
 
         const ubahKodeOtomatis = () => {
             const jenis = formAset.value.jenis;
@@ -796,7 +785,8 @@ createApp({
                 formAset.value = { 
                     ...item,
                     kategoriKeterangan: parsedKategori,
-                    detailKeterangan: parsedDetail
+                    detailKeterangan: parsedDetail,
+                    nilaiPerolehan: item.nilaiPerolehan || item.nilai_perolehan || ''
                 };
                 return;
             }
@@ -815,7 +805,8 @@ createApp({
                 kondisi: 'Baik', 
                 kategoriKeterangan: 'Pembelian',
                 detailKeterangan: '',
-                asalPerolehanCustom: ''
+                asalPerolehanCustom: '',
+                nilaiPerolehan: '' 
             };
 
             ubahKodeOtomatis();
@@ -844,7 +835,8 @@ createApp({
                     kondisi_asli: formAset.value.kondisi,
                     keterangan: combinedKeterangan, 
                     pemegang_id: formAset.value.pemegangId ?? null,
-                    pemegang_nama_sumber: formAset.value.pemegangNama || null
+                    pemegang_nama_sumber: formAset.value.pemegangNama || null,  
+                    nilai_perolehan: formAset.value.nilaiPerolehan
                 };
 
                 if (modalAset.value.isEdit) {
@@ -919,11 +911,9 @@ createApp({
 
             historyList.value.forEach(h => {
                 const nomor = String(h.nomorBast || '').trim();
-
                 if (!nomor) return;
 
                 const match = nomor.match(/^(\d+)\.BA\/BN\.10\/DBR\/(\d{4})$/);
-
                 if (!match) return;
 
                 const angka = parseInt(match[1], 10);
@@ -959,7 +949,6 @@ createApp({
                 list = list.concat(asetAktif);
             });
 
-            const bln = String(new Date().getMonth() + 1).padStart(2, '0');
             const thn = new Date().getFullYear();
             
             modalTKTM.value = {
@@ -975,6 +964,15 @@ createApp({
             };
         };
 
+        const handleSelectAsetTKTM = () => {
+            const selected = modalTKTM.value.asetList.find(a => Number(a.id) === Number(modalTKTM.value.selectedAsetId));
+            if (selected) {
+                modalTKTM.value.nilaiPerolehan = selected.nilaiPerolehan || selected.nilai_perolehan || '';
+            } else {
+                modalTKTM.value.nilaiPerolehan = '';
+            }
+        };
+
         const prosesTransferKeluar = (asset) => {
             modalPegawai.value.show = false;
             
@@ -982,6 +980,7 @@ createApp({
             if (pegawai) {
                 openModalTKTM(pegawai);
                 modalTKTM.value.selectedAsetId = asset.id;
+                modalTKTM.value.nilaiPerolehan = asset.nilaiPerolehan || asset.nilai_perolehan || '';
             }
         };
 
@@ -1052,41 +1051,18 @@ createApp({
                 const resMutasi2 = await apiRequest('mutasi.php', { method: 'POST', body: JSON.stringify({ aset_id: asset.id, tanggal: tgl, pemegang_lama_id: m.pegawaiId, pemegang_baru_id: null, jenis_transaksi: 'LAINNYA', kondisi: asset.kondisi, nomor_bast: m.nomorVerifikasi, keterangan: 'BA Verifikasi Aset - ' + m.tujuan.trim(), nilai_perolehan: m.nilaiPerolehan, lampiran_foto: metadataNames }) });
                 
                 const uploadPhotos = async (mutasiId) => {
-                    if (
-                        m.fotoBarangFiles.length === 0 &&
-                        m.fotoLabelFiles.length === 0
-                    ) {
-                        return;
-                    }
+                    if (m.fotoBarangFiles.length === 0 && m.fotoLabelFiles.length === 0) return;
 
                     const formData = new FormData();
-
                     formData.append('id', mutasiId);
+                    m.fotoBarangFiles.forEach(file => formData.append('foto_barang[]', file));
+                    m.fotoLabelFiles.forEach(file => formData.append('foto_label[]', file));
 
-                    m.fotoBarangFiles.forEach(file => {
-                        formData.append('foto_barang[]', file);
-                    });
-
-                    m.fotoLabelFiles.forEach(file => {
-                        formData.append('foto_label[]', file);
-                    });
-
-                    const response = await fetch(
-                        `${API_BASE}/upload_tktm.php`,
-                        {
-                            method: 'POST',
-                            body: formData
-                        }
-                    );
-
+                    const response = await fetch(`${API_BASE}/upload_tktm.php`, { method: 'POST', body: formData });
                     const result = await response.json();
-
                     if (!response.ok || result.status !== 'success') {
-                        throw new Error(
-                            result.message || 'Gagal mengunggah foto TKTM.'
-                        );
+                        throw new Error(result.message || 'Gagal mengunggah foto TKTM.');
                     }
-
                     return result;
                 };
 
@@ -1117,7 +1093,7 @@ createApp({
             } catch (error) { showToast(`Gagal memproses TKTM: ${error.message}`, true); }
         };
 
-        // AMBIL ASET YANG DIPEGANG PEGAWAI (Khusus di Modal Pegawai)
+        // AMBIL ASET YANG DIPEGANG PEGAWAI
         const asetDipegang = computed(() => {
             if (!modalPegawai.value || !modalPegawai.value.isEdit) return [];
             
@@ -1172,7 +1148,7 @@ createApp({
             return [...pegawaiList.value].sort((a, b) => String(a.nama).localeCompare(String(b.nama), 'id', { sensitivity: 'base' }));
         });
 
-        // AUTO-GENERATE NOMOR SURAT (RESET PER TAHUN, SIP & BAST PISAH)
+        // AUTO-GENERATE NOMOR SURAT
         const generateNomorSurat = () => {
             const asset = modalSerahTerima.value.asset;
             if (!asset) return;
@@ -1343,7 +1319,6 @@ createApp({
             }
         };
 
-
         const cetakUlangBast = (record) => {
             let nBast = '';
             let nSip = '';
@@ -1353,16 +1328,10 @@ createApp({
             let jenisTrans = record.jenisTransaksi || '';
             let tujuanTktm = '-';
 
-            
-
             if (record.keterangan && record.keterangan.toLowerCase().includes('penelitian fisik')) {
                 jenisTrans = 'LAINNYA';
-
-                // Nomor surat Penelitian
                 nPenelitian = String(record.nomorBast || '').trim();
 
-                // Jika nomor belum tersimpan pada riwayat lama,
-                // gunakan nomor Penelitian sesuai tahun transaksi.
                 if (!nPenelitian) {
                     const tahunSurat = record.tanggal
                         ? new Date(record.tanggal).getFullYear()
@@ -1376,8 +1345,6 @@ createApp({
             } else if (record.keterangan && record.keterangan.includes('Verifikasi Aset')) {
                 jenisTrans = 'LAINNYA';
 
-                // Ambil nomor dari database.
-                // Jika data lama belum punya nomor, gunakan nomor default verifikasi.
                 nVerifikasi = record.nomorBast && String(record.nomorBast).trim() !== ''
                     ? record.nomorBast
                     : `78.BA/BN.10/DBR/${new Date(record.tanggal).getFullYear()}`;
@@ -1661,7 +1628,7 @@ createApp({
             showToast('Logout berhasil.');
         };
 
-        // MODAL RESET (KOSONGKAN DATA)
+        // MODAL RESET DATA
         const modalReset = ref({ show: false, konfirmasi: '' });
         
         const openResetModal = () => {
@@ -1968,7 +1935,7 @@ createApp({
             showToast('Export Excel multi-tab berhasil!');
         };
 
-        // MODAL KONFIRMASI HAPUS (POP UP MODERN)
+        // MODAL KONFIRMASI HAPUS
         const modalHapus = ref({
             show: false,
             id: null,
@@ -2005,7 +1972,7 @@ createApp({
                             tahun: asset.tahun,
                             kondisi: asset.kondisi,
                             keterangan: asset.keterangan,
-                            pemegang_id: null 
+                            pemegang_id: null
                         };
                         await apiRequest('aset.php', { method: 'PUT', body: JSON.stringify(payload) });
                     }
@@ -2066,7 +2033,6 @@ createApp({
             }
         };
 
-        // --- FUNGSI PENGHUBUNG DARI HTML KE MODAL ---
         const deleteAsset = (id) => {
             openModalHapus('aset', id, 'Yakin ingin menghapus data aset ini? Tindakan ini tidak bisa dibatalkan.');
         };
@@ -2117,7 +2083,7 @@ createApp({
 
         return {
             isLoggedIn, loginUsername, loginPassword, loginError, currentUsername, handleLogin,
-            modalForgotPassword, forgotUsername, forgotNewPassword, forgotConfirmPassword, openForgotPassword, resetPassword, forgotError, closeForgotPassword,
+            modalForgotPassword, forgotUsername, forgotNewPassword, forgotConfirmPassword, forgotPin, openForgotPassword, resetPassword, forgotError, closeForgotPassword,
             
             currentCategory, currentTab, changeTab, showDropdown, searchQuery, filterStatus, filterKondisi, toast,
             categoryLabel, categoryIcon, db, activeAssets, visibleAssets, allAssets, pegawaiList, historyList, assignedCount, availableCount, damagedCount,
@@ -2140,10 +2106,10 @@ createApp({
             modalReset, openResetModal, prosesResetData,
 
             exportExcel, exportPegawaiExcel, getLastMutationDate, asetDipegang, sortAssetOrder, toggleAssetSort,
-            modalTKTM, openModalTKTM, submitTKTM, handleFotoTktm, filterJenisTransaksi, removeFotoTktm, refreshHistory, refreshBuktiList,
+            modalTKTM, openModalTKTM, handleSelectAsetTKTM, submitTKTM, handleFotoTktm, filterJenisTransaksi, removeFotoTktm, refreshHistory, refreshBuktiList,
 
             filterSurat, filterKondisiRiwayat, filteredHistory, fileInputBukti, filterJenisAset, filterStatusPegawai, triggerUpload, 
-            handleFileUpload, openPdf, hasBukti, selectedHistory, selectAllHistory, hapusBanyakHistory, prosesTransferKeluar,uploadPdfLangsung
+            handleFileUpload, openPdf, hasBukti, selectedHistory, selectAllHistory, hapusBanyakHistory, prosesTransferKeluar, uploadPdfLangsung
         };
     }
 }).mount('#app');

@@ -4,7 +4,7 @@ session_start();
 if (!isset($_SESSION["admin_username"])) {
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Akses ditolak! Sesi login tidak valid.']);
-    exit; // Hentikan eksekusi script di bawahnya
+    exit;
 }
 
 require_once "config.php";
@@ -16,8 +16,8 @@ if ($method === "GET") {
         $sql = "
             SELECT
                 a.id, a.jenis, a.kode_barang, a.nup_baru, a.merek, a.tipe,
-                a.nama_barang, a.tahun, a.kondisi, a.keterangan, a.pemegang_id,
-                a.created_at, -- <--- TAMBAHIN BARIS INI BIAR TANGGALNYA KETARIK
+                a.nama_barang, a.tahun, a.kondisi, a.keterangan, a.nilai_perolehan, a.pemegang_id,
+                a.created_at,
                 p.nama AS pemegang_nama, p.nip AS pemegang_nip,
                 p.jabatan AS pemegang_jabatan
             FROM aset a
@@ -42,8 +42,8 @@ if ($method === "POST") {
         exit;
     }
     try {
-        $sql = "INSERT INTO aset (jenis, kode_barang, nup_baru, merek, tipe, nama_barang, tahun, kondisi, keterangan, pemegang_id) 
-                VALUES (:jenis, :kode_barang, :nup_baru, :merek, :tipe, :nama_barang, :tahun, :kondisi, :keterangan, :pemegang_id)";
+        $sql = "INSERT INTO aset (jenis, kode_barang, nup_baru, merek, tipe, nama_barang, tahun, kondisi, keterangan, nilai_perolehan, pemegang_id) 
+                VALUES (:jenis, :kode_barang, :nup_baru, :merek, :tipe, :nama_barang, :tahun, :kondisi, :keterangan, :nilai_perolehan, :pemegang_id)";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
             ":jenis" => $input["jenis"] ?? "Laptop",
@@ -55,6 +55,7 @@ if ($method === "POST") {
             ":tahun" => $input["tahun"] ?? null,
             ":kondisi" => $input["kondisi"] ?? "Baik",
             ":keterangan" => $input["keterangan"] ?? null,
+            ":nilai_perolehan" => $input["nilai_perolehan"] ?? null,
             ":pemegang_id" => $input["pemegang_id"] ?? null
         ]);
         echo json_encode(["success" => true, "message" => "Aset berhasil ditambahkan", "id" => $pdo->lastInsertId()]);
@@ -74,7 +75,8 @@ if ($method === "PUT") {
     }
     try {
         $sql = "UPDATE aset SET jenis = :jenis, kode_barang = :kode_barang, nup_baru = :nup_baru, merek = :merek, tipe = :tipe, 
-                nama_barang = :nama_barang, tahun = :tahun, kondisi = :kondisi, keterangan = :keterangan, pemegang_id = :pemegang_id 
+                nama_barang = :nama_barang, tahun = :tahun, kondisi = :kondisi, keterangan = :keterangan, 
+                nilai_perolehan = :nilai_perolehan, pemegang_id = :pemegang_id 
                 WHERE id = :id";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
@@ -88,6 +90,7 @@ if ($method === "PUT") {
             ":tahun" => $input["tahun"] ?? null,
             ":kondisi" => $input["kondisi"] ?? "Baik",
             ":keterangan" => $input["keterangan"] ?? null,
+            ":nilai_perolehan" => $input["nilai_perolehan"] ?? null,
             ":pemegang_id" => $input["pemegang_id"] ?? null
         ]);
         echo json_encode(["success" => true, "message" => "Aset berhasil diperbarui"]);
