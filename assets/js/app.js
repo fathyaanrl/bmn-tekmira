@@ -1043,7 +1043,8 @@ createApp({
                     nup_baru: asset.nup_baru || asset.nup || '', merek: asset.merek,
                     tipe: asset.tipe, nama_barang: asset.nama_barang || asset.namaBarang,
                     tahun: asset.tahun, kondisi: asset.kondisi,
-                    keterangan: combinedKeterangan, pemegang_id: null 
+                    keterangan: combinedKeterangan, pemegang_id: null ,
+                    nilai_perolehan: m.nilaiPerolehan
                 };
                 await apiRequest('aset.php', { method: 'PUT', body: JSON.stringify(payload) });
 
@@ -1093,6 +1094,7 @@ createApp({
             } catch (error) { showToast(`Gagal memproses TKTM: ${error.message}`, true); }
         };
 
+
         // AMBIL ASET YANG DIPEGANG PEGAWAI
         const asetDipegang = computed(() => {
             if (!modalPegawai.value || !modalPegawai.value.isEdit) return [];
@@ -1110,6 +1112,25 @@ createApp({
             
             return list;
         });
+
+        // HELPER AMBIL NILAI PEROLEHAN (DENGAN FALLBACK KE RIWAYAT MUTASI/TKTM)
+        const getNilaiPerolehan = (asset) => {
+            if (!asset) return '-';
+            
+            // 1. Cek langsung dari data aset
+            const valAset = asset.nilaiPerolehan || asset.nilai_perolehan;
+            if (valAset && String(valAset).trim() !== '' && valAset !== '-') {
+                return valAset;
+            }
+            
+            // 2. Fallback: Ambil dari riwayat mutasi/TKTM jika data aset kosong
+            const hist = historyList.value.find(h => Number(h.aset_id) === Number(asset.id) && h.nilai_perolehan && h.nilai_perolehan !== '-');
+            if (hist && hist.nilai_perolehan) {
+                return hist.nilai_perolehan;
+            }
+            
+            return '-';
+        };
 
         // MODAL SERAH TERIMA & SURAT
         const modalSerahTerima = ref({ show: false, asset: null });
@@ -1672,7 +1693,7 @@ createApp({
             const wb = XLSX.utils.book_new();
 
             const headerRow = [
-                'NO', 'USER', 'KODE BARANG', 'NUP BARU', 'MERK & TIPE', 'TAHUN', 'TANGGAL BAST', 'KONDISI', 'KETERANGAN'
+                'NO', 'USER', 'KODE BARANG', 'NUP BARU', 'MERK & TIPE', 'TAHUN', 'NILAI PEROLEHAN', 'TANGGAL BAST', 'KONDISI', 'KETERANGAN'
             ];
 
             const dataRows = asetPegawai.map((asset, index) => {
@@ -1683,12 +1704,12 @@ createApp({
                     asset.nup ? String(asset.nup) : '-',
                     `${asset.merek || ''} ${asset.tipe || ''}`.trim() || '-',
                     asset.tahun || '-',
+                    getNilaiPerolehan(asset), // <-- GANTI BARIS INI (sebelumnya: asset.nilaiPerolehan || asset.nilai_perolehan || '-')
                     getLastMutationDate(asset),
                     asset.kondisi || '-',
                     asset.keterangan || '-'
                 ];
             });
-
             const judulPegawai = `ASET PEGAWAI - ${pegawai.nama || ''}`.toUpperCase();
 
             const aoa = [
@@ -1711,7 +1732,7 @@ createApp({
             ];
 
             ws['!cols'] = [
-                { wch: 6 }, { wch: 26 }, { wch: 18 }, { wch: 12 }, { wch: 30 }, { wch: 10 }, { wch: 24 }, { wch: 14 }, { wch: 35 }
+                { wch: 6 }, { wch: 26 }, { wch: 18 }, { wch: 12 }, { wch: 30 }, { wch: 10 }, { wch: 20 }, { wch: 24 }, { wch: 14 }, { wch: 35 }
             ];
 
             const rowHeights = [];
@@ -1757,7 +1778,7 @@ createApp({
 
                 for (let c = 0; c < colCount; c++) {
                     let alignHoriz = 'center';
-                    if (c === 1 || c === 4 || c === 8) alignHoriz = 'left';
+                    if (c === 1 || c === 4 || c === 9) alignHoriz = 'left';
 
                     setCellStyle(r, c, {
                         font: { sz: 10, name: 'Calibri', color: { rgb: '334155' } },
@@ -1781,6 +1802,7 @@ createApp({
             showToast(`Laporan aset ${pegawai.nama} berhasil di-export!`);
         };
 
+        // EXPORT EXCEL SEMUA ASET
         const exportExcel = () => {
             const allAssets = [...activeAssets.value].sort((a, b) => Number(b.id) - Number(a.id));
 
@@ -1811,10 +1833,10 @@ createApp({
 
             const createStyledSheet = (sheetTitle, assetList) => {
                 const headerRow = [
-                    'NO', 'USER', 'KODE BARANG', 'NUP BARU', 'MERK & TIPE', 'TAHUN', 'TANGGAL BAST', 'KONDISI', 'KETERANGAN'
+                    'NO', 'USER', 'KODE BARANG', 'NUP BARU', 'MERK & TIPE', 'TAHUN', 'NILAI PEROLEHAN', 'TANGGAL BAST', 'KONDISI', 'KETERANGAN'
                 ];
 
-                const dataRows = assetList.map((asset, index) => {
+              const dataRows = assetList.map((asset, index) => {
                     let namaUser = 'Gudang BMN TekMira'; 
                     
                     if (asset.pemegangId) {
@@ -1835,6 +1857,7 @@ createApp({
                         asset.nup ? String(asset.nup) : '-',
                         `${asset.merek || ''} ${asset.tipe || ''}`.trim() || '-',
                         asset.tahun || '-',
+                        getNilaiPerolehan(asset), // <-- GANTI BARIS INI (sebelumnya: asset.nilaiPerolehan || asset.nilai_perolehan || '-')
                         getLastMutationDate(asset),
                         asset.kondisi || '-',
                         asset.keterangan || '-'
@@ -1861,7 +1884,7 @@ createApp({
                 ];
 
                 ws['!cols'] = [
-                    { wch: 6 }, { wch: 26 }, { wch: 18 }, { wch: 12 }, { wch: 30 }, { wch: 10 }, { wch: 24 }, { wch: 14 }, { wch: 35 }
+                    { wch: 6 }, { wch: 26 }, { wch: 18 }, { wch: 12 }, { wch: 30 }, { wch: 10 }, { wch: 20 }, { wch: 24 }, { wch: 14 }, { wch: 35 }
                 ];
 
                 const rowHeights = [];
@@ -1906,7 +1929,7 @@ createApp({
 
                     for (let c = 0; c < colCount; c++) {
                         let alignHoriz = 'center';
-                        if (c === 1 || c === 4 || c === 8) alignHoriz = 'left';
+                        if (c === 1 || c === 4 || c === 9) alignHoriz = 'left';
 
                         setCellStyle(r, c, {
                             font: { sz: 10, name: 'Calibri', color: { rgb: '334155' } },
@@ -2103,7 +2126,7 @@ createApp({
             modalPengaturan, formPengaturan, openPengaturanModal, savePengaturan,
             modalProfil, formProfil, openProfilModal, saveProfil, 
             modalLogout, openLogoutModal, confirmLogout, itemsPerPage, 
-            modalReset, openResetModal, prosesResetData,
+            modalReset, openResetModal, prosesResetData,getNilaiPerolehan,
 
             exportExcel, exportPegawaiExcel, getLastMutationDate, asetDipegang, sortAssetOrder, toggleAssetSort,
             modalTKTM, openModalTKTM, handleSelectAsetTKTM, submitTKTM, handleFotoTktm, filterJenisTransaksi, removeFotoTktm, refreshHistory, refreshBuktiList,

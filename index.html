@@ -326,25 +326,25 @@
                 <!-- TAB 1: ASSETS -->
                 <div v-if="currentTab === 'assets'" class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                     <div class="overflow-x-auto custom-scrollbar">
-                        <table class="w-full text-left border-collapse text-xs">
+                        <!-- TAMBAH min-w-[1050px] AGAR KONTEN TABEL TIDAK TERTEKAN SECARA PAKSA -->
+                        <table class="w-full text-left border-collapse text-xs min-w-[1050px]">
                             <thead>
                                 <tr class="bg-slate-800 text-slate-200 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-700">
-                                    <th v-if="isSelectMode" class="py-3 px-3 w-8 text-center"><input type="checkbox" v-model="selectAllAssets" class="cursor-pointer"></th>
+                                    <th v-if="isSelectMode" class="py-3 px-3 w-8 text-center">
+                                        <input type="checkbox" v-model="selectAllAssets" class="cursor-pointer">
+                                    </th>
                                     <th class="py-3 px-2 w-8 text-center">No</th>
-                                    <th class="py-3 px-4">Kode & NUP</th>
-                                    <th class="py-3 px-4 w-50 text-center">Jenis, Merek & Tahun</th>
-                                    
-                                    <!-- TAMBAHAN KOLOM HEADER NILAI PEROLEHAN -->
-                                    <th class="py-3 px-4 text-center">Nilai Perolehan</th>
-                                    
-                                    <th class="px-4 py-3 text-left font-semibold w-40 cursor-pointer hover:bg-slate-800 transition select-none" @click="toggleAssetSort" title="Klik untuk mengurutkan Terbaru/Terlama">
-                                        <div class="flex items-center space-x-2">
+                                    <th class="py-3 px-3 text-left whitespace-nowrap">Kode & NUP</th>
+                                    <th class="py-3 px-3 text-left min-w-[180px]">Jenis, Merek & Tahun</th>
+                                    <th class="py-3 px-3 text-center whitespace-nowrap">Nilai Perolehan</th>
+                                    <th class="py-3 px-3 text-left whitespace-nowrap font-semibold cursor-pointer hover:bg-slate-700 transition select-none" @click="toggleAssetSort" title="Klik untuk mengurutkan Terbaru/Terlama">
+                                        <div class="flex items-center space-x-1.5">
                                             <span>HARI / TANGGAL</span>
                                             <i class="fa-solid text-[10px] text-slate-300" :class="sortAssetOrder === 'desc' ? 'fa-arrow-down-wide-short' : 'fa-arrow-up-short-wide'"></i>
                                         </div>
                                     </th>
-                                    <th class="py-3 px-4 text-center">Keterangan</th>
-                                    <th class="py-3 px-4 text-center w-32">
+                                    <th class="py-3 px-3 text-center whitespace-nowrap">Keterangan</th>
+                                    <th class="py-3 px-3 text-center whitespace-nowrap">
                                         <div class="flex items-center justify-center space-x-1.5 relative group cursor-pointer" title="Filter Kondisi">
                                             <span>Kondisi</span>
                                             <i class="fa-solid fa-chevron-down text-[12px] font-black transition-colors" :class="filterKondisi !== 'all' ? 'text-blue-400' : 'text-slate-300 group-hover:text-white'"></i>
@@ -356,8 +356,9 @@
                                             </select>
                                         </div>
                                     </th>
-                                    <th class="py-3 px-4 text-center">Posisi Aset</th>
-                                    <th class="py-3 px-4 text-center">Aksi</th>
+                                    <th class="py-3 px-3 text-center whitespace-nowrap">Posisi Aset</th>
+                                    <!-- DIPERBUAT MINIMAL 145px DAN PADDING KANAN EXTRA -->
+                                    <th class="py-3 pl-3 pr-5 text-center whitespace-nowrap min-w-[145px]">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100">
@@ -368,11 +369,11 @@
                                         <input type="checkbox" :value="asset.id" v-model="selectedAssets" class="cursor-pointer" :disabled="asset.keterangan && asset.keterangan.toLowerCase().includes('transfer keluar')">
                                     </td>
                                     <td class="py-3 px-2 text-center text-[11px] font-bold text-slate-400">{{ index + 1 }}</td>
-                                    <td class="py-3 px-4">
+                                    <td class="py-3 px-3 text-left whitespace-nowrap">
                                         <div class="font-mono text-slate-800 font-bold">{{ asset.kodeBarang }}</div>
                                         <div class="text-[11px] text-slate-500 mt-0.5">NUP: <span class="font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200 font-bold text-slate-800">{{ asset.nup }}</span></div>
                                     </td>
-                                    <td class="py-3 px-4">
+                                    <td class="py-3 px-3 text-left">
                                         <div class="flex items-center space-x-1.5 mb-0.5">
                                             <span class="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded bg-indigo-100 text-indigo-700">{{ asset.jenis }}</span>
                                             <span class="font-semibold text-slate-800">{{ asset.merek }}</span>
@@ -381,65 +382,68 @@
                                         <div class="text-[10px] text-slate-400 font-mono mt-0.5">Tahun: {{ asset.tahun || '-' }}</div>
                                     </td>
                                     
-                                    <!-- TAMBAHAN DATA NILAI PEROLEHAN -->
-                                    <td class="py-3 px-4 text-center font-semibold text-slate-700 whitespace-nowrap">
-                                        {{ asset.nilaiPerolehan || asset.nilai_perolehan || '-' }}
+                                    <td class="py-3 px-3 text-center font-semibold text-slate-700 whitespace-nowrap">
+                                        {{ getNilaiPerolehan(asset) }}
                                     </td>
 
-                                    <td class="px-4 py-3 whitespace-nowrap text-[11px] text-slate-600 font-medium">
+                                    <td class="py-3 px-3 text-left whitespace-nowrap text-[11px] text-slate-600 font-medium">
                                         {{ getLastMutationDate(asset) }}
-                                    </td>                                           
-                                    <td class="px-4 py-3 text-[11px] text-slate-500 text-center max-w-[120px] truncate" :title="asset.keterangan">
+                                    </td>                                         
+                                    <td class="py-3 px-3 text-center text-[11px] text-slate-500 max-w-[130px] truncate" :title="asset.keterangan">
                                         {{ asset.keterangan || '-' }}
                                     </td>
-                                    <td class="py-3 px-4 text-center">
-                                        <span class="px-2 py-0.5 rounded-full font-semibold text-[10px] inline-flex items-center space-x-1" :class="getConditionBadgeClass(asset.kondisi)">
+                                    
+                                    <!-- KONDISI -->
+                                    <td class="py-3 px-3 text-center whitespace-nowrap">
+                                        <span class="px-2.5 py-1 rounded-full font-semibold text-[10px] inline-flex items-center space-x-1 whitespace-nowrap" :class="getConditionBadgeClass(asset.kondisi)">
                                             <i class="fa-solid text-[9px]" :class="getConditionIconClass(asset.kondisi)"></i>
                                             <span>{{ asset.kondisi }}</span>
                                         </span>
                                     </td>
                                     
-                                    <td class="py-3 px-4">
+                                    <!-- POSISI ASET -->
+                                    <td class="py-3 px-3 text-center whitespace-nowrap">
                                         <template v-if="asset.keterangan && asset.keterangan.toLowerCase().includes('transfer keluar')">
-                                            <span class="text-[11px] font-bold text-rose-700 bg-rose-100 px-2 py-1 rounded border border-rose-200 inline-flex items-center space-x-1 shadow-sm">
+                                            <span class="text-[11px] font-bold text-rose-700 bg-rose-100 px-2.5 py-1 rounded border border-rose-200 inline-flex items-center justify-center space-x-1 shadow-sm whitespace-nowrap">
                                                 <i class="fa-solid fa-plane-departure text-[10px]"></i>
                                                 <span>Telah Ditransfer Keluar</span>
                                             </span>
                                         </template>
                                         <template v-else-if="asset.pemegangId">
-                                            <div class="flex items-center space-x-2">
+                                            <div class="inline-flex items-center justify-center space-x-2 text-left whitespace-nowrap">
                                                 <div class="w-7 h-7 rounded-full bg-yellow-100 text-yellow-800 font-bold text-[10px] flex items-center justify-center border border-yellow-200 shrink-0">
                                                     {{ getPegawaiInitials(asset.pemegangId) }}
                                                 </div>
                                                 <div class="min-w-0">
-                                                    <p class="font-semibold text-slate-800 text-xs truncate">{{ getPegawaiName(asset.pemegangId) }}</p>
+                                                    <p class="font-semibold text-slate-800 text-xs truncate max-w-[130px]">{{ getPegawaiName(asset.pemegangId) }}</p>
                                                     <p class="text-[10px] text-slate-400 font-mono">NIP: {{ getPegawaiNip(asset.pemegangId) }}</p>
                                                 </div>
                                             </div>
                                         </template>
                                         <template v-else>
-                                            <span class="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-200 inline-flex items-center space-x-1 shadow-sm">
+                                            <span class="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200 inline-flex items-center justify-center space-x-1 shadow-sm whitespace-nowrap">
                                                 <i class="fa-solid fa-warehouse text-[10px]"></i>
                                                 <span>Di Gudang BMN</span>
                                             </span>
                                         </template>
-                                    </td>                                           
-                                    <td class="py-3 px-4 text-center">
-                                        <div v-if="asset.keterangan && asset.keterangan.toLowerCase().includes('transfer keluar')" class="text-[10px] text-slate-500 font-semibold italic border border-slate-300 bg-slate-200 px-2 py-1.5 rounded-md flex items-center justify-center">
+                                    </td>                                         
+                                    
+                                    <!-- AKSI (DENGAN PADDING PR-5 DIBERIKAN UNTUK MEMASTIKAN ICON TRASH UTUH) -->
+                                    <td class="py-3 pl-3 pr-5 text-center whitespace-nowrap">
+                                        <div v-if="asset.keterangan && asset.keterangan.toLowerCase().includes('transfer keluar')" class="text-[10px] text-slate-500 font-semibold italic border border-slate-300 bg-slate-200 px-2 py-1.5 rounded-md inline-flex items-center justify-center whitespace-nowrap">
                                             <i class="fa-solid fa-lock mr-1.5"></i> Tanpa Aksi
                                         </div>
-                                        <div v-else class="flex items-center justify-center space-x-1">
-                                            <button @click="openSerahTerimaModal(asset)" class="bg-slate-900 hover:bg-yellow-600 text-white text-[11px] px-2.5 py-1 rounded-md transition font-medium flex items-center space-x-1 shadow-sm" :title="asset.pemegangId ? 'Kembalikan/Pindah Tangan' : 'Pinjamkan ke Pegawai'">
+                                        <div v-else class="inline-flex items-center justify-center space-x-1 shadow-none">
+                                            <button @click="openSerahTerimaModal(asset)" class="bg-slate-900 hover:bg-yellow-600 text-white text-[11px] px-2.5 py-1 rounded-md transition font-medium inline-flex items-center space-x-1 shadow-sm shrink-0" :title="asset.pemegangId ? 'Kembalikan/Pindah Tangan' : 'Pinjamkan ke Pegawai'">
                                                 <i class="fa-solid" :class="asset.pemegangId ? 'fa-right-left' : 'fa-hand-holding-hand'"></i>
-                                                <span class="hidden md:inline">{{ asset.pemegangId ? 'Mutasi' : 'Pinjamkan' }}</span>
+                                                <span>{{ asset.pemegangId ? 'Mutasi' : 'Pinjamkan' }}</span>
                                             </button>
-                                            <button @click="openAsetModal(asset)" class="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-md" title="Edit Data"><i class="fa-solid fa-pen-to-square"></i></button>
-                                            <button @click="deleteAsset(asset.id)" class="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-slate-100 rounded-md" title="Hapus"><i class="fa-solid fa-trash-can"></i></button>
+                                            <button @click="openAsetModal(asset)" class="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-md shrink-0" title="Edit Data"><i class="fa-solid fa-pen-to-square"></i></button>
+                                            <button @click="deleteAsset(asset.id)" class="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-slate-100 rounded-md shrink-0" title="Hapus"><i class="fa-solid fa-trash-can"></i></button>
                                         </div>
                                     </td>
                                 </tr>
                                 <tr v-if="filteredAssets.length === 0">
-                                    <!-- COLSPAN DIUBAH MENJADI 10 -->
                                     <td colspan="10" class="text-center py-10 text-slate-400">
                                         <i class="fa-solid fa-box-open text-3xl mb-2 block text-slate-300"></i>
                                         <br>Tidak ada data aset yang sesuai pencarian dan filter Anda.
@@ -1002,7 +1006,7 @@
                         </div>
                         
                         <div v-else class="space-y-4">
-                            <!-- INFO TRANSFER -->
+                           <!-- INFO TRANSFER -->
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-3 rounded-xl border border-slate-100">
                                 <div class="md:col-span-2">
                                     <label class="block text-[11px] font-semibold text-slate-700 mb-1">Aset yang Ditransfer *</label>
@@ -1014,10 +1018,6 @@
                                         <option v-for="aset in modalTKTM.asetList" :key="aset.id" :value="aset.id">
                                             {{ aset.jenis }}: {{ aset.merek }} {{ aset.tipe }} (NUP: {{ aset.nup }})
                                         </option>
-                                    </select>
-                                    <select v-model="modalTKTM.selectedAsetId" required class="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500">
-                                        <option value="" disabled>-- Pilih Aset --</option>
-                                        <option v-for="aset in modalTKTM.asetList" :key="aset.id" :value="aset.id">{{ aset.jenis }}: {{ aset.merek }} {{ aset.tipe }} (NUP: {{ aset.nup }})</option>
                                     </select>
                                 </div>
                                 <div class="md:col-span-2">
