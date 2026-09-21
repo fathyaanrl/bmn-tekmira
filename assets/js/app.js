@@ -831,7 +831,7 @@ createApp({
                 const payload = {
                     jenis: formAset.value.jenis,
                     kode_barang: formAset.value.kodeBarang,
-                    nup_baru: formAset.value.nupBaru || formAset.value.nup || '',
+                    nup_baru: formAset.value.nup || '',
                     merek: formAset.value.merek,
                     tipe: formAset.value.tipe,
                     nama_barang: formAset.value.namaBarang || `${formAset.value.merek || ''} ${formAset.value.tipe || ''}`.trim(),
