@@ -15,7 +15,7 @@
 <body class="bg-slate-100 text-slate-800 min-h-screen">
     <div id="app" v-cloak class="flex flex-col min-h-screen pb-12">
         <!-- HALAMAN LOGIN -->
-        <div v-if="!isLoggedIn" class="fixed inset-0 flex items-center justify-start pl-8 md:pl-32 z-[9999] bg-cover bg-center" style="background-image: url('assets/img/tektek.png');">
+        <div v-if="!isLoggedIn && !isPrintTab" class="fixed inset-0 flex items-center justify-start pl-8 md:pl-32 z-[9999] bg-cover bg-center" style="background-image: url('assets/img/tektek.png');">
             <div class="absolute inset-0 bg-slate-900/50"></div>
             <div class="relative z-10 w-full max-w-md pr-8">
                 <div class="bg-white rounded-2xl shadow-xl p-8">    
@@ -104,7 +104,7 @@
         </div>
 
         <!-- DASHBOARD -->
-        <div v-if="isLoggedIn">
+        <div v-if="isLoggedIn && !isPrintTab">
             <!-- Header -->
             <header class="bg-slate-900 text-white shadow-sm sticky top-0 z-30 no-print">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -709,7 +709,6 @@
                                 <input v-model="formPengaturan.kodeBast" type="text" class="w-full text-xs p-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-yellow-500">
                             </div>
                         </div>
-
                         <!-- TAMBAHAN LOGO SURAT -->
                         <div class="pt-2 border-t border-slate-100">
                             <label class="block text-[11px] font-semibold text-slate-700 mb-1">Logo di Kop Surat</label>
@@ -717,7 +716,7 @@
                                 <div class="relative shrink-0 p-1">
                                     <img :src="formPengaturan.logoUrl" alt="Preview Logo" class="w-14 h-14 object-contain border border-slate-200 rounded-lg bg-slate-50 p-1">
                                     <button type="button"
-                                            v-if="formPengaturan.logoUrl !== 'assets/img/logo.png'"
+                                            v-if="(formPengaturan.logoUrl || '').startsWith('data:')"
                                             @click="removeLogo"
                                             title="Batalkan, kembali ke logo default"
                                             class="absolute top-0 right-0 bg-rose-500 hover:bg-rose-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shadow-md ring-2 ring-white transition transform hover:scale-110 cursor-pointer z-10">
@@ -728,7 +727,7 @@
                             </div>
                             <p class="mt-2 text-[10px] leading-snug text-slate-500 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
                                 <i class="fa-solid fa-circle-info text-amber-500 mr-1"></i>
-                                <span class="font-semibold text-slate-600">Catatan:</span> gunakan foto/logo berformat PNG atau JPG dengan latar transparan/putih, agar posisi logo sesuai pastikan dimensi foto max 700 x 400.
+                                <span class="font-semibold text-slate-600">Catatan:</span> gunakan foto/logo berformat PNG atau JPG dengan latar transparan/putih, posisi logo di tengah dan tidak terpotong, serta resolusi jelas (min. 500 px) agar tampil sesuai di kop surat.
                             </p>
                         </div>
                         <div class="pt-3 flex justify-end space-x-2">
@@ -1441,7 +1440,6 @@
                                             </div>
                                         </div>
                                     </div>
-                                    </div>
                                 </div>
                             </div>
 
@@ -1495,6 +1493,14 @@
                         </div>
                     </form>
                 </div>
+            </div>
+
+        </div>
+
+        <!-- Pesan kalau tab surat tidak punya data (mis. sudah ditutup) -->
+            <div v-if="isPrintTab && !printData.show" class="text-center text-slate-500 text-sm py-24 no-print">
+                <i class="fa-solid fa-file-circle-xmark text-3xl text-slate-300 mb-3 block"></i>
+                Data surat tidak ditemukan. Tutup tab ini, lalu buka lagi dari Riwayat (tombol Cetak).
             </div>
 
             <!-- PRINT BAST / SURAT IZIN PREVIEW -->
@@ -1917,7 +1923,6 @@
                     </template>
                 </div>
             </div>
-        </div>
         <!-- Hidden Input khusus Upload Bukti PDF Surat -->
         <input type="file" id="fileInputBuktiPDF" class="hidden" accept="application/pdf" @change="handleFileUpload">
         <!-- <input 

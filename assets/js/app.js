@@ -2,6 +2,10 @@ const { createApp, ref, computed, onMounted } = Vue;
 
 createApp({
     setup() {
+        // MODE TAB SURAT: tab baru dibuka dengan alamat ?print=<id>, isi suratnya diambil dari localStorage
+        const printTabId = new URLSearchParams(window.location.search).get('print');
+        const isPrintTab = !!printTabId;
+
         // LOGIN & USER STATE
         const isLoggedIn = ref(
             sessionStorage.getItem('bmn_logged_in') === 'true'
@@ -1029,6 +1033,7 @@ createApp({
             const oldPegawai = getPegawaiInfo(m.pegawaiId);
             const tgl = m.tanggal; 
 
+            siapkanTabSurat(); // buka tab kosong dulu (anti popup-blocker)
             try {
                 const metadataNames = JSON.stringify({
                     pemeriksaTekmira1: m.pemeriksaTekmira1 ? getPegawaiName(m.pemeriksaTekmira1) : '',
@@ -1091,8 +1096,8 @@ createApp({
                     adminNama: adminGudang.nama, adminNip: adminGudang.nip, adminJabatan: adminGudang.jabatan
                 };
 
-                setTimeout(() => document.getElementById('print-section')?.scrollIntoView({ behavior: 'smooth' }), 200);
-            } catch (error) { showToast(`Gagal memproses TKTM: ${error.message}`, true); }
+                await bukaSuratTabBaru();
+            } catch (error) { batalTabSurat(); showToast(`Gagal memproses TKTM: ${error.message}`, true); }
         };
 
 
@@ -1137,6 +1142,15 @@ createApp({
         const modalSerahTerima = ref({ show: false, asset: null });
         const formMutasi = ref({ pemegangBaruId: '', adminGudangId: '', tanggal: new Date().toISOString().slice(0, 10), kondisi: 'Baik', nomorBast: '', nomorSip: '' });
         const printData = ref({ show: false });
+
+        // Kalau ini tab surat: ambil data surat yang dikirim dari tab utama
+        if (isPrintTab) {
+            try {
+                const raw = localStorage.getItem('bmn_print_' + printTabId);
+                if (raw) printData.value = JSON.parse(raw);
+            } catch (e) { console.error('Gagal membaca data surat', e); }
+            document.title = 'Cetak Surat - BMN tekMIRA';
+        }
 
         const openSerahTerimaModal = (asset) => {
             modalSerahTerima.value = { show: true, asset };
@@ -1247,6 +1261,7 @@ createApp({
                 adminJabatan: adminGudang.jabatan
             });
 
+            siapkanTabSurat(); // buka tab kosong dulu (anti popup-blocker)
             try {
                 if (jenisTransaksi === 'MUTASI') {
                     await apiRequest('mutasi.php', {
@@ -1329,14 +1344,10 @@ createApp({
                     adminNip: adminGudang.nip,
                     adminJabatan: adminGudang.jabatan
                 };
-                setTimeout(() => {
-                    const printArea = document.getElementById('print-section');
-                    if (printArea) {
-                        printArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }
-                }, 200);
+                await bukaSuratTabBaru();
 
             } catch (error) {
+                batalTabSurat();
                 showToast(`Transaksi gagal: ${error.message}`, true);
             }
         };
@@ -1477,10 +1488,8 @@ createApp({
                 adminJabatan: jabatanAdminGudang
             };
 
-            setTimeout(() => {
-                const printArea = document.getElementById('print-section');
-                if (printArea) printArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }, 100);
+            siapkanTabSurat();
+            bukaSuratTabBaru();
         };
 
         const formatTanggalIndo = (tanggal) => {
@@ -1529,19 +1538,112 @@ createApp({
             return `${parts[2]}-${parts[1]}-${parts[0]}`;
         };
 
-        const tutupPrint = () => { printData.value.show = false; };
+        // ===== SURAT DI TAB BARU =====
+        // Tab kosong dibuka lebih dulu (langsung saat tombol diklik) supaya tidak diblokir popup-blocker,
+        // lalu diarahkan ke halaman surat setelah data selesai disimpan.
+        let pendingPrintTab = null;
+
+        const batalTabSurat = () => {
+            try { if (pendingPrintTab && !pendingPrintTab.closed) pendingPrintTab.close(); } catch (e) {}
+            pendingPrintTab = null;
+        };
+
+        const siapkanTabSurat = () => {
+            batalTabSurat();
+            try {
+                pendingPrintTab = window.open('', '_blank');
+                if (pendingPrintTab) {
+                    pendingPrintTab.document.write('<title>Memuat surat...</title><p style="font-family:Arial,sans-serif;padding:24px;color:#475569">Memuat surat...</p>');
+                }
+            } catch (e) { pendingPrintTab = null; }
+        };
+
+        // Foto preview (blob:) hanya hidup di tab asal, jadi diubah ke data URL (dikecilkan) supaya bisa tampil di tab baru
+        const blobKeDataUrl = (url) => new Promise((resolve) => {
+            if (typeof url !== 'string' || !url.startsWith('blob:')) return resolve(url);
+            fetch(url).then(r => r.blob()).then(blob => {
+                const objUrl = URL.createObjectURL(blob);
+                const img = new Image();
+                img.onload = () => {
+                    const skala = Math.min(1, 1000 / Math.max(img.width, img.height));
+                    const canvas = document.createElement('canvas');
+                    canvas.width = Math.round(img.width * skala);
+                    canvas.height = Math.round(img.height * skala);
+                    const ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#fff';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    URL.revokeObjectURL(objUrl);
+                    resolve(canvas.toDataURL('image/jpeg', 0.85));
+                };
+                img.onerror = () => { URL.revokeObjectURL(objUrl); resolve(url); };
+                img.src = objUrl;
+            }).catch(() => resolve(url));
+        });
+
+        const bukaSuratTabBaru = async () => {
+            try {
+                const data = JSON.parse(JSON.stringify(printData.value));
+                data.show = true;
+                data.fotoBarangUrls = await Promise.all((data.fotoBarangUrls || []).map(blobKeDataUrl));
+                data.fotoLabelUrls = await Promise.all((data.fotoLabelUrls || []).map(blobKeDataUrl));
+
+                // bersihkan data surat lama (lebih dari 1 hari)
+                const sekarang = Date.now();
+                Object.keys(localStorage).forEach(k => {
+                    if (k.startsWith('bmn_print_') && sekarang - Number(k.slice(10)) > 86400000) localStorage.removeItem(k);
+                });
+
+                const id = String(sekarang);
+                localStorage.setItem('bmn_print_' + id, JSON.stringify(data));
+
+                const url = new URL(window.location.href);
+                url.search = '';
+                url.hash = '';
+                url.searchParams.set('print', id);
+
+                if (pendingPrintTab && !pendingPrintTab.closed) {
+                    pendingPrintTab.location.href = url.toString();
+                } else {
+                    const tab = window.open(url.toString(), '_blank');
+                    if (!tab) showToast('Tab surat diblokir browser. Izinkan pop-up untuk situs ini, lalu klik Cetak lagi dari Riwayat.', true);
+                }
+                pendingPrintTab = null;
+
+                // di tab utama surat tidak lagi ditampilkan di bawah
+                printData.value = { show: false };
+            } catch (e) {
+                console.error('Gagal membuka surat di tab baru', e);
+                batalTabSurat();
+                showToast('Gagal membuka surat di tab baru: ' + e.message, true);
+            }
+        };
+
+        const tutupPrint = () => {
+            if (isPrintTab) {
+                window.close();
+                // kalau browser tidak mau menutup tab ini, kosongkan tampilan saja
+                setTimeout(() => { printData.value = { show: false }; }, 300);
+                return;
+            }
+            printData.value.show = false;
+        };
         const jalankanPrint = () => { window.print(); };
 
         // MODAL PENGATURAN DOKUMEN
         const modalPengaturan = ref({ show: false });
         const savedPengaturan = JSON.parse(localStorage.getItem('bmn_pengaturan_dokumen') || 'null');
         
+        // Logo default kop surat (dipakai saat belum ada logo custom / setelah klik tombol X)
+        const DEFAULT_LOGO = 'assets/img/logo.png';
+
         const formPengaturan = ref({
             namaKepala: savedPengaturan?.namaKepala || 'Nur Syarief Boni Mulyanto, S.T',
             nipKepala: savedPengaturan?.nipKepala || '',
             jabatanKepala: savedPengaturan?.jabatanKepala || 'Kepala Subbagian Perlengkapan,\nRumah Tangga dan Pengadaan',
             kodeSip: savedPengaturan?.kodeSip || 'F. DBR.U.1.02.02',
-            kodeBast: savedPengaturan?.kodeBast || 'F. DBR.U.1.02.01'
+            kodeBast: savedPengaturan?.kodeBast || 'F. DBR.U.1.02.01',
+            logoUrl: (savedPengaturan?.logoUrl || '').startsWith('data:') ? savedPengaturan.logoUrl : DEFAULT_LOGO
         });
 
         const openPengaturanModal = () => { modalPengaturan.value.show = true; };
@@ -1571,7 +1673,7 @@ createApp({
 
         // Batalin logo custom -> balik ke logo default
         const removeLogo = () => {
-            formPengaturan.value.logoUrl = 'assets/img/logo.png';
+            formPengaturan.value.logoUrl = DEFAULT_LOGO;
             showToast('Logo dikembalikan ke default. Klik "Simpan" untuk menyimpan permanen.');
         };
 
@@ -2230,6 +2332,8 @@ createApp({
 
         // LIFECYCLE
         onMounted(async () => {
+            if (isPrintTab) return; // tab surat tidak perlu load data / cek login
+
             await refreshBuktiList();
             checkLogin();
 
@@ -2239,6 +2343,7 @@ createApp({
         });
 
         return {
+            isPrintTab,
             isLoggedIn, loginUsername, loginPassword, loginError, currentUsername, handleLogin,
             modalForgotPassword, forgotUsername, forgotNewPassword, forgotConfirmPassword, forgotPin, openForgotPassword, resetPassword, forgotError, closeForgotPassword,
             
@@ -2257,7 +2362,7 @@ createApp({
             modalSerahTerima, formMutasi, openSerahTerimaModal, availablePegawaiForTransfer, stafGudangList, submitSerahTerima,
             printData, formatTanggalIndo, formatTanggalTerbilang, formatTanggalAngka, cetakUlangBast, tutupPrint, jalankanPrint,
             
-            modalPengaturan, formPengaturan, openPengaturanModal, savePengaturan, handleLogoUpload, removeLogo,
+            modalPengaturan, formPengaturan, openPengaturanModal, savePengaturan, handleLogoUpload, removeLogo, defaultLogo: DEFAULT_LOGO,
             modalProfil, formProfil, openProfilModal, saveProfil, showRedaksiDropdown,
             savedRedaksi, modalRedaksi,formRedaksi, openRedaksiSIP,openRedaksiBAST,openRedaksiVERIFIKASI,
             openRedaksiPENELITIAN, saveRedaksi,resetRedaksiDefault, modalLogout, openLogoutModal, confirmLogout, itemsPerPage, 
