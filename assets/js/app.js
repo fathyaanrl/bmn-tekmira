@@ -1551,6 +1551,30 @@ createApp({
             showToast('Pengaturan dokumen berhasil disimpan di browser.');
         };
 
+        // Upload logo baru dari komputer -> disimpan sebagai gambar (base64) di browser (localStorage)
+        const handleLogoUpload = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (!file.type.startsWith('image/')) {
+                showToast('File harus berupa gambar (PNG/JPG)!', true);
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                formPengaturan.value.logoUrl = e.target.result; // hasilnya data:image/...;base64,....
+                showToast('Logo berhasil diganti. Klik "Simpan" untuk menyimpan permanen.');
+            };
+            reader.readAsDataURL(file);
+        };
+
+        // Batalin logo custom -> balik ke logo default
+        const removeLogo = () => {
+            formPengaturan.value.logoUrl = 'assets/img/logo.png';
+            showToast('Logo dikembalikan ke default. Klik "Simpan" untuk menyimpan permanen.');
+        };
+
         // MODAL PROFIL & LOGOUT
         const savedUsername = localStorage.getItem('bmn_username') || 'Admin BMN';
         currentUsername.value = savedUsername;
@@ -2233,7 +2257,7 @@ createApp({
             modalSerahTerima, formMutasi, openSerahTerimaModal, availablePegawaiForTransfer, stafGudangList, submitSerahTerima,
             printData, formatTanggalIndo, formatTanggalTerbilang, formatTanggalAngka, cetakUlangBast, tutupPrint, jalankanPrint,
             
-            modalPengaturan, formPengaturan, openPengaturanModal, savePengaturan,
+            modalPengaturan, formPengaturan, openPengaturanModal, savePengaturan, handleLogoUpload, removeLogo,
             modalProfil, formProfil, openProfilModal, saveProfil, showRedaksiDropdown,
             savedRedaksi, modalRedaksi,formRedaksi, openRedaksiSIP,openRedaksiBAST,openRedaksiVERIFIKASI,
             openRedaksiPENELITIAN, saveRedaksi,resetRedaksiDefault, modalLogout, openLogoutModal, confirmLogout, itemsPerPage, 
