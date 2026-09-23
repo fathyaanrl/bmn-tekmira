@@ -543,10 +543,15 @@ createApp({
                     String(asset.tahun).toLowerCase().includes(query) || String(asset.keterangan).toLowerCase().includes(query) || holder.includes(query)
                 );
             }).sort((a, b) => {
-                if (sortAssetOrder.value === 'desc') {
-                    return Number(b.id) - Number(a.id);
-                } else {
-                    return Number(a.id) - Number(b.id);
+                if (filterJenisAset.value !== 'all') {
+                    return Number(a.nup) - Number(b.nup);
+                } 
+                else {
+                    if (sortAssetOrder.value === 'desc') {
+                        return Number(b.id) - Number(a.id);
+                    } else {
+                        return Number(a.id) - Number(b.id);
+                    }
                 }
             });
         });
