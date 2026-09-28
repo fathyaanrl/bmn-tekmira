@@ -2,7 +2,6 @@ const { createApp, ref, computed, onMounted } = Vue;
 
 createApp({
     setup() {
-        // MODE TAB SURAT: tab baru dibuka dengan alamat ?print=<id>, isi suratnya diambil dari localStorage
         const printTabId = new URLSearchParams(window.location.search).get('print');
         const isPrintTab = !!printTabId;
 
@@ -188,7 +187,6 @@ createApp({
             selectedPegawai.value = [];
             selectedHistory.value = [];
 
-            // Jika pindah ke tab riwayat/mutasi, refresh datanya
             if (tabName === 'mutasi' || tabName === 'riwayat') {
                 await refreshHistory();
                 await refreshBuktiList();
@@ -1038,7 +1036,7 @@ createApp({
             const oldPegawai = getPegawaiInfo(m.pegawaiId);
             const tgl = m.tanggal; 
 
-            siapkanTabSurat(); // buka tab kosong dulu (anti popup-blocker)
+            siapkanTabSurat();
             try {
                 const metadataNames = JSON.stringify({
                     pemeriksaTekmira1: m.pemeriksaTekmira1 ? getPegawaiName(m.pemeriksaTekmira1) : '',
@@ -1148,7 +1146,6 @@ createApp({
         const formMutasi = ref({ pemegangBaruId: '', adminGudangId: '', tanggal: new Date().toISOString().slice(0, 10), kondisi: 'Baik', nomorBast: '', nomorSip: '' });
         const printData = ref({ show: false });
 
-        // Kalau ini tab surat: ambil data surat yang dikirim dari tab utama
         if (isPrintTab) {
             try {
                 const raw = localStorage.getItem('bmn_print_' + printTabId);
@@ -1266,7 +1263,7 @@ createApp({
                 adminJabatan: adminGudang.jabatan
             });
 
-            siapkanTabSurat(); // buka tab kosong dulu (anti popup-blocker)
+            siapkanTabSurat(); 
             try {
                 if (jenisTransaksi === 'MUTASI') {
                     await apiRequest('mutasi.php', {
@@ -1543,9 +1540,6 @@ createApp({
             return `${parts[2]}-${parts[1]}-${parts[0]}`;
         };
 
-        // ===== SURAT DI TAB BARU =====
-        // Tab kosong dibuka lebih dulu (langsung saat tombol diklik) supaya tidak diblokir popup-blocker,
-        // lalu diarahkan ke halaman surat setelah data selesai disimpan.
         let pendingPrintTab = null;
 
         const batalTabSurat = () => {
@@ -1615,7 +1609,6 @@ createApp({
                 }
                 pendingPrintTab = null;
 
-                // di tab utama surat tidak lagi ditampilkan di bawah
                 printData.value = { show: false };
             } catch (e) {
                 console.error('Gagal membuka surat di tab baru', e);
@@ -1627,7 +1620,6 @@ createApp({
         const tutupPrint = () => {
             if (isPrintTab) {
                 window.close();
-                // kalau browser tidak mau menutup tab ini, kosongkan tampilan saja
                 setTimeout(() => { printData.value = { show: false }; }, 300);
                 return;
             }
@@ -1658,7 +1650,6 @@ createApp({
             showToast('Pengaturan dokumen berhasil disimpan di browser.');
         };
 
-        // Upload logo baru dari komputer -> disimpan sebagai gambar (base64) di browser (localStorage)
         const handleLogoUpload = (event) => {
             const file = event.target.files[0];
             if (!file) return;
@@ -1670,13 +1661,13 @@ createApp({
 
             const reader = new FileReader();
             reader.onload = (e) => {
-                formPengaturan.value.logoUrl = e.target.result; // hasilnya data:image/...;base64,....
+                formPengaturan.value.logoUrl = e.target.result;
                 showToast('Logo berhasil diganti. Klik "Simpan" untuk menyimpan permanen.');
             };
             reader.readAsDataURL(file);
         };
 
-        // Batalin logo custom -> balik ke logo default
+        // Batalin logo custom
         const removeLogo = () => {
             formPengaturan.value.logoUrl = DEFAULT_LOGO;
             showToast('Logo dikembalikan ke default. Klik "Simpan" untuk menyimpan permanen.');
@@ -1763,30 +1754,27 @@ createApp({
             modalProfil.value.show = true;
         };
 
-        // STATE REDAKSI SURAT
-        //const showRedaksiDropdown = ref(false);
-
         // Template Redaksi Bawaan (Default)
         const defaultRedaksi = {
             SIP: {
                 judul: 'Ubah Redaksi Surat Izin Pemakaian (SIP)',
-                pembuka: 'Yang bertanda tangan di bawah ini, menerangkan bahwa barang milik negara (BMN) berupa aset di bawah ini diserahkan hak pemakaian sementara kepada pihak kedua dengan ketentuan menjaga dan merawat aset dengan baik.',
-                penutup: 'Demikian Surat Izin Pemakaian ini dibuat untuk dipergunakan sebagaimana mestinya.'
+                pembuka: 'Izin pemakaian barang inventaris kantor Balai Besar Pengujian Mineral dan Batubara tekMIRA berupa :',
+                penutup: 'Selanjutnya barang inventaris tersebut agar dapat dipergunakan untuk keperluan dinas pada Kantor Balai Besar Pengujian Mineral dan Batubara tekMIRA pemakai/pengguna barang wajib memelihara dengan sebaik-baiknya dan bertanggung jawab penuh atas hilang/musnahnya barang inventaris tersebut.'
             },
             BAST: {
                 judul: 'Ubah Redaksi Berita Acara Serah Terima (BAST)',
-                pembuka: 'Pada hari ini, kami yang bertanda tangan di bawah ini telah melaksanakan serah terima Barang Milik Negara (BMN) berupa aset fisik dalam kondisi baik dan lengkap.',
-                penutup: 'Demikian Berita Acara Serah Terima ini dibuat dengan sebenarnya dalam rangkap secukupnya untuk dipergunakan sebagaimana mestinya.'
+                pembuka: 'Dengan ini menyatakan bahwa PIHAK PERTAMA telah menyerahkan/Mengembalikan kepada PIHAK KEDUA berupa :',
+                penutup: 'Demikian Berita Acara Serah Terima Barang Milik Negara ini dibuat untuk dapat diproses lebih lanjut.'
             },
             VERIFIKASI: {
                 judul: 'Ubah Redaksi BA Verifikasi Aset',
-                pembuka: 'Telah dilakukan verifikasi teknis dan pemeriksaan kelayakan fisik BMN dalam rangka proses administrasi Transfer Keluar aset ke instansi tujuan.',
-                penutup: 'Hasil verifikasi ini menyatakan aset telah memenuhi syarat administrasi dan teknis untuk ditransfer.'
+                pembuka: 'Pada hari ini, [TANGGAL_TERBILANG] ([TANGGAL_ANGKA]), telah melakukan verifikasi Barang Milik Negara pada [INSTANSI_TUJUAN], Kementerian Energi dan Sumber Daya Mineral dengan rincian sebagai berikut:',
+                penutup: 'Demikian Berita Acara ini dibuat untuk dapat di pergunakan sebagaimana mestinya dan apabila ditemukan kesalahan di kemudian hari, akan diperbaiki sebagaimana mestinya.'
             },
             PENELITIAN: {
                 judul: 'Ubah Redaksi BA Penelitian Fisik',
-                pembuka: 'Telah dilakukan penelitian fisik dan pencocokan nomor identitas/NUP Barang Milik Negara (BMN) sebelum dilaksanakan transfer keluar.',
-                penutup: 'Demikian Berita Acara Penelitian Fisik ini dibuat sebagai bukti sah kondisi aset saat dilakukan transfer.'
+                pembuka: 'Pada hari ini, [TANGGAL_TERBILANG] ([TANGGAL_ANGKA]), kami yang bertanda tangan di bawah ini, telah melaksanakan penelitian fisik Barang Milik Negara yang diusulkan transfer berupa:',
+                penutup: 'Demikian Berita Acara ini dibuat untuk dapat di pergunakan sebagaimana mestinya dan apabila ditemukan kesalahan di kemudian hari, akan diperbaiki sebagaimana mestinya.'
             }
         };
 
@@ -1923,7 +1911,7 @@ createApp({
                     asset.nup ? String(asset.nup) : '-',
                     `${asset.merek || ''} ${asset.tipe || ''}`.trim() || '-',
                     asset.tahun || '-',
-                    getNilaiPerolehan(asset), // <-- GANTI BARIS INI (sebelumnya: asset.nilaiPerolehan || asset.nilai_perolehan || '-')
+                    getNilaiPerolehan(asset), 
                     getLastMutationDate(asset),
                     asset.kondisi || '-',
                     asset.keterangan || '-'
@@ -2076,7 +2064,7 @@ createApp({
                         asset.nup ? String(asset.nup) : '-',
                         `${asset.merek || ''} ${asset.tipe || ''}`.trim() || '-',
                         asset.tahun || '-',
-                        getNilaiPerolehan(asset), // <-- GANTI BARIS INI (sebelumnya: asset.nilaiPerolehan || asset.nilai_perolehan || '-')
+                        getNilaiPerolehan(asset), 
                         getLastMutationDate(asset),
                         asset.kondisi || '-',
                         asset.keterangan || '-'
@@ -2337,7 +2325,7 @@ createApp({
 
         // LIFECYCLE
         onMounted(async () => {
-            if (isPrintTab) return; // tab surat tidak perlu load data / cek login
+            if (isPrintTab) return; 
 
             await refreshBuktiList();
             checkLogin();

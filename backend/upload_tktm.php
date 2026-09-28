@@ -37,11 +37,8 @@ require_once "config.php";
 
 $id = (int) $id;
 
-/*
-|--------------------------------------------------------------------------
-| Folder upload (Keluar 1 tingkat ke root bmn-tekmira/uploads/tktm/)
-|--------------------------------------------------------------------------
-*/
+//Folder upload (Keluar 1 tingkat ke root bmn-tekmira/uploads/tktm/)
+
 $targetDir = dirname(__DIR__) . "/uploads/tktm/";
 
 if (!is_dir($targetDir)) {
@@ -51,11 +48,8 @@ if (!is_dir($targetDir)) {
 $uploadedBarang = [];
 $uploadedLabel = [];
 
-/*
-|--------------------------------------------------------------------------
-| FOTO BARANG
-|--------------------------------------------------------------------------
-*/
+//FOTO BARANG
+
 if (
     isset($_FILES['foto_barang']) &&
     is_array($_FILES['foto_barang']['tmp_name'])
@@ -96,11 +90,8 @@ if (
     }
 }
 
-/*
-|--------------------------------------------------------------------------
-| FOTO LABEL
-|--------------------------------------------------------------------------
-*/
+// FOTO LABEL
+
 if (
     isset($_FILES['foto_label']) &&
     is_array($_FILES['foto_label']['tmp_name'])
@@ -141,11 +132,7 @@ if (
     }
 }
 
-/*
-|--------------------------------------------------------------------------
-| Ambil & Update lampiran_foto di Database
-|--------------------------------------------------------------------------
-*/
+// Ambil & Update lampiran_foto di Database
 try {
     $stmt = $pdo->prepare("
         SELECT lampiran_foto
